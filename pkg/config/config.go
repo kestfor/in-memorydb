@@ -58,3 +58,8 @@ func Read(path string) (*Config, error) {
 
 	return &cfg, nil
 }
+
+// TODO
+func (c *Config) Validate() error {
+	return nil
+}
