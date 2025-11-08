@@ -30,16 +30,16 @@ type SecurityConfig struct {
 }
 
 type GossipConfig struct {
-	Protocol            string `yaml:"protocol"`
-	AntiEntropyInterval int    `yaml:"interval"`
-	Fanout              int    `yaml:"fanout"`
-	Retries             int    `yaml:"retries"`
+	Protocol              string `yaml:"protocol"`
+	AntiEntropyIntervalMs int    `yaml:"interval"`
+	Fanout                int    `yaml:"fanout"`
+	Retries               int    `yaml:"retries"`
 }
 
 type PersistenceConfig struct {
-	WalDir           string `yaml:"wal_dir"`
-	SnapDir          string `yaml:"snap_dir"`
-	SnapshotInterval int    `yaml:"snapshot_interval"`
+	WalDir             string `yaml:"wal_dir"`
+	SnapDir            string `yaml:"snap_dir"`
+	SnapshotIntervalMs int    `yaml:"snapshot_interval"`
 }
 
 type ReplicationConfig struct {
@@ -56,10 +56,11 @@ func Read(path string) (*Config, error) {
 		return nil, err
 	}
 
-	return &cfg, nil
-}
+	cfg.PopulateDefaults()
 
-// TODO
-func (c *Config) Validate() error {
-	return nil
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }

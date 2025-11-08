@@ -1,0 +1,21 @@
+node:
+  id: "node1"
+  bind_address: "127.0.0.1"
+  port: 9090
+gossip:
+  protocol: "SWIM"
+  interval: 500
+  fanout: 3
+  retries: 3
+seeds:
+  - "195.0.0.2:9090"
+persistence:
+  wal_dir: "wal"
+  snap_dir: "snap"
+  snapshot_interval: 10
+security:
+  enabled: true
+  ca_cert: "ca.crt"
+  ca_key: "ca.key"
+  cert: "node1.crt"
+  key: "node1.key"
