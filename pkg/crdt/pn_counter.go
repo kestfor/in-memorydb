@@ -2,66 +2,126 @@ package crdt
 
 import (
 	"encoding/json"
+	"fmt"
 	"in-memorydb/pkg/structs"
 	"sync"
 
-	"golang.org/x/exp/constraints"
+	"github.com/google/uuid"
 )
 
 const PNCounterName = "PNCounter"
 
 // PNCounter — распределённый счётчик с поддержкой инкремента/декремента
-type PNCounter[T comparable, V constraints.Integer] struct {
+type PNCounter struct {
 	mu sync.RWMutex
-	id T       // ID узла
-	P  map[T]V // положительные инкременты
-	N  map[T]V // отрицательные инкременты
+	id string
+	P  map[string]int64 // положительные инкременты
+	N  map[string]int64 // отрицательные инкременты
 }
 
-func NewPNCounter[T comparable, V constraints.Integer](id T) *PNCounter[T, V] {
-	return &PNCounter[T, V]{
-		id: id,
-		P:  make(map[T]V),
-		N:  make(map[T]V),
+type PNCounterDelta struct {
+	ID    string
+	Delta int64
+}
+
+var _ CRDT = (*PNCounter)(nil)
+
+func (d *PNCounterDelta) Merge(other Delta) error {
+	otherDelta, ok := other.(*PNCounterDelta)
+	if !ok {
+		return fmt.Errorf("cannot merge %T with %T: %w", d, other, ErrDeltaTypeMismatch)
+	}
+	d.Delta += otherDelta.Delta
+	return nil
+}
+
+func (P PNCounterDelta) MarshalJSON() ([]byte, error) {
+	type Alias PNCounterDelta
+	return json.Marshal(struct {
+		Type string `json:"type"`
+		*Alias
+	}{
+		Type:  PNCounterName,
+		Alias: (*Alias)(&P),
+	})
+}
+
+func (P *PNCounterDelta) UnmarshalJSON(data []byte) error {
+	type Alias PNCounterDelta
+	var aux struct {
+		Type string `json:"type"`
+		*Alias
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if aux.Type != "" && aux.Type != PNCounterName {
+		return ErrInvalidDeltaType
+	}
+
+	*P = PNCounterDelta(*aux.Alias)
+	return nil
+}
+
+func (P PNCounterDelta) Type() string {
+	return PNCounterName
+}
+
+func (c *PNCounter) Type() string {
+	return PNCounterName
+}
+
+func NewPNCounter(id uuid.UUID) *PNCounter {
+	return &PNCounter{
+		id: id.String(),
+		P:  make(map[string]int64),
+		N:  make(map[string]int64),
 	}
 }
 
-func NewPNCounterFromSnapshot[T comparable, V constraints.Integer](snapshot []byte) (*PNCounter[T, V], error) {
+func (c *PNCounter) UnmarshalJSON(snapshot []byte) error {
 	var data struct {
-		ID T
-		P  map[T]V
-		N  map[T]V
+		ID string
+		P  map[string]int64
+		N  map[string]int64
 	}
 
 	if err := json.Unmarshal(snapshot, &data); err != nil {
-		return nil, err
+		return err
 	}
 
-	c := &PNCounter[T, V]{
-		id: data.ID,
-		P:  data.P,
-		N:  data.N,
-	}
+	c.id = data.ID
+	c.P = data.P
+	c.N = data.N
 
-	return c, nil
+	return nil
 }
 
-func (c *PNCounter[T, V]) Increment(delta V) {
+func (c *PNCounter) Increment(delta int64) Delta {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	c.P[c.id] += delta
+	c.mu.Unlock()
+	return &PNCounterDelta{
+		ID:    c.id,
+		Delta: delta,
+	}
 }
 
-func (c *PNCounter[T, V]) Decrement(delta V) {
+func (c *PNCounter) Decrement(delta int64) Delta {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	c.N[c.id] += delta
+	c.mu.Unlock()
+	return &PNCounterDelta{
+		ID:    c.id,
+		Delta: -delta,
+	}
 }
 
-func (c *PNCounter[T, V]) Value() V {
+func (c *PNCounter) Value() int64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	var sumP, sumN V
+	var sumP, sumN int64
 	for _, v := range c.P {
 		sumP += v
 	}
@@ -72,7 +132,75 @@ func (c *PNCounter[T, V]) Value() V {
 }
 
 // Merge объединяет два счётчика
-func (c *PNCounter[T, V]) Merge(other *PNCounter[T, V]) {
+func (c *PNCounter) Merge(other CRDT) error {
+	o, ok := other.(*PNCounter)
+	if !ok {
+		return fmt.Errorf("cannot merge %T with %T: %w", c, other, ErrCRDTTypeMismatch)
+	}
+	c.mergePNCounter(o)
+	return nil
+}
+
+func (c *PNCounter) ApplyDelta(delta Delta) error {
+	d, ok := delta.(*PNCounterDelta)
+	if !ok {
+		return fmt.Errorf("cannot apply delta with type %T to %T: %w", delta, c, ErrDeltaTypeMismatch)
+	}
+
+	c.mu.Lock()
+	if d.Delta >= 0 {
+		c.P[d.ID] = max(c.P[d.ID], c.P[d.ID]+d.Delta)
+	} else {
+		c.N[d.ID] = max(c.N[d.ID], c.N[d.ID]-d.Delta)
+	}
+	c.mu.Unlock()
+
+	return nil
+}
+
+func (c *PNCounter) MergeSnapshot(snapshot []byte) error {
+	var other PNCounter
+	if err := json.Unmarshal(snapshot, &other); err != nil {
+		return err
+	}
+
+	return c.Merge(&other)
+}
+
+func (c *PNCounter) MarshalJSON() ([]byte, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	data := struct {
+		ID string
+		P  map[string]int64
+		N  map[string]int64
+	}{
+		ID: c.id,
+		P:  c.P,
+		N:  c.N,
+	}
+
+	return json.Marshal(data)
+}
+
+// IDs возвращает список всех известных узлов
+func (c *PNCounter) IDs() structs.Set[string] {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	ids := structs.NewSet[string]()
+	for id := range c.P {
+		ids.Add(id)
+	}
+	for id := range c.N {
+		ids.Add(id)
+	}
+
+	return ids
+}
+
+func (c *PNCounter) mergePNCounter(other *PNCounter) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for node, val := range other.P {
@@ -85,47 +213,4 @@ func (c *PNCounter[T, V]) Merge(other *PNCounter[T, V]) {
 			c.N[node] = val
 		}
 	}
-}
-
-func (c *PNCounter[T, V]) MergeSnapshot(snapshot []byte) error {
-	other, err := NewPNCounterFromSnapshot[T, V](snapshot)
-	if err != nil {
-		return err
-	}
-	c.Merge(other)
-	return nil
-}
-
-// Snapshot возвращает снимок текущего состояния (например, для репликации или хранения)
-func (c *PNCounter[T, V]) Snapshot() ([]byte, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	data := struct {
-		ID T
-		P  map[T]V
-		N  map[T]V
-	}{
-		ID: c.id,
-		P:  c.P,
-		N:  c.N,
-	}
-
-	return json.Marshal(data)
-}
-
-// IDs возвращает список всех известных узлов
-func (c *PNCounter[T, V]) IDs() structs.Set[T] {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	ids := structs.NewSet[T]()
-	for id := range c.P {
-		ids.Add(id)
-	}
-	for id := range c.N {
-		ids.Add(id)
-	}
-
-	return ids
 }

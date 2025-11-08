@@ -16,7 +16,8 @@ type Config struct {
 }
 
 type NodeConfig struct {
-	ID          string `yaml:"id"`
+	ID          string `yaml:"-"`
+	Name        string `yaml:"name"`
 	BindAddress string `yaml:"bind_address"`
 	Port        int    `yaml:"port"`
 }

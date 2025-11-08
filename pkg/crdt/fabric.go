@@ -10,7 +10,7 @@ var ErrCRDTNotFound = fmt.Errorf("crdt not found")
 
 var constructors = map[string]CRDTConstructor{
 	PNCounterName: func(id uuid.UUID) CRDT {
-		return NewPNCounter[uuid.UUID, int64](id)
+		return NewPNCounter(id)
 	},
 }
 

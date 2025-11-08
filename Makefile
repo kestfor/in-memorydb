@@ -6,3 +6,6 @@ lint:
 
 bench:
 	go test -bench=. -benchmem ./...
+
+format:
+	go fmt ./...
