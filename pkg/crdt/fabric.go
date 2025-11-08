@@ -12,6 +12,9 @@ var constructors = map[string]CRDTConstructor{
 	PNCounterName: func(id uuid.UUID) CRDT {
 		return NewPNCounter(id)
 	},
+	LWWHLCRegisterName: func(id uuid.UUID) CRDT {
+		return NewLWWHLCRegister(id)
+	},
 }
 
 type fabric struct {
