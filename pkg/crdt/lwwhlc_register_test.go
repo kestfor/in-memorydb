@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Test compareHLC function
+// Test CompareHLC function
 func TestCompareHLC(t *testing.T) {
 	tests := []struct {
 		name string
@@ -64,9 +64,9 @@ func TestCompareHLC(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := compareHLC(tc.a, tc.b)
+			got := CompareHLC(tc.a, tc.b)
 			if got != tc.want {
-				t.Errorf("compareHLC(%+v, %+v) = %d, want %d", tc.a, tc.b, got, tc.want)
+				t.Errorf("CompareHLC(%+v, %+v) = %d, want %d", tc.a, tc.b, got, tc.want)
 			}
 		})
 	}
@@ -648,7 +648,7 @@ func TestLWWHLCRegister_HLCAdvancement(t *testing.T) {
 	d2 := delta2.(*LWWHLCRegisterDelta)
 
 	// The second write should have advanced timestamp
-	cmp := compareHLC(d1.TS, d2.TS)
+	cmp := CompareHLC(d1.TS, d2.TS)
 	if cmp >= 0 {
 		t.Errorf("Second write timestamp should be greater than first, got %+v vs %+v", d2.TS, d1.TS)
 	}

@@ -9,37 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const LWWHLCRegisterName = "LWWHLCRegister"
-
-type HLCTimestamp struct {
-	WallTime int64  `json:"wall_time"` // unix nano
-	Lamport  int64  `json:"lamport"`   // локальный счетчик
-	ID       string `json:"id"`        // replica ID для tie-break
-}
-
-// Сравнение двух HLC: возвращает -1,0,1
-func compareHLC(a, b HLCTimestamp) int {
-	if a.WallTime < b.WallTime {
-		return -1
-	}
-	if a.WallTime > b.WallTime {
-		return 1
-	}
-	if a.Lamport < b.Lamport {
-		return -1
-	}
-	if a.Lamport > b.Lamport {
-		return 1
-	}
-	if a.ID < b.ID {
-		return -1
-	}
-	if a.ID > b.ID {
-		return 1
-	}
-	return 0
-}
-
 type LWWHLCRegisterDelta struct {
 	Value json.RawMessage `json:"value"`
 	TS    HLCTimestamp    `json:"ts"`
@@ -50,7 +19,7 @@ func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
 	if !ok {
 		return fmt.Errorf("cannot merge %T with %T", d, other)
 	}
-	if compareHLC(d.TS, od.TS) < 0 {
+	if CompareHLC(d.TS, od.TS) < 0 {
 		d.Value = append(json.RawMessage(nil), od.Value...)
 		d.TS = od.TS
 	}
@@ -63,7 +32,7 @@ func (d *LWWHLCRegisterDelta) MarshalJSON() ([]byte, error) {
 		Type string `json:"type"`
 		*Alias
 	}{
-		Type:  LWWHLCRegisterName,
+		Type:  CRDTTypeLWWHLCRegister.String(),
 		Alias: (*Alias)(d),
 	})
 }
@@ -79,14 +48,14 @@ func (d *LWWHLCRegisterDelta) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	if aux.Type != "" && aux.Type != LWWHLCRegisterName {
-		return fmt.Errorf("invalid delta type, expected %s, got %s", LWWHLCRegisterName, aux.Type)
+	if aux.Type != "" && aux.Type != CRDTTypeLWWHLCRegister.String() {
+		return fmt.Errorf("invalid delta type, expected %s, got %s", CRDTTypeLWWHLCRegister, aux.Type)
 	}
 	return nil
 }
 
-func (d *LWWHLCRegisterDelta) Type() string {
-	return LWWHLCRegisterName
+func (d *LWWHLCRegisterDelta) Type() CRDTType {
+	return CRDTTypeLWWHLCRegister
 }
 
 type LWWHLCRegister struct {
@@ -140,7 +109,7 @@ func (r *LWWHLCRegister) ApplyDelta(delta Delta) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if compareHLC(r.localHLC, d.TS) < 0 {
+	if CompareHLC(r.localHLC, d.TS) < 0 {
 		r.value = append(json.RawMessage(nil), d.Value...)
 		r.localHLC = d.TS
 	}
@@ -165,7 +134,7 @@ func (r *LWWHLCRegister) Merge(other CRDT) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if compareHLC(r.localHLC, o.localHLC) < 0 {
+	if CompareHLC(r.localHLC, o.localHLC) < 0 {
 		r.value = append(json.RawMessage(nil), o.value...)
 		r.localHLC = o.localHLC
 	}
@@ -216,6 +185,6 @@ func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *LWWHLCRegister) Type() string {
-	return LWWHLCRegisterName
+func (r *LWWHLCRegister) Type() CRDTType {
+	return CRDTTypeLWWHLCRegister
 }

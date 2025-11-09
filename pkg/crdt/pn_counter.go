@@ -9,8 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const PNCounterName = "PNCounter"
-
 // PNCounter — распределённый счётчик с поддержкой инкремента/декремента
 type PNCounter struct {
 	mu sync.RWMutex
@@ -41,7 +39,7 @@ func (P PNCounterDelta) MarshalJSON() ([]byte, error) {
 		Type string `json:"type"`
 		*Alias
 	}{
-		Type:  PNCounterName,
+		Type:  CRDTTypePNCounter.String(),
 		Alias: (*Alias)(&P),
 	})
 }
@@ -56,7 +54,7 @@ func (P *PNCounterDelta) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if aux.Type != "" && aux.Type != PNCounterName {
+	if aux.Type != "" && aux.Type != CRDTTypePNCounter.String() {
 		return ErrInvalidDeltaType
 	}
 
@@ -64,12 +62,12 @@ func (P *PNCounterDelta) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (P PNCounterDelta) Type() string {
-	return PNCounterName
+func (P PNCounterDelta) Type() CRDTType {
+	return CRDTTypePNCounter
 }
 
-func (c *PNCounter) Type() string {
-	return PNCounterName
+func (c *PNCounter) Type() CRDTType {
+	return CRDTTypePNCounter
 }
 
 func NewPNCounter(id uuid.UUID) *PNCounter {
