@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"in-memorydb/pkg/structs"
 	"sync"
-
-	"github.com/google/uuid"
 )
 
 // PNCounter — распределённый счётчик с поддержкой инкремента/декремента
@@ -70,9 +68,9 @@ func (c *PNCounter) Type() CRDTType {
 	return CRDTTypePNCounter
 }
 
-func NewPNCounter(id uuid.UUID) *PNCounter {
+func NewPNCounter(id string) *PNCounter {
 	return &PNCounter{
-		id: id.String(),
+		id: id,
 		P:  make(map[string]int64),
 		N:  make(map[string]int64),
 	}

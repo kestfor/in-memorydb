@@ -10,63 +10,63 @@ import (
 	"github.com/google/uuid"
 )
 
-// Test CompareHLC function
-func TestCompareHLC(t *testing.T) {
+// Test Compare function
+func TestCompare(t *testing.T) {
 	tests := []struct {
 		name string
-		a    HLCTimestamp
-		b    HLCTimestamp
+		a    Timestamp
+		b    Timestamp
 		want int
 	}{
 		{
 			name: "a walltime < b walltime",
-			a:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node1"},
-			b:    HLCTimestamp{WallTime: 200, Lamport: 3, ID: "node2"},
+			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			b:    Timestamp{WallTime: 200, Lamport: 3, ID: "node2"},
 			want: -1,
 		},
 		{
 			name: "a walltime > b walltime",
-			a:    HLCTimestamp{WallTime: 300, Lamport: 1, ID: "node1"},
-			b:    HLCTimestamp{WallTime: 200, Lamport: 10, ID: "node2"},
+			a:    Timestamp{WallTime: 300, Lamport: 1, ID: "node1"},
+			b:    Timestamp{WallTime: 200, Lamport: 10, ID: "node2"},
 			want: 1,
 		},
 		{
 			name: "equal walltime, a lamport < b lamport",
-			a:    HLCTimestamp{WallTime: 100, Lamport: 3, ID: "node1"},
-			b:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    Timestamp{WallTime: 100, Lamport: 3, ID: "node1"},
+			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: -1,
 		},
 		{
 			name: "equal walltime, a lamport > b lamport",
-			a:    HLCTimestamp{WallTime: 100, Lamport: 7, ID: "node1"},
-			b:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    Timestamp{WallTime: 100, Lamport: 7, ID: "node1"},
+			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: 1,
 		},
 		{
 			name: "equal walltime and lamport, a ID < b ID",
-			a:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node1"},
-			b:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: -1,
 		},
 		{
 			name: "equal walltime and lamport, a ID > b ID",
-			a:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node3"},
-			b:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node3"},
+			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: 1,
 		},
 		{
 			name: "completely equal timestamps",
-			a:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node1"},
-			b:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
 			want: 0,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := CompareHLC(tc.a, tc.b)
+			got := Compare(&tc.a, &tc.b)
 			if got != tc.want {
-				t.Errorf("CompareHLC(%+v, %+v) = %d, want %d", tc.a, tc.b, got, tc.want)
+				t.Errorf("Compare(%+v, %+v) = %d, want %d", tc.a, tc.b, got, tc.want)
 			}
 		})
 	}
@@ -108,9 +108,9 @@ func TestLWWHLCRegister_WriteRead(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := NewLWWHLCRegister(uuid.New())
+			r := NewLWWHLCRegister(uuid.New().String())
 
-			// Perform writes with small delays to ensure HLC advances
+			// Perform writes with small delays to ensure Time advances
 			for i, w := range tc.writes {
 				if i > 0 {
 					time.Sleep(time.Millisecond)
@@ -128,7 +128,7 @@ func TestLWWHLCRegister_WriteRead(t *testing.T) {
 
 // Test empty register
 func TestLWWHLCRegister_EmptyRegister(t *testing.T) {
-	r := NewLWWHLCRegister(uuid.New())
+	r := NewLWWHLCRegister(uuid.New().String())
 	got := r.Read()
 	if got != nil {
 		t.Errorf("Read() on empty register = %s, want nil", got)
@@ -146,8 +146,8 @@ func TestLWWHLCRegister_ApplyDelta(t *testing.T) {
 		{
 			name: "apply valid delta",
 			prepare: func() (*LWWHLCRegister, Delta) {
-				r1 := NewLWWHLCRegister(uuid.New())
-				r2 := NewLWWHLCRegister(uuid.New())
+				r1 := NewLWWHLCRegister(uuid.New().String())
+				r2 := NewLWWHLCRegister(uuid.New().String())
 				time.Sleep(2 * time.Millisecond)
 				delta := r2.Write(json.RawMessage(`"new value"`))
 				return r1, delta
@@ -158,8 +158,8 @@ func TestLWWHLCRegister_ApplyDelta(t *testing.T) {
 		{
 			name: "apply older delta - should be ignored",
 			prepare: func() (*LWWHLCRegister, Delta) {
-				r1 := NewLWWHLCRegister(uuid.New())
-				r2 := NewLWWHLCRegister(uuid.New())
+				r1 := NewLWWHLCRegister(uuid.New().String())
+				r2 := NewLWWHLCRegister(uuid.New().String())
 
 				// r2 writes older value
 				delta := r2.Write(json.RawMessage(`"older"`))
@@ -176,8 +176,8 @@ func TestLWWHLCRegister_ApplyDelta(t *testing.T) {
 		{
 			name: "apply invalid delta type",
 			prepare: func() (*LWWHLCRegister, Delta) {
-				r := NewLWWHLCRegister(uuid.New())
-				return r, &mockDelta{}
+				r := NewLWWHLCRegister(uuid.New().String())
+				return r, &mockDeltaPn{}
 			},
 			wantValue: nil,
 			wantErr:   true,
@@ -217,12 +217,12 @@ func TestLWWHLCRegister_Merge(t *testing.T) {
 		{
 			name: "merge with newer value",
 			prepareA: func() *LWWHLCRegister {
-				r := NewLWWHLCRegister(uuid.New())
+				r := NewLWWHLCRegister(uuid.New().String())
 				r.Write(json.RawMessage(`"old"`))
 				return r
 			},
 			prepareB: func() *LWWHLCRegister {
-				r := NewLWWHLCRegister(uuid.New())
+				r := NewLWWHLCRegister(uuid.New().String())
 				time.Sleep(2 * time.Millisecond)
 				r.Write(json.RawMessage(`"new"`))
 				return r
@@ -233,10 +233,10 @@ func TestLWWHLCRegister_Merge(t *testing.T) {
 		{
 			name: "merge into empty register",
 			prepareA: func() *LWWHLCRegister {
-				return NewLWWHLCRegister(uuid.New())
+				return NewLWWHLCRegister(uuid.New().String())
 			},
 			prepareB: func() *LWWHLCRegister {
-				r := NewLWWHLCRegister(uuid.New())
+				r := NewLWWHLCRegister(uuid.New().String())
 				time.Sleep(2 * time.Millisecond)
 				r.Write(json.RawMessage(`"value"`))
 				return r
@@ -247,7 +247,7 @@ func TestLWWHLCRegister_Merge(t *testing.T) {
 		{
 			name: "merge with wrong type",
 			prepareA: func() *LWWHLCRegister {
-				return NewLWWHLCRegister(uuid.New())
+				return NewLWWHLCRegister(uuid.New().String())
 			},
 			prepareB: func() *LWWHLCRegister {
 				return nil
@@ -264,7 +264,7 @@ func TestLWWHLCRegister_Merge(t *testing.T) {
 
 			var err error
 			if b == nil {
-				err = a.Merge(&mockCRDT{})
+				err = a.Merge(&mockCRDTPn{})
 			} else {
 				err = a.Merge(b)
 			}
@@ -295,7 +295,7 @@ func TestLWWHLCRegister_JSONSerialization(t *testing.T) {
 		{
 			name: "register with value",
 			prepare: func() *LWWHLCRegister {
-				r := NewLWWHLCRegister(uuid.New())
+				r := NewLWWHLCRegister(uuid.New().String())
 				r.Write(json.RawMessage(`"test value"`))
 				return r
 			},
@@ -304,7 +304,7 @@ func TestLWWHLCRegister_JSONSerialization(t *testing.T) {
 		{
 			name: "register with complex json",
 			prepare: func() *LWWHLCRegister {
-				r := NewLWWHLCRegister(uuid.New())
+				r := NewLWWHLCRegister(uuid.New().String())
 				r.Write(json.RawMessage(`{"nested":{"key":"value"},"array":[1,2,3]}`))
 				return r
 			},
@@ -357,7 +357,7 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			name: "valid delta",
 			delta: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"test"`),
-				TS: HLCTimestamp{
+				TS: &Timestamp{
 					WallTime: 123456789,
 					Lamport:  5,
 					ID:       "node1",
@@ -369,7 +369,7 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			name: "delta with complex value",
 			delta: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`{"key":"value"}`),
-				TS: HLCTimestamp{
+				TS: &Timestamp{
 					WallTime: 987654321,
 					Lamport:  10,
 					ID:       "node2",
@@ -381,7 +381,7 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			name: "delta with null value",
 			delta: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`null`),
-				TS: HLCTimestamp{
+				TS: &Timestamp{
 					WallTime: 111111111,
 					Lamport:  0,
 					ID:       "node3",
@@ -407,8 +407,8 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			if err := json.Unmarshal(data, &raw); err != nil {
 				t.Fatalf("failed to unmarshal to map: %v", err)
 			}
-			if raw["type"] != LWWHLCRegisterName {
-				t.Errorf("type field = %q, want %q", raw["type"], LWWHLCRegisterName)
+			if raw["type"] != CRDTTypeLWWHLCRegister.String() {
+				t.Errorf("type field = %q, want %q", raw["type"], CRDTTypeLWWHLCRegister.String())
 			}
 
 			// Unmarshal
@@ -421,7 +421,7 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			if string(restored.Value) != string(tc.delta.Value) {
 				t.Errorf("Value = %s, want %s", restored.Value, tc.delta.Value)
 			}
-			if restored.TS != tc.delta.TS {
+			if *restored.TS != *tc.delta.TS {
 				t.Errorf("TS = %+v, want %+v", restored.TS, tc.delta.TS)
 			}
 		})
@@ -431,16 +431,16 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 // Test Delta.Type
 func TestLWWHLCRegisterDelta_Type(t *testing.T) {
 	d := &LWWHLCRegisterDelta{}
-	if got := d.Type(); got != LWWHLCRegisterName {
-		t.Errorf("Type() = %q, want %q", got, LWWHLCRegisterName)
+	if got := d.Type(); got != CRDTTypeLWWHLCRegister {
+		t.Errorf("Type() = %q, want %q", got, CRDTTypeLWWHLCRegister.String())
 	}
 }
 
 // Test Register.Type
 func TestLWWHLCRegister_Type(t *testing.T) {
-	r := NewLWWHLCRegister(uuid.New())
-	if got := r.Type(); got != LWWHLCRegisterName {
-		t.Errorf("Type() = %q, want %q", got, LWWHLCRegisterName)
+	r := NewLWWHLCRegister(uuid.New().String())
+	if got := r.Type(); got != CRDTTypeLWWHLCRegister {
+		t.Errorf("Type() = %q, want %q", got, CRDTTypeLWWHLCRegister.String())
 	}
 }
 
@@ -457,11 +457,11 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with newer delta",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"old"`),
-				TS:    HLCTimestamp{WallTime: 100, Lamport: 1, ID: "node1"},
+				TS:    &Timestamp{WallTime: 100, Lamport: 1, ID: "node1"},
 			},
 			delta2: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"new"`),
-				TS:    HLCTimestamp{WallTime: 200, Lamport: 1, ID: "node2"},
+				TS:    &Timestamp{WallTime: 200, Lamport: 1, ID: "node2"},
 			},
 			wantValue: json.RawMessage(`"new"`),
 			wantErr:   false,
@@ -470,11 +470,11 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with older delta - keep current",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"newer"`),
-				TS:    HLCTimestamp{WallTime: 300, Lamport: 5, ID: "node1"},
+				TS:    &Timestamp{WallTime: 300, Lamport: 5, ID: "node1"},
 			},
 			delta2: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"older"`),
-				TS:    HLCTimestamp{WallTime: 200, Lamport: 3, ID: "node2"},
+				TS:    &Timestamp{WallTime: 200, Lamport: 3, ID: "node2"},
 			},
 			wantValue: json.RawMessage(`"newer"`),
 			wantErr:   false,
@@ -483,11 +483,11 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with equal walltime, newer lamport",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"first"`),
-				TS:    HLCTimestamp{WallTime: 100, Lamport: 3, ID: "node1"},
+				TS:    &Timestamp{WallTime: 100, Lamport: 3, ID: "node1"},
 			},
 			delta2: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"second"`),
-				TS:    HLCTimestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+				TS:    &Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			},
 			wantValue: json.RawMessage(`"second"`),
 			wantErr:   false,
@@ -496,7 +496,7 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with wrong type",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"value"`),
-				TS:    HLCTimestamp{WallTime: 100, Lamport: 1, ID: "node1"},
+				TS:    &Timestamp{WallTime: 100, Lamport: 1, ID: "node1"},
 			},
 			delta2:    nil,
 			wantValue: json.RawMessage(`"value"`),
@@ -513,7 +513,7 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 
 			var err error
 			if tc.delta2 == nil {
-				err = delta.Merge(&mockDelta{})
+				err = delta.Merge(&mockDeltaPn{})
 			} else {
 				err = delta.Merge(tc.delta2)
 			}
@@ -570,7 +570,7 @@ func TestLWWHLCRegisterDelta_UnmarshalJSON_InvalidType(t *testing.T) {
 
 // Test concurrent writes
 func TestLWWHLCRegister_ConcurrentWrites(t *testing.T) {
-	r := NewLWWHLCRegister(uuid.New())
+	r := NewLWWHLCRegister(uuid.New().String())
 	var wg sync.WaitGroup
 
 	// Concurrent writes
@@ -593,7 +593,7 @@ func TestLWWHLCRegister_ConcurrentWrites(t *testing.T) {
 
 // Test concurrent reads
 func TestLWWHLCRegister_ConcurrentReads(t *testing.T) {
-	r := NewLWWHLCRegister(uuid.New())
+	r := NewLWWHLCRegister(uuid.New().String())
 	r.Write(json.RawMessage(`"test"`))
 
 	var wg sync.WaitGroup
@@ -612,7 +612,7 @@ func TestLWWHLCRegister_ConcurrentReads(t *testing.T) {
 
 // Test concurrent merges
 func TestLWWHLCRegister_ConcurrentMerges(t *testing.T) {
-	r := NewLWWHLCRegister(uuid.New())
+	r := NewLWWHLCRegister(uuid.New().String())
 	var wg sync.WaitGroup
 
 	// Concurrent merges
@@ -620,7 +620,7 @@ func TestLWWHLCRegister_ConcurrentMerges(t *testing.T) {
 		wg.Add(1)
 		go func(val int) {
 			defer wg.Done()
-			other := NewLWWHLCRegister(uuid.New())
+			other := NewLWWHLCRegister(uuid.New().String())
 			other.Write(json.RawMessage(fmt.Sprintf(`"value_%d"`, val)))
 			r.Merge(other)
 		}(i)
@@ -635,9 +635,9 @@ func TestLWWHLCRegister_ConcurrentMerges(t *testing.T) {
 	}
 }
 
-// Test HLC advancement
+// Test Time advancement
 func TestLWWHLCRegister_HLCAdvancement(t *testing.T) {
-	r := NewLWWHLCRegister(uuid.New())
+	r := NewLWWHLCRegister(uuid.New().String())
 
 	// First write
 	delta1 := r.Write(json.RawMessage(`"first"`))
@@ -648,7 +648,7 @@ func TestLWWHLCRegister_HLCAdvancement(t *testing.T) {
 	d2 := delta2.(*LWWHLCRegisterDelta)
 
 	// The second write should have advanced timestamp
-	cmp := CompareHLC(d1.TS, d2.TS)
+	cmp := Compare(d1.TS, d2.TS)
 	if cmp >= 0 {
 		t.Errorf("Second write timestamp should be greater than first, got %+v vs %+v", d2.TS, d1.TS)
 	}
@@ -662,3 +662,143 @@ func TestLWWHLCRegister_HLCAdvancement(t *testing.T) {
 		t.Errorf("Third write WallTime should be greater than second, got %d vs %d", d3.TS.WallTime, d2.TS.WallTime)
 	}
 }
+
+// Test clock synchronization in ApplyDelta
+func TestLWWHLCRegister_ClockSyncOnApplyDelta(t *testing.T) {
+	nodeID := uuid.New().String()
+	r := NewLWWHLCRegister(nodeID)
+
+	// Create a delta with a future timestamp
+	futureClock := NewHLC("remote-node")
+	futureClock.WithOffset(time.Hour) // 1 hour in future
+	futureTS := futureClock.Now()
+
+	delta := &LWWHLCRegisterDelta{
+		Value: json.RawMessage(`"future value"`),
+		TS:    futureTS,
+	}
+
+	// Apply the delta
+	err := r.ApplyDelta(delta)
+	if err != nil {
+		t.Fatalf("ApplyDelta() error = %v", err)
+	}
+
+	// Now write locally - the clock should have synchronized
+	localDelta := r.Write(json.RawMessage(`"local value"`))
+	localTS := localDelta.(*LWWHLCRegisterDelta).TS
+
+	// Local timestamp should be greater than or equal to the future timestamp
+	if localTS.WallTime < futureTS.WallTime {
+		t.Errorf("Clock did not sync properly. Local WallTime %d < Remote WallTime %d",
+			localTS.WallTime, futureTS.WallTime)
+	}
+}
+
+// Test clock synchronization in Merge
+func TestLWWHLCRegister_ClockSyncOnMerge(t *testing.T) {
+	node1 := uuid.New().String()
+	node2 := uuid.New().String()
+
+	r1 := NewLWWHLCRegister(node1)
+	r2 := NewLWWHLCRegister(node2)
+
+	// R2 writes with offset in future
+	r2.clock.WithOffset(time.Hour)
+	r2.Write(json.RawMessage(`"future value"`))
+
+	// R1 merges R2
+	ts1Before := r1.clock.Now()
+	err := r1.Merge(r2)
+	if err != nil {
+		t.Fatalf("Merge() error = %v", err)
+	}
+
+	// R1's clock should have advanced
+	ts1After := r1.clock.Now()
+
+	if ts1After.WallTime <= ts1Before.WallTime {
+		t.Errorf("Clock did not advance after merge. Before: %d, After: %d",
+			ts1Before.WallTime, ts1After.WallTime)
+	}
+}
+
+// Test UnmarshalJSON synchronizes clock
+func TestLWWHLCRegister_UnmarshalSyncsClock(t *testing.T) {
+	// Create register with a timestamp far in the future
+	original := NewLWWHLCRegister(uuid.New().String())
+	original.clock.WithOffset(24 * time.Hour) // 24 hours ahead
+	original.Write(json.RawMessage(`"test value"`))
+
+	// Marshal it
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+
+	// Unmarshal into new register
+	restored := &LWWHLCRegister{}
+	if err := json.Unmarshal(data, restored); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	// Write to restored register - should not panic or produce old timestamps
+	delta := restored.Write(json.RawMessage(`"new value"`))
+	newTS := delta.(*LWWHLCRegisterDelta).TS
+
+	// New timestamp should be >= restored timestamp
+	if newTS.WallTime < restored.ts.WallTime {
+		t.Errorf("New timestamp went backwards after unmarshal. Got %d, want >= %d",
+			newTS.WallTime, restored.ts.WallTime)
+	}
+}
+
+// Test convergence with clock synchronization
+func TestLWWHLCRegister_Convergence(t *testing.T) {
+	// Create 3 nodes
+	r1 := NewLWWHLCRegister("node1")
+	r2 := NewLWWHLCRegister("node2")
+	r3 := NewLWWHLCRegister("node3")
+
+	// Each node writes
+	r1.Write(json.RawMessage(`"value1"`))
+	time.Sleep(2 * time.Millisecond)
+	r2.Write(json.RawMessage(`"value2"`))
+	time.Sleep(2 * time.Millisecond)
+	r3.Write(json.RawMessage(`"value3"`))
+
+	// Merge in different orders
+	// r1 merges r2, then r3
+	_ = r1.Merge(r2)
+	_ = r1.Merge(r3)
+	_ = r2.Merge(r3)
+	_ = r3.Merge(r1)
+
+	// All should converge to same value (value3 - the latest)
+	v1 := string(r1.Read())
+	v2 := string(r2.Read())
+
+	if v1 != v2 {
+		t.Errorf("Registers did not converge. r1=%s, r2=%s", v1, v2)
+	}
+
+	if v1 != `"value3"` {
+		t.Errorf("Expected converged value to be 'value3', got %s", v1)
+	}
+}
+
+// mockDeltaPn is a mock implementation for testing error cases
+type mockDeltaPn struct{}
+
+func (m *mockDeltaPn) Type() CRDTType               { return CRDTTypePNCounter }
+func (m *mockDeltaPn) MarshalJSON() ([]byte, error) { return nil, fmt.Errorf("mock error") }
+func (m *mockDeltaPn) UnmarshalJSON([]byte) error   { return fmt.Errorf("mock error") }
+
+// mockCRDTPn is a mock CRDT implementation for testing error cases
+type mockCRDTPn struct{}
+
+func (m *mockCRDTPn) Type() CRDTType               { return CRDTTypePNCounter }
+func (m *mockCRDTPn) Merge(other CRDT) error       { return fmt.Errorf("mock error") }
+func (m *mockCRDTPn) ApplyDelta(delta Delta) error { return fmt.Errorf("mock error") }
+func (m *mockCRDTPn) MarshalJSON() ([]byte, error) { return nil, fmt.Errorf("mock error") }
+func (m *mockCRDTPn) UnmarshalJSON([]byte) error   { return fmt.Errorf("mock error") }

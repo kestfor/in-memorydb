@@ -4,14 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 type LWWHLCRegisterDelta struct {
 	Value json.RawMessage `json:"value"`
-	TS    HLCTimestamp    `json:"ts"`
+	TS    *Timestamp      `json:"ts"`
 }
 
 func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
@@ -19,10 +16,12 @@ func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
 	if !ok {
 		return fmt.Errorf("cannot merge %T with %T", d, other)
 	}
-	if CompareHLC(d.TS, od.TS) < 0 {
-		d.Value = append(json.RawMessage(nil), od.Value...)
+
+	if d.TS.Before(od.TS) {
+		d.Value = od.Value
 		d.TS = od.TS
 	}
+
 	return nil
 }
 
@@ -59,21 +58,19 @@ func (d *LWWHLCRegisterDelta) Type() CRDTType {
 }
 
 type LWWHLCRegister struct {
-	mu       sync.RWMutex
-	id       string
-	value    json.RawMessage
-	localHLC HLCTimestamp
+	mu    sync.RWMutex
+	id    string
+	value json.RawMessage
+	ts    *Timestamp
+	clock *Time
 }
 
-func NewLWWHLCRegister(id uuid.UUID) *LWWHLCRegister {
-	now := time.Now().UnixNano()
+func NewLWWHLCRegister(id string) *LWWHLCRegister {
+	clock := NewHLC(id)
 	return &LWWHLCRegister{
-		id: id.String(),
-		localHLC: HLCTimestamp{
-			WallTime: now,
-			Lamport:  0,
-			ID:       id.String(),
-		},
+		id:    id,
+		ts:    clock.Now(),
+		clock: clock,
 	}
 }
 
@@ -82,20 +79,14 @@ func (r *LWWHLCRegister) Write(value json.RawMessage) Delta {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	now := time.Now().UnixNano()
-	if now > r.localHLC.WallTime {
-		r.localHLC.WallTime = now
-		r.localHLC.Lamport = 0
-	} else {
-		r.localHLC.Lamport++
-	}
-
-	r.value = append(json.RawMessage(nil), value...)
+	r.ts = r.clock.Now()
+	r.value = value
 
 	delta := &LWWHLCRegisterDelta{
-		Value: append(json.RawMessage(nil), value...),
-		TS:    r.localHLC,
+		Value: r.value,
+		TS:    r.ts,
 	}
+
 	return delta
 }
 
@@ -109,9 +100,11 @@ func (r *LWWHLCRegister) ApplyDelta(delta Delta) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if CompareHLC(r.localHLC, d.TS) < 0 {
-		r.value = append(json.RawMessage(nil), d.Value...)
-		r.localHLC = d.TS
+	r.clock.SyncWithRemote(d.TS)
+
+	if r.ts.Before(d.TS) {
+		r.value = d.Value
+		r.ts = d.TS
 	}
 
 	return nil
@@ -121,7 +114,7 @@ func (r *LWWHLCRegister) ApplyDelta(delta Delta) error {
 func (r *LWWHLCRegister) Read() json.RawMessage {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	return append(json.RawMessage(nil), r.value...)
+	return r.value
 }
 
 // Merge объединяет два регистра
@@ -134,14 +127,11 @@ func (r *LWWHLCRegister) Merge(other CRDT) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if CompareHLC(r.localHLC, o.localHLC) < 0 {
-		r.value = append(json.RawMessage(nil), o.value...)
-		r.localHLC = o.localHLC
-	}
+	r.clock.SyncWithRemote(o.ts)
 
-	// синхронизируем lamport counter
-	if o.localHLC.Lamport > r.localHLC.Lamport {
-		r.localHLC.Lamport = o.localHLC.Lamport
+	if r.ts.Before(o.ts) {
+		r.value = o.value
+		r.ts = o.ts
 	}
 
 	return nil
@@ -153,13 +143,13 @@ func (r *LWWHLCRegister) MarshalJSON() ([]byte, error) {
 	defer r.mu.RUnlock()
 
 	data := struct {
-		ID       string          `json:"id"`
-		Value    json.RawMessage `json:"value"`
-		LocalHLC HLCTimestamp    `json:"local_hlc"`
+		ID        string          `json:"id"`
+		Value     json.RawMessage `json:"value"`
+		Timestamp *Timestamp      `json:"timestamp"`
 	}{
-		ID:       r.id,
-		Value:    r.value,
-		LocalHLC: r.localHLC,
+		ID:        r.id,
+		Value:     r.value,
+		Timestamp: r.ts,
 	}
 
 	return json.Marshal(data)
@@ -168,9 +158,9 @@ func (r *LWWHLCRegister) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON десериализует регистр
 func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 	var tmp struct {
-		ID       string          `json:"id"`
-		Value    json.RawMessage `json:"value"`
-		LocalHLC HLCTimestamp    `json:"local_hlc"`
+		ID        string          `json:"id"`
+		Value     json.RawMessage `json:"value"`
+		Timestamp *Timestamp      `json:"timestamp"`
 	}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
@@ -179,9 +169,16 @@ func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	r.id = tmp.ID
 	r.value = tmp.Value
-	r.localHLC = tmp.LocalHLC
+	r.ts = tmp.Timestamp
+	r.clock = NewHLC(r.id)
+
+	if r.ts != nil {
+		r.clock.SyncWithRemote(r.ts)
+	}
+
 	return nil
 }
 

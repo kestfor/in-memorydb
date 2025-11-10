@@ -2,17 +2,15 @@ package crdt
 
 import (
 	"fmt"
-
-	"github.com/google/uuid"
 )
 
 var ErrCRDTNotFound = fmt.Errorf("crdt not found")
 
-var constructors = map[string]CRDTConstructor{
-	PNCounterName: func(id uuid.UUID) CRDT {
+var constructors = map[CRDTType]CRDTConstructor{
+	CRDTTypePNCounter: func(id string) CRDT {
 		return NewPNCounter(id)
 	},
-	LWWHLCRegisterName: func(id uuid.UUID) CRDT {
+	CRDTTypeLWWHLCRegister: func(id string) CRDT {
 		return NewLWWHLCRegister(id)
 	},
 }
@@ -24,7 +22,7 @@ func NewFabric() CRDTFabric {
 	return &fabric{}
 }
 
-func (f *fabric) New(name string, id uuid.UUID) (CRDT, error) {
+func (f *fabric) New(name CRDTType, id string) (CRDT, error) {
 	constructor, ok := constructors[name]
 	if !ok {
 		return nil, ErrCRDTNotFound

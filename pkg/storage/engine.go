@@ -2,12 +2,42 @@ package storage
 
 import (
 	"fmt"
+	"in-memorydb/pkg/crdt"
 	"log/slog"
-	"time"
+	"sync"
+	"sync/atomic"
 )
 
 // scaleThreshold — при каком количестве ключей на шард начинаем увеличивать
 const scaleThreshold = 100_000
+
+type CRDTEntry struct {
+	Mu          sync.RWMutex
+	Object      crdt.CRDT       // сам CRDT-объект (интерфейс)
+	Deltas      []crdt.Delta    // накопленные дельты для репликации (delta buffer) лучше в отдельном месте
+	Tombstone   bool            // для удалений
+	LastUpdated *crdt.Timestamp // timestamp of last update
+}
+
+type CausalContext struct {
+	// VectorClock map[string]int64 // векторный час
+	// DotContext  map[string]int64 // dot context
+}
+
+type Shard struct {
+	mu   sync.RWMutex
+	data map[string]*CRDTEntry
+}
+
+type Engine struct {
+	nodeID     string
+	shards     atomic.Pointer[[]*Shard]
+	numShards  atomic.Uint32
+	growthLock sync.Mutex
+	clock      *crdt.Time
+	// статистика
+	countKeys atomic.Int64
+}
 
 func NewEngine(initialShards int) *Engine {
 	if initialShards <= 0 {
@@ -28,7 +58,7 @@ func (e *Engine) Get(key string) (*CRDTEntry, bool) {
 	return entry, ok
 }
 
-func (e *Engine) Put(key string, obj any) {
+func (e *Engine) Put(key string, obj crdt.CRDT) {
 	shard := e.shardFor(key)
 
 	shard.mu.Lock()
@@ -39,8 +69,8 @@ func (e *Engine) Put(key string, obj any) {
 	}
 
 	shard.data[key] = &CRDTEntry{
-		Object:   obj,
-		LastUsed: time.Now().UnixNano(),
+		Object:      obj,
+		LastUpdated: e.clock.Now(),
 	}
 
 	e.maybeScale()
