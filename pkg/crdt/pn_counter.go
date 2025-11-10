@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// PNCounter — распределённый счётчик с поддержкой инкремента/декремента
+// PNCounter — распределённый счётчик с поддержкой инкремента/декремента, thread-safe но мб это оверхед
 type PNCounter struct {
 	mu sync.RWMutex
 	id string
@@ -15,9 +15,10 @@ type PNCounter struct {
 	N  map[string]int64 // отрицательные инкременты
 }
 
+// PNCounterDelta — дельта для PNCounter, не thread-safe
 type PNCounterDelta struct {
-	ID    string
-	Delta int64
+	P map[string]int64
+	N map[string]int64
 }
 
 var _ CRDT = (*PNCounter)(nil)
@@ -27,7 +28,13 @@ func (d *PNCounterDelta) Merge(other Delta) error {
 	if !ok {
 		return fmt.Errorf("cannot merge %T with %T: %w", d, other, ErrDeltaTypeMismatch)
 	}
-	d.Delta += otherDelta.Delta
+
+	for node, val := range otherDelta.P {
+		d.P[node] += val
+	}
+	for node, val := range otherDelta.N {
+		d.N[node] += val
+	}
 	return nil
 }
 
@@ -99,8 +106,7 @@ func (c *PNCounter) Increment(delta int64) Delta {
 	c.P[c.id] += delta
 	c.mu.Unlock()
 	return &PNCounterDelta{
-		ID:    c.id,
-		Delta: delta,
+		P: map[string]int64{c.id: delta},
 	}
 }
 
@@ -109,8 +115,7 @@ func (c *PNCounter) Decrement(delta int64) Delta {
 	c.N[c.id] += delta
 	c.mu.Unlock()
 	return &PNCounterDelta{
-		ID:    c.id,
-		Delta: -delta,
+		N: map[string]int64{c.id: delta},
 	}
 }
 
@@ -144,10 +149,12 @@ func (c *PNCounter) ApplyDelta(delta Delta) error {
 	}
 
 	c.mu.Lock()
-	if d.Delta >= 0 {
-		c.P[d.ID] = max(c.P[d.ID], c.P[d.ID]+d.Delta)
-	} else {
-		c.N[d.ID] = max(c.N[d.ID], c.N[d.ID]-d.Delta)
+	for node, val := range d.P {
+		c.P[node] = max(c.P[node], val)
+	}
+
+	for node, val := range d.N {
+		c.N[node] = max(c.N[node], val)
 	}
 	c.mu.Unlock()
 

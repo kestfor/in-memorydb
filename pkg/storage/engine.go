@@ -14,7 +14,6 @@ const scaleThreshold = 100_000
 type CRDTEntry struct {
 	Mu          sync.RWMutex
 	Object      crdt.CRDT       // сам CRDT-объект (интерфейс)
-	Deltas      []crdt.Delta    // накопленные дельты для репликации (delta buffer) лучше в отдельном месте
 	Tombstone   bool            // для удалений
 	LastUpdated *crdt.Timestamp // timestamp of last update
 }
@@ -39,7 +38,7 @@ type Engine struct {
 	countKeys atomic.Int64
 }
 
-func NewEngine(initialShards int) *Engine {
+func NewEngine(initialShards int, nodeID string) *Engine {
 	if initialShards <= 0 {
 		initialShards = 64
 	}
@@ -47,6 +46,7 @@ func NewEngine(initialShards int) *Engine {
 	shards := make([]*Shard, initialShards)
 	s.shards.Store(&shards)
 	s.numShards.Store(uint32(initialShards))
+	s.clock = crdt.NewHLC(nodeID)
 	return s
 }
 

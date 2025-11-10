@@ -35,6 +35,8 @@ type Delta interface {
 
 	// Get type of crdt which delta belongs to
 	Type() CRDTType
+
+	Merge(other Delta) error
 }
 
 type CRDTConstructor func(id string) CRDT

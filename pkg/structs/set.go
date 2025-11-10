@@ -16,6 +16,10 @@ func NewSet[T comparable](values ...T) Set[T] {
 	return res
 }
 
+func (s Set[T]) Delete(value T) {
+	delete(s, value)
+}
+
 // Add добавляет элемент в множество
 func (s Set[T]) Add(value T) {
 	s[value] = empty{}
