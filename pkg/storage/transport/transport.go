@@ -13,4 +13,7 @@ type Transport interface {
 
 	// Pull retrieves a batch of updates from the specified remote address for the given version within the provided context.
 	Pull(ctx context.Context, addr string, version storage.Version) ([]*storage.Update, error)
+
+	// GetVersion retrieves version vector from specified addr
+	GetVersion(ctx context.Context, addr string) (storage.Version, error)
 }

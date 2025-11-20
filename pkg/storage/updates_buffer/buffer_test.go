@@ -1,42 +1,47 @@
 package updates_buffer
 
 import (
-	"in-memorydb/pkg/crdt"
+	mock_crdt "in-memorydb/pkg/crdt/mocks"
 	"strconv"
 	"testing"
 
 	"in-memorydb/pkg/storage"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 	"golang.org/x/exp/rand"
 )
 
-type payloadMock struct{}
-
-func (p *payloadMock) MarshalJSON() (out []byte, err error) {
-	return []byte{}, nil
+type TestSuite struct {
+	suite.Suite
+	ctr *gomock.Controller
 }
 
-func (p *payloadMock) UnmarshalJSON(in []byte) (err error) {
-	return nil
+func TestTestSuite(t *testing.T) {
+	suite.Run(t, new(TestSuite))
 }
 
-func (p *payloadMock) Merge(other crdt.Delta) error {
-	return nil
+func (s *TestSuite) SetupSuite() {
+	s.ctr = gomock.NewController(s.T())
 }
 
 // helper to build storage.Update quickly in tests.
 // Assumes storage.Update has fields Key, NodeID and method Merge(*Update) error.
-func newUpdate(key, nodeID string) *storage.Update {
+func (s *TestSuite) newUpdate(key, nodeID string) *storage.Update {
+
+	crdtMock := mock_crdt.NewMockDelta(s.ctr)
+	crdtMock.EXPECT().Merge(gomock.Any()).Return(nil).AnyTimes()
+
 	return &storage.Update{
 		Key:     key,
 		NodeID:  nodeID,
-		Payload: &payloadMock{},
+		Payload: crdtMock,
 	}
 }
 
-func TestBuffer_Put_MergeAndLen(t *testing.T) {
+func (s *TestSuite) TestBuffer_Put_MergeAndLen() {
+
 	tests := []struct {
 		name       string
 		maxSize    int
@@ -87,11 +92,11 @@ func TestBuffer_Put_MergeAndLen(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 			buf := NewBuffer(tc.maxSize)
 
 			for _, op := range tc.ops {
-				buf.Put(newUpdate(op.key, op.node))
+				buf.Put(s.newUpdate(op.key, op.node))
 			}
 
 			assert.Equal(t, tc.expLen, buf.Len(), "unexpected buffer length")
@@ -110,7 +115,7 @@ func TestBuffer_Put_MergeAndLen(t *testing.T) {
 	}
 }
 
-func TestBuffer_LRU_EvictionAndOrder(t *testing.T) {
+func (s *TestSuite) TestBuffer_LRU_EvictionAndOrder() {
 	tests := []struct {
 		name             string
 		maxSize          int
@@ -162,11 +167,11 @@ func TestBuffer_LRU_EvictionAndOrder(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 			buf := NewBuffer(tc.maxSize)
 
 			for _, op := range tc.insertSequence {
-				buf.Put(newUpdate(op.key, op.node))
+				buf.Put(s.newUpdate(op.key, op.node))
 			}
 
 			assert.Equal(t, tc.expectedLen, buf.Len(), "length after inserts should match")
@@ -190,7 +195,7 @@ func TestBuffer_LRU_EvictionAndOrder(t *testing.T) {
 	}
 }
 
-func TestBuffer_Remove_PopOldest(t *testing.T) {
+func (s *TestSuite) TestBuffer_Remove_PopOldest() {
 	tests := []struct {
 		name            string
 		maxSize         int
@@ -227,10 +232,10 @@ func TestBuffer_Remove_PopOldest(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 			buf := NewBuffer(tc.maxSize)
 			for _, op := range tc.insertSeq {
-				buf.Put(newUpdate(op.key, op.node))
+				buf.Put(s.newUpdate(op.key, op.node))
 			}
 
 			if tc.removeKey != "" {
@@ -259,13 +264,13 @@ func TestBuffer_Remove_PopOldest(t *testing.T) {
 	}
 }
 
-func TestBuffer_PeekN(t *testing.T) {
+func (s *TestSuite) TestBuffer_PeekN() {
 	buffer := NewBuffer(10)
-	u1 := newUpdate("k1", "n1")
-	u2 := newUpdate("k2", "n1")
-	u3 := newUpdate("k3", "n1")
-	u4 := newUpdate("k4", "n1")
-	u5 := newUpdate("k1", "n1") // merged with first
+	u1 := s.newUpdate("k1", "n1")
+	u2 := s.newUpdate("k2", "n1")
+	u3 := s.newUpdate("k3", "n1")
+	u4 := s.newUpdate("k4", "n1")
+	u5 := s.newUpdate("k1", "n1") // merged with first
 	buffer.Put(u1)
 	buffer.Put(u2)
 	buffer.Put(u3)
@@ -273,18 +278,21 @@ func TestBuffer_PeekN(t *testing.T) {
 	buffer.Put(u5)
 
 	items := buffer.PeekN(6)
-	require.Len(t, items, 4)
-	require.Equal(t, []*storage.Update{u1, u4, u3, u2}, items) // in reverse order because of lru politics
+	s.Require().Len(items, 4)
+	s.Require().Equal([]*storage.Update{u1, u4, u3, u2}, items) // in reverse order because of lru politics
 
 	buffer.RemoveN(3)
 	items = buffer.PeekN(6)
-	require.Len(t, items, 1)
-	require.Equal(t, []*storage.Update{u1}, items)
+	s.Require().Len(items, 1)
+	s.Require().Equal([]*storage.Update{u1}, items)
 }
 
 func BenchmarkBuffer_Put(b *testing.B) {
 	const maxSize = 1000
 	buf := NewBuffer(maxSize)
+	ctr := gomock.NewController(b)
+	crdtMock := mock_crdt.NewMockDelta(ctr)
+	crdtMock.EXPECT().Merge(gomock.Any()).Return(nil).AnyTimes()
 
 	// Подготовка заранее: ключи и nodeId
 	keys := make([]string, b.N)
@@ -295,7 +303,11 @@ func BenchmarkBuffer_Put(b *testing.B) {
 		n := "n" + strconv.Itoa(rand.Int()%100)
 		keys[i] = k
 		nodes[i] = n
-		updates[i] = newUpdate(k, n)
+		updates[i] = &storage.Update{
+			Key:     k,
+			NodeID:  n,
+			Payload: crdtMock,
+		}
 	}
 
 	b.ResetTimer()
@@ -307,12 +319,19 @@ func BenchmarkBuffer_Put(b *testing.B) {
 func BenchmarkBuffer_Get(b *testing.B) {
 	const maxSize = 1000
 	buf := NewBuffer(maxSize)
+	ctr := gomock.NewController(b)
+	crdtMock := mock_crdt.NewMockDelta(ctr)
+	crdtMock.EXPECT().Merge(gomock.Any()).Return(nil).AnyTimes()
 
 	// Подготовка и заполнение буфера
 	for i := 0; i < maxSize; i++ {
 		k := "k" + strconv.Itoa(rand.Int()%maxSize)
 		n := "n" + strconv.Itoa(rand.Int()%100)
-		buf.Put(newUpdate(k, n))
+		buf.Put(&storage.Update{
+			Key:     k,
+			NodeID:  n,
+			Payload: crdtMock,
+		})
 	}
 
 	// Подготовка ключей для Get
@@ -332,6 +351,9 @@ func BenchmarkBuffer_Get(b *testing.B) {
 func BenchmarkBuffer_PutAndGet(b *testing.B) {
 	const maxSize = 1000
 	buf := NewBuffer(maxSize)
+	ctr := gomock.NewController(b)
+	crdtMock := mock_crdt.NewMockDelta(ctr)
+	crdtMock.EXPECT().Merge(gomock.Any()).Return(nil).AnyTimes()
 
 	// Подготовка заранее
 	keys := make([]string, b.N)
@@ -342,7 +364,11 @@ func BenchmarkBuffer_PutAndGet(b *testing.B) {
 		n := "n" + strconv.Itoa(rand.Int()%100)
 		keys[i] = k
 		nodes[i] = n
-		updates[i] = newUpdate(k, n)
+		updates[i] = &storage.Update{
+			Key:     keys[i],
+			NodeID:  nodes[i],
+			Payload: crdtMock,
+		}
 	}
 
 	b.ResetTimer()

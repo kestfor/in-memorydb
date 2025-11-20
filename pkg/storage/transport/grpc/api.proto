@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package transport;
+
+option go_package = "pkg/storage/transport/grpc/transportpb";
+
+import "google/protobuf/empty.proto";
+
+enum UpdateType {
+  UPDATE_TYPE_UNSPECIFIED = 0;
+  UPDATE_TYPE_SET = 1;
+  UPDATE_TYPE_DELETE = 2;
+  UPDATE_TYPE_DELTA = 3;
+}
+
+message TimeStamp {
+  uint64 wall_time = 1;
+  uint64 lamport = 2;
+  string id = 3;
+}
+
+message Range {
+  int64 start = 1;
+  int64 end = 2;
+}
+
+message Update {
+  string node_id = 1;
+  UpdateType type = 2;
+  TimeStamp ts = 3;
+  Range range = 4;
+  string key = 5;
+  bytes payload = 6;
+  string crdt_type = 7;
+}
+
+message GetRequest{
+  map<string, Range> version = 1;
+}
+
+message GetResponse{
+  repeated Update updates = 1;
+}
+
+message PublishRequest{
+  repeated Update updates = 1;
+}
+
+message GetVersionVectorResponse {
+  map<string, Range> version = 1;
+}
+
+service Updates {
+  rpc Publish(PublishRequest) returns (google.protobuf.Empty);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc GetVersionVector(google.protobuf.Empty) returns (GetVersionVectorResponse);
+}

@@ -2,11 +2,14 @@ package crdt
 
 //go:generate go-enum --marshal --nocase
 
+//go:generate mockgen -source=crdt.go -destination=mocks/crdt.mock.go CRDT,Delta
+
 // ENUM(PNCounter, LWWHLCRegister)
 type CRDTType string
 
 type CRDTFabric interface {
 	New(crdtType CRDTType, id string) (CRDT, error)
+	DeltaFromBytes(typeName string, bytes []byte) (Delta, error)
 }
 
 type CRDT interface {

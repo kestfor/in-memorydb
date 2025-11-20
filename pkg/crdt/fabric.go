@@ -1,6 +1,7 @@
 package crdt
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -12,6 +13,26 @@ var constructors = map[CRDTType]CRDTConstructor{
 	},
 	CRDTTypeLWWHLCRegister: func(id string) CRDT {
 		return NewLWWHLCRegister(id)
+	},
+}
+
+var fromBytesConstructors = map[CRDTType]func([]byte) (Delta, error){
+	CRDTTypePNCounter: func(bytes []byte) (Delta, error) {
+		var counter PNCounterDelta
+		err := json.Unmarshal(bytes, &counter)
+		if err != nil {
+			return nil, err
+		}
+		return &counter, nil
+	},
+
+	CRDTTypeLWWHLCRegister: func(bytes []byte) (Delta, error) {
+		var counter LWWHLCRegisterDelta
+		err := json.Unmarshal(bytes, &counter)
+		if err != nil {
+			return nil, err
+		}
+		return &counter, nil
 	},
 }
 
@@ -28,4 +49,13 @@ func (f *fabric) New(name CRDTType, id string) (CRDT, error) {
 		return nil, ErrCRDTNotFound
 	}
 	return constructor(id), nil
+}
+
+func (f *fabric) DeltaFromBytes(typeName string, bytes []byte) (Delta, error) {
+
+	fromBytesConstr, ok := fromBytesConstructors[CRDTType(typeName)]
+	if !ok {
+		return nil, ErrCRDTNotFound
+	}
+	return fromBytesConstr(bytes)
 }

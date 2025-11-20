@@ -13,6 +13,9 @@ type VersionVectorResponse struct {
 }
 
 type Gossip interface {
+	// Start starts an anti-entropy process and returns a channel for updates that will be sent to other peers
+	Start(ctx context.Context) chan<- []*storage.Update
+
 	// Send sends data to random n=fanout nodes
 	Send(ctx context.Context, data []*storage.Update) error
 
@@ -20,7 +23,7 @@ type Gossip interface {
 	AsyncSend(ctx context.Context, data []*storage.Update) <-chan error
 
 	// GetVersionVector retrieves the version vector from the random node based on the current state of the storage system.
-	GetVersionVector(ctx context.Context) (VersionVectorResponse, error)
+	GetVersionVector(ctx context.Context) (*VersionVectorResponse, error)
 
 	// Pull retrieves data from the network based on the provided version vector, ensuring synchronization of state.
 	Pull(ctx context.Context, versions storage.Version) ([]*storage.Update, error)

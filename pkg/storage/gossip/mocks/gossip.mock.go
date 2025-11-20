@@ -57,10 +57,10 @@ func (mr *MockGossipMockRecorder) AsyncSend(ctx, data any) *gomock.Call {
 }
 
 // GetVersionVector mocks base method.
-func (m *MockGossip) GetVersionVector(ctx context.Context) (gossip.VersionVectorResponse, error) {
+func (m *MockGossip) GetVersionVector(ctx context.Context) (*gossip.VersionVectorResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVersionVector", ctx)
-	ret0, _ := ret[0].(gossip.VersionVectorResponse)
+	ret0, _ := ret[0].(*gossip.VersionVectorResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -98,4 +98,30 @@ func (m *MockGossip) Send(ctx context.Context, data []*storage.Update) error {
 func (mr *MockGossipMockRecorder) Send(ctx, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockGossip)(nil).Send), ctx, data)
+}
+
+// Start mocks base method.
+func (m *MockGossip) Start() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Start")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Start indicates an expected call of Start.
+func (mr *MockGossipMockRecorder) Start() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockGossip)(nil).Start))
+}
+
+// Stop mocks base method.
+func (m *MockGossip) Stop() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Stop")
+}
+
+// Stop indicates an expected call of Stop.
+func (mr *MockGossipMockRecorder) Stop() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockGossip)(nil).Stop))
 }
