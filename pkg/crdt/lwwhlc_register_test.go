@@ -793,6 +793,7 @@ type mockDeltaPn struct{}
 func (m *mockDeltaPn) Type() CRDTType               { return CRDTTypePNCounter }
 func (m *mockDeltaPn) MarshalJSON() ([]byte, error) { return nil, fmt.Errorf("mock error") }
 func (m *mockDeltaPn) UnmarshalJSON([]byte) error   { return fmt.Errorf("mock error") }
+func (m *mockDeltaPn) Merge(delta Delta) error      { return nil }
 
 // mockCRDTPn is a mock CRDT implementation for testing error cases
 type mockCRDTPn struct{}

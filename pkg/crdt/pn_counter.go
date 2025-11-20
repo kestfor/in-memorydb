@@ -38,18 +38,25 @@ func (d *PNCounterDelta) Merge(other Delta) error {
 	return nil
 }
 
-func (P PNCounterDelta) MarshalJSON() ([]byte, error) {
+func (d *PNCounterDelta) CreateCRDT() (CRDT, error) {
+	return &PNCounter{
+		P: d.P,
+		N: d.N,
+	}, nil
+}
+
+func (d PNCounterDelta) MarshalJSON() ([]byte, error) {
 	type Alias PNCounterDelta
 	return json.Marshal(struct {
 		Type string `json:"type"`
 		*Alias
 	}{
 		Type:  CRDTTypePNCounter.String(),
-		Alias: (*Alias)(&P),
+		Alias: (*Alias)(&d),
 	})
 }
 
-func (P *PNCounterDelta) UnmarshalJSON(data []byte) error {
+func (d *PNCounterDelta) UnmarshalJSON(data []byte) error {
 	type Alias PNCounterDelta
 	var aux struct {
 		Type string `json:"type"`
@@ -63,11 +70,11 @@ func (P *PNCounterDelta) UnmarshalJSON(data []byte) error {
 		return ErrInvalidDeltaType
 	}
 
-	*P = PNCounterDelta(*aux.Alias)
+	*d = PNCounterDelta(*aux.Alias)
 	return nil
 }
 
-func (P PNCounterDelta) Type() CRDTType {
+func (d PNCounterDelta) Type() CRDTType {
 	return CRDTTypePNCounter
 }
 

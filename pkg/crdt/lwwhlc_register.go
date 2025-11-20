@@ -25,6 +25,14 @@ func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
 	return nil
 }
 
+func (d *LWWHLCRegisterDelta) CreateCRDT() (CRDT, error) {
+	return &LWWHLCRegister{
+		value: d.Value,
+		ts:    d.TS,
+		clock: NewHLC(d.TS.ID),
+	}, nil
+}
+
 func (d *LWWHLCRegisterDelta) MarshalJSON() ([]byte, error) {
 	type Alias LWWHLCRegisterDelta
 	return json.Marshal(struct {

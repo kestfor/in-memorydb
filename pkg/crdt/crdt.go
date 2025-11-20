@@ -37,6 +37,8 @@ type Delta interface {
 	Type() CRDTType
 
 	Merge(other Delta) error
+
+	CreateCRDT() (CRDT, error)
 }
 
 type CRDTConstructor func(id string) CRDT
