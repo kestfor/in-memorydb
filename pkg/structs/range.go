@@ -30,8 +30,8 @@ func (r Range) Equals(o Range) bool {
 }
 
 func (r Range) Merge(other Range) (Range, error) {
-	if !(r.Start <= other.Start && r.End <= other.End) && !(other.Start <= r.Start && other.End <= r.End) {
-		return Range{}, fmt.Errorf("ranges are not mergeable: %w", ErrCannotMerge)
+	if other.Start > r.End+1 || r.Start > other.End+1 {
+		return Range{}, fmt.Errorf("ranges are not mergeable (%s, %s): %w", r, other, ErrCannotMerge)
 	}
 	r.Start = min(other.Start, r.Start)
 	r.End = max(other.End, r.End)

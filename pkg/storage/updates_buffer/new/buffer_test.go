@@ -286,6 +286,7 @@ func (s *TestSuite) TestBuffer_Put_Collapse() {
 	}
 }
 
+//
 //func (s *TestSuite) TestBufferGetCovering() {
 //	tests := []struct {
 //		name    string
