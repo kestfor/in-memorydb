@@ -81,6 +81,19 @@ func (e *Engine) Put(key string, obj crdt.CRDT) {
 	e.maybeScale()
 }
 
+// MarkDeleted marks the specified key as deleted by setting its tombstone flag and updates its last modification time.
+func (e *Engine) MarkDeleted(key string) {
+	shard := e.shardFor(key)
+	shard.mu.Lock()
+	defer shard.mu.Unlock()
+	if entry, ok := shard.data[key]; ok {
+		entry.Tombstone = true
+		entry.LastUpdated = e.clock.Now()
+	}
+}
+
+// Delete deletes key from shard, decrease keys num
+// shouldn't be used, gc of engine exists for this purpose
 func (e *Engine) Delete(key string) {
 	shard := e.shardFor(key)
 	shard.mu.Lock()

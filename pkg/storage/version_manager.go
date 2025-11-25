@@ -2,27 +2,28 @@ package storage
 
 import (
 	"in-memorydb/pkg/crdt"
+	"in-memorydb/pkg/storage/history"
 	"in-memorydb/pkg/structs"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 )
 
-type Version map[string]structs.Range
+type VectorClock = map[string]uint64
 
 type VersionManager struct {
-	nodeID  string          // unique ID of current node
-	seq     atomic.Int64    // global sequence number of updates for current node
-	version Version         // nodeID -> seq range
-	engine  *Engine         // thread-safe for read/write, for entry use each entry has its own mutex
-	fabric  crdt.CRDTFabric // thread-safe
+	nodeID  string           // unique ID of current node
+	seq     atomic.Uint64    // global sequence number of updates for current node
+	history *history.History // nodeID -> seq range
+	engine  *Engine          // thread-safe for read/write, for entry use each entry has its own mutex
+	fabric  crdt.CRDTFabric  // thread-safe
 	mu      sync.RWMutex
 }
 
 func NewVersionManager(nodeID string, engine *Engine) *VersionManager {
 	return &VersionManager{
 		nodeID:  nodeID,
-		version: make(Version),
+		history: history.NewHistory(),
 		engine:  engine,
 		fabric:  crdt.NewFabric(),
 	}
@@ -33,7 +34,8 @@ func (vm *VersionManager) getVersion(nodeID string) structs.Range {
 	if nodeID == vm.nodeID {
 		return structs.Range{End: vm.seq.Load()}
 	}
-	return vm.version[nodeID]
+	vclock := vm.history.VectorClockContiguous()
+	return structs.Range{End: vclock[nodeID]}
 }
 
 // Advance увеличивает локальный счетчик обновлений на 1
@@ -55,70 +57,54 @@ func (vm *VersionManager) Update(updates ...*Update) []*Update {
 	return applied
 }
 
-// GetVersionVector возвращает текущий version vector всех известных нод
-// Это snapshot текущего состояния синхронизации
-func (vm *VersionManager) GetVersionVector() map[string]structs.Range {
+func (vm *VersionManager) VectorClockContiguous() VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
-
-	vec := make(map[string]structs.Range, len(vm.version)+1)
-
-	// Добавляем локальную ноду
-	vec[vm.nodeID] = structs.Range{End: vm.seq.Load()}
-
-	// Копируем версии других нод
-	for nodeID, seq := range vm.version {
-		vec[nodeID] = seq
-	}
-
-	return vec
+	return vm.history.VectorClockContiguous()
 }
 
-// GetKnownNodes возвращает список всех известных нод (включая локальную)
-// Нода становится "известной" после получения от неё хотя бы одного update
-func (vm *VersionManager) GetKnownNodes() []string {
+func (vm *VersionManager) VectorClockMax() VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
-
-	nodes := make([]string, 0, len(vm.version)+1)
-	nodes = append(nodes, vm.nodeID)
-
-	for nodeID := range vm.version {
-		nodes = append(nodes, nodeID)
-	}
-
-	return nodes
+	return vm.history.VectorClockMax()
 }
 
-// RegisterNode явно добавляет ноду в список известных с начальной версией 0
-// Полезно для инициализации при присоединении к кластеру
-func (vm *VersionManager) RegisterNode(nodeID string) {
-	vm.mu.Lock()
-	defer vm.mu.Unlock()
-
-	if nodeID == vm.nodeID {
-		return // не регистрируем самих себя
-	}
-
-	if _, exists := vm.version[nodeID]; !exists {
-		vm.version[nodeID] = structs.Range{}
-	}
-}
+//
+//// GetKnownNodes возвращает список всех известных нод (включая локальную)
+//// Нода становится "известной" после получения от неё хотя бы одного update
+//func (vm *VersionManager) GetKnownNodes() []string {
+//	vm.mu.RLock()
+//	defer vm.mu.RUnlock()
+//
+//	nodes := make([]string, 0, len(vm.version)+1)
+//	nodes = append(nodes, vm.nodeID)
+//
+//	for nodeID := range vm.version {
+//		nodes = append(nodes, nodeID)
+//	}
+//
+//	return nodes
+//}
 
 // GetCurrentSequence возвращает текущий sequence number локальной ноды
-func (vm *VersionManager) GetCurrentSequence() int64 {
+func (vm *VersionManager) GetCurrentSequence() uint64 {
 	return vm.seq.Load()
+}
+
+func (vm *VersionManager) VersionDiff(remote map[string]uint64) map[string][]structs.Range {
+	return vm.history.DiffAll(remote)
 }
 
 // handleUpdate processes a single update, applying changes to the VersionManager.
 // Returns true if the update was successfully applied, otherwise false.
 func (vm *VersionManager) handleUpdate(update *Update) bool {
-	currVersion := vm.getVersion(update.NodeID)
 
 	// old update, already applied
-	if update.Range.End <= currVersion.End {
+	if !vm.history.HasRange(update.NodeID, update.Range) {
 		return false
 	}
+
+	vm.history.AddRange(update.NodeID, update.Range)
 
 	key := update.Key
 	entry, ok := vm.engine.Get(key)

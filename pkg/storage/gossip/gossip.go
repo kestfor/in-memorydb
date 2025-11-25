@@ -3,13 +3,14 @@ package gossip
 import (
 	"context"
 	"in-memorydb/pkg/storage"
+	"in-memorydb/pkg/structs"
 )
 
 //go:generate mockgen -source=gossip.go -destination=mocks/gossip.mock.go Gossip
 
 type VersionVectorResponse struct {
-	NodeID        string
-	VersionVector storage.Version
+	NodeID      string
+	VectorClock storage.VectorClock
 }
 
 type Gossip interface {
@@ -26,5 +27,5 @@ type Gossip interface {
 	GetVersionVector(ctx context.Context) (*VersionVectorResponse, error)
 
 	// Pull retrieves data from the network based on the provided version vector, ensuring synchronization of state.
-	Pull(ctx context.Context, versions storage.Version) ([]*storage.Update, error)
+	Pull(ctx context.Context, versions map[string][]structs.Range) ([]*storage.Update, error)
 }

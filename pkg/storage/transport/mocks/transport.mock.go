@@ -12,6 +12,7 @@ package mock_transport
 import (
 	context "context"
 	storage "in-memorydb/pkg/storage"
+	structs "in-memorydb/pkg/structs"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -41,19 +42,34 @@ func (m *MockTransport) EXPECT() *MockTransportMockRecorder {
 	return m.recorder
 }
 
-// Pull mocks base method.
-func (m *MockTransport) Pull(ctx context.Context, addr string, version storage.Version) ([]*storage.Update, error) {
+// GetVersion mocks base method.
+func (m *MockTransport) GetVersion(ctx context.Context, addr string) (storage.VectorClock, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Pull", ctx, addr, version)
+	ret := m.ctrl.Call(m, "GetVersion", ctx, addr)
+	ret0, _ := ret[0].(storage.VectorClock)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVersion indicates an expected call of GetVersion.
+func (mr *MockTransportMockRecorder) GetVersion(ctx, addr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersion", reflect.TypeOf((*MockTransport)(nil).GetVersion), ctx, addr)
+}
+
+// Pull mocks base method.
+func (m *MockTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*storage.Update, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Pull", ctx, addr, versions)
 	ret0, _ := ret[0].([]*storage.Update)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Pull indicates an expected call of Pull.
-func (mr *MockTransportMockRecorder) Pull(ctx, addr, version any) *gomock.Call {
+func (mr *MockTransportMockRecorder) Pull(ctx, addr, versions any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pull", reflect.TypeOf((*MockTransport)(nil).Pull), ctx, addr, version)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pull", reflect.TypeOf((*MockTransport)(nil).Pull), ctx, addr, versions)
 }
 
 // Send mocks base method.

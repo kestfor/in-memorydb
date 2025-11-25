@@ -1,7 +1,8 @@
-package updates_buffer
+package buffer
 
 import (
 	mock_crdt "in-memorydb/pkg/crdt/mocks"
+	"in-memorydb/pkg/structs"
 	"strconv"
 	"testing"
 
@@ -40,21 +41,28 @@ func (s *TestSuite) newUpdate(key, nodeID string) *storage.Update {
 	}
 }
 
-func (s *TestSuite) TestBuffer_Put_MergeAndLen() {
+func (s *TestSuite) TestBuffer_Put_Len() {
 
 	tests := []struct {
-		name       string
-		maxSize    int
-		ops        []struct{ key, node string }
+		name    string
+		maxSize int
+		ops     []struct {
+			key, node string
+			r         structs.Range
+		}
 		expLen     int
 		expPresent []struct{ key, node string }
 	}{
 		{
-			name:    "put same key+node twice -> merged, len stays 1",
+			name:    "put same key+node twice with overlapping ranges -> merged, len stays 1",
 			maxSize: 10,
-			ops: []struct{ key, node string }{
-				{"k1", "n1"},
-				{"k1", "n1"},
+			ops: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 10}},
+				{"k1", "n1", structs.Range{5, 15}},
 			},
 			expLen: 1,
 			expPresent: []struct{ key, node string }{
@@ -62,11 +70,31 @@ func (s *TestSuite) TestBuffer_Put_MergeAndLen() {
 			},
 		},
 		{
+			name:    "put same key+node twice with non-overlapping ranges -> len 2",
+			maxSize: 10,
+			ops: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 10}},
+				{"k1", "n1", structs.Range{12, 15}},
+			},
+			expLen: 2,
+			expPresent: []struct{ key, node string }{
+				{"k1", "n1"},
+			},
+		},
+		{
 			name:    "put same key different node -> two entries",
 			maxSize: 10,
-			ops: []struct{ key, node string }{
-				{"k1", "n1"},
-				{"k1", "n2"},
+			ops: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 10}},
+				{"k1", "n2", structs.Range{0, 10}},
 			},
 			expLen: 2,
 			expPresent: []struct{ key, node string }{
@@ -77,10 +105,14 @@ func (s *TestSuite) TestBuffer_Put_MergeAndLen() {
 		{
 			name:    "different keys different nodes -> multiple entries",
 			maxSize: 10,
-			ops: []struct{ key, node string }{
-				{"k1", "n1"},
-				{"k2", "n1"},
-				{"k3", "n2"},
+			ops: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 10}},
+				{"k2", "n1", structs.Range{0, 10}},
+				{"k3", "n2", structs.Range{0, 10}},
 			},
 			expLen: 3,
 			expPresent: []struct{ key, node string }{
@@ -96,21 +128,99 @@ func (s *TestSuite) TestBuffer_Put_MergeAndLen() {
 			buf := NewBuffer(tc.maxSize)
 
 			for _, op := range tc.ops {
-				buf.Put(s.newUpdate(op.key, op.node))
+				buf.Put(s.newUpdateWithRange(op.key, op.node, op.r))
 			}
 
 			assert.Equal(t, tc.expLen, buf.Len(), "unexpected buffer length")
 
 			// ensure expected entries present via Get
 			for _, p := range tc.expPresent {
-				u, ok := buf.Get(p.key, p.node)
+				us, ok := buf.Get(p.key, p.node)
 				assert.True(t, ok, "entry should be present %s/%s", p.key, p.node)
-				assert.NotNil(t, u)
-				if u != nil {
-					assert.Equal(t, p.key, u.Key)
-					assert.Equal(t, p.node, u.NodeID)
-				}
+				assert.NotEmpty(t, us)
 			}
+		})
+	}
+}
+
+func (s *TestSuite) TestBuffer_Put_Collapse() {
+	tests := []struct {
+		name    string
+		maxSize int
+		ops     []struct {
+			key, node string
+			r         structs.Range
+		}
+		expUpdates []struct {
+			key, node string
+			r         structs.Range
+		}
+		expItemCount int
+	}{
+		{
+			name:    "merge overlapping and adjacent ranges",
+			maxSize: 10,
+			ops: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 9}},
+				{"k1", "n1", structs.Range{11, 13}},
+				{"k1", "n1", structs.Range{10, 10}},
+				{"k1", "n1", structs.Range{12, 12}},
+			},
+			expUpdates: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 13}},
+			},
+			expItemCount: 1,
+		},
+		{
+			name:    "non-merging ranges stay separate",
+			maxSize: 10,
+			ops: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 5}},
+				{"k1", "n1", structs.Range{7, 10}},
+				{"k1", "n1", structs.Range{12, 15}},
+			},
+			expUpdates: []struct {
+				key  string
+				node string
+				r    structs.Range
+			}{
+				{"k1", "n1", structs.Range{0, 5}},
+				{"k1", "n1", structs.Range{7, 10}},
+				{"k1", "n1", structs.Range{12, 15}},
+			},
+			expItemCount: 3,
+		},
+	}
+
+	for _, tc := range tests {
+		s.T().Run(tc.name, func(t *testing.T) {
+			buf := NewBuffer(tc.maxSize)
+
+			for _, op := range tc.ops {
+				buf.Put(s.newUpdateWithRange(op.key, op.node, op.r))
+			}
+
+			us, ok := buf.Get("k1", "n1")
+			assert.True(t, ok)
+			assert.Len(t, us, len(tc.expUpdates))
+
+			for i, exp := range tc.expUpdates {
+				assert.Equal(t, exp.r, us[i].Range)
+			}
+
+			assert.Equal(t, tc.expItemCount, buf.Len())
 		})
 	}
 }
@@ -262,6 +372,25 @@ func (s *TestSuite) TestBuffer_Remove_PopOldest() {
 			}
 		})
 	}
+}
+
+func (s *TestSuite) newUpdateWithRange(key string, node string, r structs.Range) *storage.Update {
+	u := s.newUpdate(key, node)
+	u.Range = r
+	return u
+}
+
+func (s *TestSuite) TestBufferGetCovering() {
+	buf := NewBuffer(10)
+	u1 := s.newUpdateWithRange("A", "n1", structs.Range{Start: 0, End: 2})
+	u2 := s.newUpdateWithRange("B", "n1", structs.Range{3, 4})
+	u3 := s.newUpdateWithRange("C", "n1", structs.Range{5, 6})
+	u4 := s.newUpdateWithRange("A", "n1", structs.Range{7, 10})
+	u5 := s.newUpdateWithRange("A", "n1", structs.Range{11, 13})
+
+	buf.Put(u1, u2, u3, u4, u5)
+	covering := buf.GetCovering("n1", structs.Range{10, 12})
+	s.Require().True(covering[0].Range.ContainsOther(structs.Range{10, 12}))
 }
 
 func (s *TestSuite) TestBuffer_PeekN() {

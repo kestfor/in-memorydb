@@ -110,21 +110,21 @@ func toDomainUpdate(update *transportpb.Update) (*storage.Update, error) {
 	}, nil
 }
 
-func fromDomainVersion(version storage.Version) map[string]*transportpb.Range {
-	result := make(map[string]*transportpb.Range, len(version))
-	for k, v := range version {
-		result[k] = &transportpb.Range{
-			Start: v.Start,
-			End:   v.End,
-		}
-	}
-	return result
-}
+func fromDomainVersions(versions map[string][]structs.Range) map[string]*transportpb.RangeList {
+	result := make(map[string]*transportpb.RangeList, len(versions))
+	for k, v := range versions {
 
-func toDomainVersion(version map[string]*transportpb.Range) storage.Version {
-	result := make(storage.Version, len(version))
-	for k, v := range version {
-		result[k] = structs.Range{Start: v.Start, End: v.End}
+		arr := make([]*transportpb.Range, len(v))
+		for _, r := range v {
+			arr = append(arr, &transportpb.Range{
+				Start: r.Start,
+				End:   r.End,
+			})
+		}
+
+		result[k] = &transportpb.RangeList{
+			Ranges: arr,
+		}
 	}
 	return result
 }

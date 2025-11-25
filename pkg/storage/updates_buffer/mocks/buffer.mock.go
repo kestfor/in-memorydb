@@ -11,6 +11,7 @@ package mock_updates_buffer
 
 import (
 	storage "in-memorydb/pkg/storage"
+	structs "in-memorydb/pkg/structs"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -41,10 +42,10 @@ func (m *MockUpdatesBuffer) EXPECT() *MockUpdatesBufferMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockUpdatesBuffer) Get(key, nodeID string) (*storage.Update, bool) {
+func (m *MockUpdatesBuffer) Get(key, nodeID string) ([]*storage.Update, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", key, nodeID)
-	ret0, _ := ret[0].(*storage.Update)
+	ret0, _ := ret[0].([]*storage.Update)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -53,6 +54,20 @@ func (m *MockUpdatesBuffer) Get(key, nodeID string) (*storage.Update, bool) {
 func (mr *MockUpdatesBufferMockRecorder) Get(key, nodeID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUpdatesBuffer)(nil).Get), key, nodeID)
+}
+
+// GetCovering mocks base method.
+func (m *MockUpdatesBuffer) GetCovering(nodeID string, r structs.Range) []*storage.Update {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCovering", nodeID, r)
+	ret0, _ := ret[0].([]*storage.Update)
+	return ret0
+}
+
+// GetCovering indicates an expected call of GetCovering.
+func (mr *MockUpdatesBufferMockRecorder) GetCovering(nodeID, r any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCovering", reflect.TypeOf((*MockUpdatesBuffer)(nil).GetCovering), nodeID, r)
 }
 
 // Len mocks base method.

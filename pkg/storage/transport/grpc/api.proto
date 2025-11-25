@@ -20,8 +20,8 @@ message TimeStamp {
 }
 
 message Range {
-  int64 start = 1;
-  int64 end = 2;
+  uint64 start = 1;
+  uint64 end = 2;
 }
 
 message Update {
@@ -34,8 +34,12 @@ message Update {
   string crdt_type = 7;
 }
 
+message RangeList {
+  repeated Range ranges = 1;
+}
+
 message GetRequest{
-  map<string, Range> version = 1;
+  map<string, RangeList> versions = 1;
 }
 
 message GetResponse{
@@ -47,7 +51,7 @@ message PublishRequest{
 }
 
 message GetVersionVectorResponse {
-  map<string, Range> version = 1;
+  map<string, uint64> VectorClock = 1;
 }
 
 service Updates {

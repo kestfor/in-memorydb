@@ -82,7 +82,7 @@ func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*storage.Update) <
 	return ch
 }
 
-func (g *DefaultGossip) Pull(ctx context.Context, version storage.Version) ([]*storage.Update, error) {
+func (g *DefaultGossip) Pull(ctx context.Context, version map[string][]structs.Range) ([]*storage.Update, error) {
 	peer, err := g.getRandomPeer()
 	if err != nil {
 		return nil, err
@@ -100,8 +100,8 @@ func (g *DefaultGossip) GetVersionVector(ctx context.Context) (*gossip.VersionVe
 		return nil, err
 	}
 	return &gossip.VersionVectorResponse{
-		NodeID:        peer.Name,
-		VersionVector: version,
+		NodeID:      peer.Name,
+		VectorClock: version,
 	}, nil
 
 }
@@ -150,8 +150,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 		return
 	}
 
-	currVersion := g.versionManager.GetVersionVector()
-	diff := storage.VersionDifference(currVersion, received.VersionVector)
+	diff := g.versionManager.VersionDiff(received.VectorClock)
 
 	withTimeOut, cancel = context.WithTimeout(ctx, time.Second)
 	updates, err := g.Pull(withTimeOut, diff)

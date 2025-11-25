@@ -9,15 +9,15 @@ var ErrCannotMerge = errors.New("cannot merge ranges")
 
 // Range представляет диапазон sequence numbers [Start, End] включительно
 type Range struct {
-	Start int64 `json:"s"`
-	End   int64 `json:"e"`
+	Start uint64 `json:"s"`
+	End   uint64 `json:"e"`
 }
 
-func (r Range) Len() int64 {
+func (r Range) Len() uint64 {
 	return r.End - r.Start + 1
 }
 
-func (r Range) ContainsValue(v int64) bool {
+func (r Range) ContainsValue(v uint64) bool {
 	return v >= r.Start && v <= r.End
 }
 
@@ -42,7 +42,7 @@ func (r Range) String() string {
 	return fmt.Sprintf("[%d-%d]", r.Start, r.End)
 }
 
-func (r Range) Split(pivot int64) (left, right Range) {
+func (r Range) Split(pivot uint64) (left, right Range) {
 	if pivot < r.Start || pivot > r.End {
 		left = r
 		right = r

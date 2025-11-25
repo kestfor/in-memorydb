@@ -136,8 +136,8 @@ func (x *TimeStamp) GetId() string {
 
 type Range struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Start         int64                  `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
-	End           int64                  `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
+	Start         uint64                 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
+	End           uint64                 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -172,14 +172,14 @@ func (*Range) Descriptor() ([]byte, []int) {
 	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Range) GetStart() int64 {
+func (x *Range) GetStart() uint64 {
 	if x != nil {
 		return x.Start
 	}
 	return 0
 }
 
-func (x *Range) GetEnd() int64 {
+func (x *Range) GetEnd() uint64 {
 	if x != nil {
 		return x.End
 	}
@@ -278,16 +278,60 @@ func (x *Update) GetCrdtType() string {
 	return ""
 }
 
+type RangeList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ranges        []*Range               `protobuf:"bytes,1,rep,name=ranges,proto3" json:"ranges,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RangeList) Reset() {
+	*x = RangeList{}
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RangeList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RangeList) ProtoMessage() {}
+
+func (x *RangeList) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RangeList.ProtoReflect.Descriptor instead.
+func (*RangeList) Descriptor() ([]byte, []int) {
+	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RangeList) GetRanges() []*Range {
+	if x != nil {
+		return x.Ranges
+	}
+	return nil
+}
+
 type GetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       map[string]*Range      `protobuf:"bytes,1,rep,name=version,proto3" json:"version,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Versions      map[string]*RangeList  `protobuf:"bytes,1,rep,name=versions,proto3" json:"versions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetRequest) Reset() {
 	*x = GetRequest{}
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[3]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -299,7 +343,7 @@ func (x *GetRequest) String() string {
 func (*GetRequest) ProtoMessage() {}
 
 func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[3]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -312,12 +356,12 @@ func (x *GetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{3}
+	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetRequest) GetVersion() map[string]*Range {
+func (x *GetRequest) GetVersions() map[string]*RangeList {
 	if x != nil {
-		return x.Version
+		return x.Versions
 	}
 	return nil
 }
@@ -331,7 +375,7 @@ type GetResponse struct {
 
 func (x *GetResponse) Reset() {
 	*x = GetResponse{}
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[4]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +387,7 @@ func (x *GetResponse) String() string {
 func (*GetResponse) ProtoMessage() {}
 
 func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[4]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +400,7 @@ func (x *GetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
 func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{4}
+	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetResponse) GetUpdates() []*Update {
@@ -375,7 +419,7 @@ type PublishRequest struct {
 
 func (x *PublishRequest) Reset() {
 	*x = PublishRequest{}
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[5]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -387,7 +431,7 @@ func (x *PublishRequest) String() string {
 func (*PublishRequest) ProtoMessage() {}
 
 func (x *PublishRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[5]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -400,7 +444,7 @@ func (x *PublishRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublishRequest.ProtoReflect.Descriptor instead.
 func (*PublishRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{5}
+	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PublishRequest) GetUpdates() []*Update {
@@ -412,14 +456,14 @@ func (x *PublishRequest) GetUpdates() []*Update {
 
 type GetVersionVectorResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       map[string]*Range      `protobuf:"bytes,1,rep,name=version,proto3" json:"version,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	VectorClock   map[string]uint64      `protobuf:"bytes,1,rep,name=VectorClock,proto3" json:"VectorClock,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetVersionVectorResponse) Reset() {
 	*x = GetVersionVectorResponse{}
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[6]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -431,7 +475,7 @@ func (x *GetVersionVectorResponse) String() string {
 func (*GetVersionVectorResponse) ProtoMessage() {}
 
 func (x *GetVersionVectorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[6]
+	mi := &file_pkg_storage_transport_grpc_api_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -444,12 +488,12 @@ func (x *GetVersionVectorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetVersionVectorResponse.ProtoReflect.Descriptor instead.
 func (*GetVersionVectorResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{6}
+	return file_pkg_storage_transport_grpc_api_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetVersionVectorResponse) GetVersion() map[string]*Range {
+func (x *GetVersionVectorResponse) GetVectorClock() map[string]uint64 {
 	if x != nil {
-		return x.Version
+		return x.VectorClock
 	}
 	return nil
 }
@@ -464,8 +508,8 @@ const file_pkg_storage_transport_grpc_api_proto_rawDesc = "" +
 	"\alamport\x18\x02 \x01(\x04R\alamport\x12\x0e\n" +
 	"\x02id\x18\x03 \x01(\tR\x02id\"/\n" +
 	"\x05Range\x12\x14\n" +
-	"\x05start\x18\x01 \x01(\x03R\x05start\x12\x10\n" +
-	"\x03end\x18\x02 \x01(\x03R\x03end\"\xe3\x01\n" +
+	"\x05start\x18\x01 \x01(\x04R\x05start\x12\x10\n" +
+	"\x03end\x18\x02 \x01(\x04R\x03end\"\xe3\x01\n" +
 	"\x06Update\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12)\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x15.transport.UpdateTypeR\x04type\x12$\n" +
@@ -473,22 +517,24 @@ const file_pkg_storage_transport_grpc_api_proto_rawDesc = "" +
 	"\x05range\x18\x04 \x01(\v2\x10.transport.RangeR\x05range\x12\x10\n" +
 	"\x03key\x18\x05 \x01(\tR\x03key\x12\x18\n" +
 	"\apayload\x18\x06 \x01(\fR\apayload\x12\x1b\n" +
-	"\tcrdt_type\x18\a \x01(\tR\bcrdtType\"\x98\x01\n" +
+	"\tcrdt_type\x18\a \x01(\tR\bcrdtType\"5\n" +
+	"\tRangeList\x12(\n" +
+	"\x06ranges\x18\x01 \x03(\v2\x10.transport.RangeR\x06ranges\"\xa0\x01\n" +
 	"\n" +
-	"GetRequest\x12<\n" +
-	"\aversion\x18\x01 \x03(\v2\".transport.GetRequest.VersionEntryR\aversion\x1aL\n" +
-	"\fVersionEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12&\n" +
-	"\x05value\x18\x02 \x01(\v2\x10.transport.RangeR\x05value:\x028\x01\":\n" +
+	"GetRequest\x12?\n" +
+	"\bversions\x18\x01 \x03(\v2#.transport.GetRequest.VersionsEntryR\bversions\x1aQ\n" +
+	"\rVersionsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12*\n" +
+	"\x05value\x18\x02 \x01(\v2\x14.transport.RangeListR\x05value:\x028\x01\":\n" +
 	"\vGetResponse\x12+\n" +
 	"\aupdates\x18\x01 \x03(\v2\x11.transport.UpdateR\aupdates\"=\n" +
 	"\x0ePublishRequest\x12+\n" +
-	"\aupdates\x18\x01 \x03(\v2\x11.transport.UpdateR\aupdates\"\xb4\x01\n" +
-	"\x18GetVersionVectorResponse\x12J\n" +
-	"\aversion\x18\x01 \x03(\v20.transport.GetVersionVectorResponse.VersionEntryR\aversion\x1aL\n" +
-	"\fVersionEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12&\n" +
-	"\x05value\x18\x02 \x01(\v2\x10.transport.RangeR\x05value:\x028\x01*m\n" +
+	"\aupdates\x18\x01 \x03(\v2\x11.transport.UpdateR\aupdates\"\xb2\x01\n" +
+	"\x18GetVersionVectorResponse\x12V\n" +
+	"\vVectorClock\x18\x01 \x03(\v24.transport.GetVersionVectorResponse.VectorClockEntryR\vVectorClock\x1a>\n" +
+	"\x10VectorClockEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x04R\x05value:\x028\x01*m\n" +
 	"\n" +
 	"UpdateType\x12\x1b\n" +
 	"\x17UPDATE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
@@ -513,36 +559,37 @@ func file_pkg_storage_transport_grpc_api_proto_rawDescGZIP() []byte {
 }
 
 var file_pkg_storage_transport_grpc_api_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pkg_storage_transport_grpc_api_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_pkg_storage_transport_grpc_api_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_pkg_storage_transport_grpc_api_proto_goTypes = []any{
 	(UpdateType)(0),                  // 0: transport.UpdateType
 	(*TimeStamp)(nil),                // 1: transport.TimeStamp
 	(*Range)(nil),                    // 2: transport.Range
 	(*Update)(nil),                   // 3: transport.Update
-	(*GetRequest)(nil),               // 4: transport.GetRequest
-	(*GetResponse)(nil),              // 5: transport.GetResponse
-	(*PublishRequest)(nil),           // 6: transport.PublishRequest
-	(*GetVersionVectorResponse)(nil), // 7: transport.GetVersionVectorResponse
-	nil,                              // 8: transport.GetRequest.VersionEntry
-	nil,                              // 9: transport.GetVersionVectorResponse.VersionEntry
-	(*emptypb.Empty)(nil),            // 10: google.protobuf.Empty
+	(*RangeList)(nil),                // 4: transport.RangeList
+	(*GetRequest)(nil),               // 5: transport.GetRequest
+	(*GetResponse)(nil),              // 6: transport.GetResponse
+	(*PublishRequest)(nil),           // 7: transport.PublishRequest
+	(*GetVersionVectorResponse)(nil), // 8: transport.GetVersionVectorResponse
+	nil,                              // 9: transport.GetRequest.VersionsEntry
+	nil,                              // 10: transport.GetVersionVectorResponse.VectorClockEntry
+	(*emptypb.Empty)(nil),            // 11: google.protobuf.Empty
 }
 var file_pkg_storage_transport_grpc_api_proto_depIdxs = []int32{
 	0,  // 0: transport.Update.type:type_name -> transport.UpdateType
 	1,  // 1: transport.Update.ts:type_name -> transport.TimeStamp
 	2,  // 2: transport.Update.range:type_name -> transport.Range
-	8,  // 3: transport.GetRequest.version:type_name -> transport.GetRequest.VersionEntry
-	3,  // 4: transport.GetResponse.updates:type_name -> transport.Update
-	3,  // 5: transport.PublishRequest.updates:type_name -> transport.Update
-	9,  // 6: transport.GetVersionVectorResponse.version:type_name -> transport.GetVersionVectorResponse.VersionEntry
-	2,  // 7: transport.GetRequest.VersionEntry.value:type_name -> transport.Range
-	2,  // 8: transport.GetVersionVectorResponse.VersionEntry.value:type_name -> transport.Range
-	6,  // 9: transport.Updates.Publish:input_type -> transport.PublishRequest
-	4,  // 10: transport.Updates.Get:input_type -> transport.GetRequest
-	10, // 11: transport.Updates.GetVersionVector:input_type -> google.protobuf.Empty
-	10, // 12: transport.Updates.Publish:output_type -> google.protobuf.Empty
-	5,  // 13: transport.Updates.Get:output_type -> transport.GetResponse
-	7,  // 14: transport.Updates.GetVersionVector:output_type -> transport.GetVersionVectorResponse
+	2,  // 3: transport.RangeList.ranges:type_name -> transport.Range
+	9,  // 4: transport.GetRequest.versions:type_name -> transport.GetRequest.VersionsEntry
+	3,  // 5: transport.GetResponse.updates:type_name -> transport.Update
+	3,  // 6: transport.PublishRequest.updates:type_name -> transport.Update
+	10, // 7: transport.GetVersionVectorResponse.VectorClock:type_name -> transport.GetVersionVectorResponse.VectorClockEntry
+	4,  // 8: transport.GetRequest.VersionsEntry.value:type_name -> transport.RangeList
+	7,  // 9: transport.Updates.Publish:input_type -> transport.PublishRequest
+	5,  // 10: transport.Updates.Get:input_type -> transport.GetRequest
+	11, // 11: transport.Updates.GetVersionVector:input_type -> google.protobuf.Empty
+	11, // 12: transport.Updates.Publish:output_type -> google.protobuf.Empty
+	6,  // 13: transport.Updates.Get:output_type -> transport.GetResponse
+	8,  // 14: transport.Updates.GetVersionVector:output_type -> transport.GetVersionVectorResponse
 	12, // [12:15] is the sub-list for method output_type
 	9,  // [9:12] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
@@ -561,7 +608,7 @@ func file_pkg_storage_transport_grpc_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_storage_transport_grpc_api_proto_rawDesc), len(file_pkg_storage_transport_grpc_api_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -4,6 +4,7 @@ import (
 	"context"
 	"in-memorydb/pkg/storage"
 	"in-memorydb/pkg/storage/transport/grpc/transportpb"
+	"in-memorydb/pkg/structs"
 	"log/slog"
 	"sync"
 
@@ -90,20 +91,20 @@ func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*storag
 	return err
 }
 
-func (t *GRPCTransport) Pull(ctx context.Context, addr string, version storage.Version) ([]*storage.Update, error) {
+func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*storage.Update, error) {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := client.Get(ctx, &transportpb.GetRequest{Version: fromDomainVersion(version)})
+	res, err := client.Get(ctx, &transportpb.GetRequest{Versions: fromDomainVersions(versions)})
 	if err != nil {
 		return nil, err
 	}
 	return toDomainUpdates(res.Updates)
 }
 
-func (t *GRPCTransport) GetVersion(ctx context.Context, addr string) (storage.Version, error) {
+func (t *GRPCTransport) GetVersion(ctx context.Context, addr string) (map[string]uint64, error) {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return nil, err
@@ -113,5 +114,5 @@ func (t *GRPCTransport) GetVersion(ctx context.Context, addr string) (storage.Ve
 	if err != nil {
 		return nil, err
 	}
-	return toDomainVersion(resp.Version), nil
+	return resp.VectorClock, nil
 }
