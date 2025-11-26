@@ -2,8 +2,9 @@ package grpc
 
 import (
 	"context"
-	"in-memorydb/pkg/storage"
+	"in-memorydb/pkg/config"
 	"in-memorydb/pkg/storage/transport/grpc/transportpb"
+	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
 	"log/slog"
 	"sync"
@@ -13,9 +14,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-type TransportConfig struct {
-}
 
 type ClientPool struct {
 	mu      sync.Mutex
@@ -70,13 +68,13 @@ func (p *ClientPool) CloseAll() {
 	p.clients = make(map[string]*grpc.ClientConn)
 }
 
-func NewGRPCTransport(config *TransportConfig) *GRPCTransport {
+func NewGRPCTransport(config *config.TransportConfig) *GRPCTransport {
 	return &GRPCTransport{
 		pool: NewClientPool(),
 	}
 }
 
-func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*storage.Update) error {
+func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*types.Update) error {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return err
@@ -91,7 +89,7 @@ func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*storag
 	return err
 }
 
-func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*storage.Update, error) {
+func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*types.Update, error) {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return nil, err

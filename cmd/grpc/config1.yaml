@@ -1,0 +1,11 @@
+node:
+  id: "node1"
+  bind_address: "127.0.0.1"
+  port: 9090
+gossip:
+  port: 9091
+  fanout: 3
+  interval: 30000
+  retries: 2
+persistence:
+  wal_dir: ./wal_data

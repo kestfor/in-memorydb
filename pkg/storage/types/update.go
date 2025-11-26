@@ -1,4 +1,4 @@
-package storage
+package types
 
 import (
 	"encoding/json"
@@ -33,9 +33,10 @@ type Update struct {
 	TimeStamp *crdt.Timestamp `json:"time_stamp"`
 	Range     structs.Range   `json:"range"`
 	Key       string          `json:"key"`
-	Payload   crdt.Delta      `json:"payload"`
+	Payload   crdt.Delta      `json:"payload,omitempty"`
 }
 
+// TODO set -> delta transition
 func (u *Update) Merge(new *Update) error {
 	if u.Key != new.Key {
 		return fmt.Errorf("cannot merge updates with different keys: %v and %v: %w", u.Key, new.Key, ErrCannotMerge)
@@ -50,7 +51,7 @@ func (u *Update) Merge(new *Update) error {
 		return fmt.Errorf("%w: %w", err, ErrCannotMerge)
 	}
 
-	if u.Type != new.Type {
+	if u.Type == UpdateTypeSet || u.Type == UpdateTypeDelete {
 		u.Type = new.Type
 		u.Payload = new.Payload
 	} else {

@@ -1,8 +1,9 @@
-package storage
+package engine
 
 import (
 	"fmt"
 	"in-memorydb/pkg/crdt"
+	"in-memorydb/pkg/utils"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -63,7 +64,7 @@ func (e *Engine) Get(key string) (*CRDTEntry, bool) {
 	return entry, ok
 }
 
-func (e *Engine) Put(key string, obj crdt.CRDT) {
+func (e *Engine) Put(key string, obj crdt.CRDT) *crdt.Timestamp {
 	shard := e.shardFor(key)
 
 	shard.mu.Lock()
@@ -73,23 +74,38 @@ func (e *Engine) Put(key string, obj crdt.CRDT) {
 		e.countKeys.Add(1)
 	}
 
+	ts := e.clock.Now()
+
 	shard.data[key] = &CRDTEntry{
 		Object:      obj,
-		LastUpdated: e.clock.Now(),
+		LastUpdated: ts,
 	}
 
 	e.maybeScale()
+	return ts
+}
+
+func (e *Engine) Clock() *crdt.Time {
+	return e.clock
 }
 
 // MarkDeleted marks the specified key as deleted by setting its tombstone flag and updates its last modification time.
-func (e *Engine) MarkDeleted(key string) {
+// returns true if entry was marked in this call
+func (e *Engine) MarkDeleted(key string) (*CRDTEntry, bool) {
 	shard := e.shardFor(key)
 	shard.mu.Lock()
 	defer shard.mu.Unlock()
 	if entry, ok := shard.data[key]; ok {
-		entry.Tombstone = true
-		entry.LastUpdated = e.clock.Now()
+		if !entry.Tombstone {
+			entry.Tombstone = true
+			entry.LastUpdated = e.clock.Now()
+			return entry, true
+		}
+
+		return nil, false
 	}
+
+	return nil, false
 }
 
 // Delete deletes key from shard, decrease keys num
@@ -106,7 +122,7 @@ func (e *Engine) Delete(key string) {
 }
 
 func (e *Engine) shardFor(key string) *Shard {
-	idx := hashKey(key) & (e.numShards.Load() - 1)
+	idx := utils.HashKey(key) & (e.numShards.Load() - 1)
 	arr := *e.shards.Load()
 
 	shard := arr[idx]
@@ -154,7 +170,7 @@ func (e *Engine) growShards() {
 		}
 		old.mu.RLock()
 		for k, v := range old.data {
-			idx := hashKey(k) & (newCount - 1)
+			idx := utils.HashKey(k) & (newCount - 1)
 			if newArr[idx] == nil {
 				newArr[idx] = &Shard{data: make(map[string]*CRDTEntry, 128)}
 			}

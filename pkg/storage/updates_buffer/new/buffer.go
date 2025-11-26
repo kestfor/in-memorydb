@@ -2,7 +2,7 @@ package buffer
 
 import (
 	"container/list"
-	"in-memorydb/pkg/storage"
+	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
 	"log/slog"
 	"sort"
@@ -29,7 +29,7 @@ type Buffer struct {
 // Sorted by Range.Start to enable binary search in GetCovering queries.
 // This structure trades O(m log m) insertion cost for O(log m) search cost.
 type nodeRangeIndex struct {
-	updates []*storage.Update // invariant: sorted by Range.Start ascending
+	updates []*types.Update // invariant: sorted by Range.Start ascending
 }
 
 func NewBuffer(maxSize int) *Buffer {
@@ -50,7 +50,7 @@ func NewBuffer(maxSize int) *Buffer {
 //
 //	m = updates per (key, nodeID) pair
 //	k = total updates for nodeID across all keys
-func (b *Buffer) Put(updates ...*storage.Update) {
+func (b *Buffer) Put(updates ...*types.Update) {
 	b.rwlock.Lock()
 	defer b.rwlock.Unlock()
 
@@ -59,7 +59,7 @@ func (b *Buffer) Put(updates ...*storage.Update) {
 		key    string
 		nodeID string
 	}
-	grouped := make(map[keyNode][]*storage.Update)
+	grouped := make(map[keyNode][]*types.Update)
 	for _, u := range updates {
 		kn := keyNode{u.Key, u.NodeID}
 		grouped[kn] = append(grouped[kn], u)
@@ -77,9 +77,9 @@ func (b *Buffer) Put(updates ...*storage.Update) {
 		existingEls := nodes[kn.nodeID]
 
 		// Collect all existing updates
-		var all []*storage.Update
+		var all []*types.Update
 		for _, el := range existingEls {
-			all = append(all, el.Value.(*storage.Update))
+			all = append(all, el.Value.(*types.Update))
 		}
 
 		// Merge with incoming updates
@@ -123,7 +123,7 @@ func (b *Buffer) Put(updates ...*storage.Update) {
 // This heuristic reduces memory usage while preventing loss of information needed for sync.
 //
 // Time complexity: O(m log m) where m = len(updates) due to sorting
-func (b *Buffer) collapseUpdates(upds []*storage.Update) []*storage.Update {
+func (b *Buffer) collapseUpdates(upds []*types.Update) []*types.Update {
 	if len(upds) <= 1 {
 		return upds
 	}
@@ -133,7 +133,7 @@ func (b *Buffer) collapseUpdates(upds []*storage.Update) []*storage.Update {
 		return upds[i].Range.Start < upds[j].Range.Start
 	})
 
-	merged := make([]*storage.Update, 0, len(upds))
+	merged := make([]*types.Update, 0, len(upds))
 	current := upds[0]
 
 	for i := 1; i < len(upds); i++ {
@@ -164,7 +164,7 @@ func (b *Buffer) collapseUpdates(upds []*storage.Update) []*storage.Update {
 // Returns (updates, true) if found, (nil, false) otherwise.
 //
 // Time complexity: O(k log k) where k = number of updates for this (key, nodeID) pair
-func (b *Buffer) Get(key, nodeID string) ([]*storage.Update, bool) {
+func (b *Buffer) Get(key, nodeID string) ([]*types.Update, bool) {
 	b.rwlock.Lock()
 	defer b.rwlock.Unlock()
 
@@ -179,7 +179,7 @@ func (b *Buffer) Get(key, nodeID string) ([]*storage.Update, bool) {
 
 	// Sort elements by Range.Start for consistent ascending order
 	sort.Slice(els, func(i, j int) bool {
-		return els[i].Value.(*storage.Update).Range.Start < els[j].Value.(*storage.Update).Range.Start
+		return els[i].Value.(*types.Update).Range.Start < els[j].Value.(*types.Update).Range.Start
 	})
 
 	// Move all elements to front in reverse order to maintain order and mark as recently used
@@ -188,9 +188,9 @@ func (b *Buffer) Get(key, nodeID string) ([]*storage.Update, bool) {
 	}
 
 	// Collect updates from list elements
-	updates := make([]*storage.Update, len(els))
+	updates := make([]*types.Update, len(els))
 	for i, el := range els {
-		updates[i] = el.Value.(*storage.Update)
+		updates[i] = el.Value.(*types.Update)
 	}
 
 	return updates, true
@@ -253,13 +253,13 @@ func (b *Buffer) removeNLocked(n int) int {
 // Must be called with write lock held.
 //
 // Time complexity: O(log m + d) where m = nodeID index size, d = lookup depth
-func (b *Buffer) removeOldestLocked() *storage.Update {
+func (b *Buffer) removeOldestLocked() *types.Update {
 	el := b.items.Back()
 	if el == nil {
 		return nil
 	}
 
-	upd := el.Value.(*storage.Update)
+	upd := el.Value.(*types.Update)
 	b.items.Remove(el)
 
 	// Remove from per-nodeID range index
@@ -294,7 +294,7 @@ func (b *Buffer) removeOldestLocked() *storage.Update {
 // Uses binary search on the per-nodeID range index for O(log m) lookup.
 //
 // Time complexity: O(log m + k) where m = updates for nodeID, k = query results
-func (b *Buffer) GetCovering(nodeID string, r structs.Range) []*storage.Update {
+func (b *Buffer) GetCovering(nodeID string, r structs.Range) []*types.Update {
 	b.rwlock.RLock()
 	defer b.rwlock.RUnlock()
 
@@ -303,7 +303,7 @@ func (b *Buffer) GetCovering(nodeID string, r structs.Range) []*storage.Update {
 		return nil
 	}
 
-	var result []*storage.Update
+	var result []*types.Update
 
 	// Binary search: find first update where Range.Start <= r.End
 	// All updates before this position have Range.Start > r.End (no overlap possible)
@@ -340,7 +340,7 @@ func (b *Buffer) rangesOverlap(r1, r2 structs.Range) bool {
 // Elements are returned in reverse insertion order (most recent first).
 //
 // Time complexity: O(n)
-func (b *Buffer) PeekN(n int) []*storage.Update {
+func (b *Buffer) PeekN(n int) []*types.Update {
 	b.rwlock.RLock()
 	defer b.rwlock.RUnlock()
 
@@ -348,11 +348,11 @@ func (b *Buffer) PeekN(n int) []*storage.Update {
 		n = b.items.Len()
 	}
 
-	res := make([]*storage.Update, 0, n)
+	res := make([]*types.Update, 0, n)
 	el := b.items.Front() // Front = most recent
 
 	for i := 0; i < n && el != nil; i++ {
-		if upd, ok := el.Value.(*storage.Update); ok {
+		if upd, ok := el.Value.(*types.Update); ok {
 			res = append(res, upd)
 		}
 		el = el.Next()
@@ -376,7 +376,7 @@ func (b *Buffer) Len() int {
 // Called after collapse: adds only the final merged updates.
 //
 // Time complexity: O(k log m) where k = new updates, m = existing for nodeID
-func (b *Buffer) addToNodeIDIndex(nodeID string, updates []*storage.Update) {
+func (b *Buffer) addToNodeIDIndex(nodeID string, updates []*types.Update) {
 	if len(updates) == 0 {
 		return
 	}
@@ -384,7 +384,7 @@ func (b *Buffer) addToNodeIDIndex(nodeID string, updates []*storage.Update) {
 	idx, ok := b.nodeIDIdx[nodeID]
 	if !ok {
 		idx = &nodeRangeIndex{
-			updates: make([]*storage.Update, 0, 10),
+			updates: make([]*types.Update, 0, 10),
 		}
 		b.nodeIDIdx[nodeID] = idx
 	}
@@ -398,7 +398,7 @@ func (b *Buffer) addToNodeIDIndex(nodeID string, updates []*storage.Update) {
 
 		// Insert at position (go idiom for slice insertion)
 		idx.updates = append(idx.updates[:insertPos],
-			append([]*storage.Update{upd}, idx.updates[insertPos:]...)...)
+			append([]*types.Update{upd}, idx.updates[insertPos:]...)...)
 	}
 }
 
@@ -412,7 +412,7 @@ func (b *Buffer) removeFromNodeIDIndex(nodeID string, els []*list.Element) {
 	}
 
 	for _, el := range els {
-		b.removeFromNodeIDIndexLocked(nodeID, el.Value.(*storage.Update))
+		b.removeFromNodeIDIndexLocked(nodeID, el.Value.(*types.Update))
 	}
 }
 
@@ -421,7 +421,7 @@ func (b *Buffer) removeFromNodeIDIndex(nodeID string, els []*list.Element) {
 //
 // Time complexity: O(m) where m = updates for nodeID
 // Note: Could be optimized to O(log m) with pointer-based lookup if needed
-func (b *Buffer) removeFromNodeIDIndexLocked(nodeID string, upd *storage.Update) {
+func (b *Buffer) removeFromNodeIDIndexLocked(nodeID string, upd *types.Update) {
 	idx, ok := b.nodeIDIdx[nodeID]
 	if !ok || idx == nil || len(idx.updates) == 0 {
 		return

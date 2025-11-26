@@ -39,7 +39,7 @@ func (d *PNCounterDelta) Merge(other Delta) error {
 }
 
 func (d *PNCounterDelta) CreateCRDT() (CRDT, error) {
-	return &PNCounter{
+	return &PNCounter{ // TODO возможно тут нужен ID
 		P: d.P,
 		N: d.N,
 	}, nil
@@ -74,7 +74,7 @@ func (d *PNCounterDelta) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (d PNCounterDelta) Type() CRDTType {
+func (d *PNCounterDelta) Type() CRDTType {
 	return CRDTTypePNCounter
 }
 
@@ -126,7 +126,7 @@ func (c *PNCounter) Decrement(delta int64) Delta {
 	}
 }
 
-func (c *PNCounter) Value() int64 {
+func (c *PNCounter) Value() any {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	var sumP, sumN int64

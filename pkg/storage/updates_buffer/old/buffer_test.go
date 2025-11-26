@@ -2,7 +2,7 @@ package buffer
 
 import (
 	mock_crdt "in-memorydb/pkg/crdt/mocks"
-	"in-memorydb/pkg/storage"
+	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
 	"strconv"
 	"testing"
@@ -27,18 +27,18 @@ func (s *TestSuite) SetupSuite() {
 }
 
 // helper to build storage.Update quickly in tests.
-func (s *TestSuite) newUpdate(key, nodeID string) *storage.Update {
+func (s *TestSuite) newUpdate(key, nodeID string) *types.Update {
 	crdtMock := mock_crdt.NewMockDelta(s.ctr)
 	crdtMock.EXPECT().Merge(gomock.Any()).Return(nil).AnyTimes()
 
-	return &storage.Update{
+	return &types.Update{
 		Key:     key,
 		NodeID:  nodeID,
 		Payload: crdtMock,
 	}
 }
 
-func (s *TestSuite) newUpdateWithRange(key string, node string, r structs.Range) *storage.Update {
+func (s *TestSuite) newUpdateWithRange(key string, node string, r structs.Range) *types.Update {
 	u := s.newUpdate(key, node)
 	u.Range = r
 	return u
@@ -450,12 +450,12 @@ func (s *TestSuite) TestBuffer_PeekN() {
 
 	items := buffer.PeekN(6)
 	s.Require().Len(items, 4)
-	s.Require().Equal([]*storage.Update{u1, u4, u3, u2}, items) // in reverse order because of lru politics
+	s.Require().Equal([]*types.Update{u1, u4, u3, u2}, items) // in reverse order because of lru politics
 
 	buffer.RemoveN(3)
 	items = buffer.PeekN(6)
 	s.Require().Len(items, 1)
-	s.Require().Equal([]*storage.Update{u1}, items)
+	s.Require().Equal([]*types.Update{u1}, items)
 }
 
 func (s *TestSuite) TestBuffer_Remove() {
@@ -545,13 +545,13 @@ func BenchmarkBuffer_Put(b *testing.B) {
 
 	keys := make([]string, b.N)
 	nodes := make([]string, b.N)
-	updates := make([]*storage.Update, b.N)
+	updates := make([]*types.Update, b.N)
 	for i := 0; i < b.N; i++ {
 		k := "k" + strconv.Itoa(rand.Int()%maxSize)
 		n := "n" + strconv.Itoa(rand.Int()%100)
 		keys[i] = k
 		nodes[i] = n
-		updates[i] = &storage.Update{
+		updates[i] = &types.Update{
 			Key:     k,
 			NodeID:  n,
 			Range:   structs.Range{Start: uint64(rand.Int() % 1000), End: uint64(rand.Int()%1000 + 1000)},
@@ -576,7 +576,7 @@ func BenchmarkBuffer_Get(b *testing.B) {
 	for i := 0; i < maxSize; i++ {
 		k := "k" + strconv.Itoa(rand.Int()%10000)
 		n := "n" + strconv.Itoa(rand.Int()%10000)
-		buf.Put(&storage.Update{
+		buf.Put(&types.Update{
 			Key:     k,
 			NodeID:  n,
 			Range:   structs.Range{Start: uint64(rand.Int() % 1000), End: uint64(rand.Int()%1000 + 1000)},
@@ -606,13 +606,13 @@ func BenchmarkBuffer_PutAndGet(b *testing.B) {
 
 	keys := make([]string, b.N)
 	nodes := make([]string, b.N)
-	updates := make([]*storage.Update, b.N)
+	updates := make([]*types.Update, b.N)
 	for i := 0; i < b.N; i++ {
 		k := "k" + strconv.Itoa(rand.Int()%10000)
 		n := "n" + strconv.Itoa(rand.Int()%10000)
 		keys[i] = k
 		nodes[i] = n
-		updates[i] = &storage.Update{
+		updates[i] = &types.Update{
 			Key:     keys[i],
 			NodeID:  nodes[i],
 			Range:   structs.Range{Start: uint64(rand.Int() % 1000), End: uint64(rand.Int()%1000 + 1000)},
@@ -689,7 +689,7 @@ func BenchmarkBuffer_GetCovering(b *testing.B) {
 				start := uint64(rand.Int() % 10000)
 				end := start + uint64(rand.Int()%bm.rangeWidth)
 
-				buf.Put(&storage.Update{
+				buf.Put(&types.Update{
 					Key:     "k" + strconv.Itoa(rand.Int()%1000),
 					NodeID:  nodeID,
 					Range:   structs.Range{Start: start, End: end},
@@ -737,7 +737,7 @@ func BenchmarkBuffer_GetCovering_WorstCase(b *testing.B) {
 	// Create overlapping ranges (all cover 0-10000)
 	for i := 0; i < bufferSize; i++ {
 		nodeID := nodes[i%numNodes]
-		buf.Put(&storage.Update{
+		buf.Put(&types.Update{
 			Key:     "k" + strconv.Itoa(i),
 			NodeID:  nodeID,
 			Range:   structs.Range{Start: 0, End: 10000},
@@ -775,7 +775,7 @@ func BenchmarkBuffer_GetCovering_BestCase(b *testing.B) {
 		nodeID := nodes[i%numNodes]
 		start := uint64(i * 100)
 		end := start + 50
-		buf.Put(&storage.Update{
+		buf.Put(&types.Update{
 			Key:     "k" + strconv.Itoa(i),
 			NodeID:  nodeID,
 			Range:   structs.Range{Start: start, End: end},

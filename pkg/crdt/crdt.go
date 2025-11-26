@@ -8,8 +8,14 @@ package crdt
 type CRDTType string
 
 type CRDTFabric interface {
+	// New returns ready to use crdt object
 	New(crdtType CRDTType, id string) (CRDT, error)
-	DeltaFromBytes(typeName string, bytes []byte) (Delta, error)
+
+	// NilDelta returns nil pointer casted to delta in order to use for Type() functions
+	NilDelta(crdtType CRDTType) (Delta, error)
+
+	// DeltaFromBytes creates delta from raw bytes
+	DeltaFromBytes(crdtType CRDTType, bytes []byte) (Delta, error)
 }
 
 type CRDT interface {
@@ -25,6 +31,8 @@ type CRDT interface {
 	// Deserialize state from bytes
 	UnmarshalJSON(data []byte) error
 
+	Value() any
+
 	// Get type of CRDT
 	Type() CRDTType
 }
@@ -36,7 +44,7 @@ type Delta interface {
 	// Deserialize delta from bytes
 	UnmarshalJSON(data []byte) error
 
-	// Get type of crdt which delta belongs to
+	// Get type of crdt which delta belongs to, can be used on nil
 	Type() CRDTType
 
 	Merge(other Delta) error

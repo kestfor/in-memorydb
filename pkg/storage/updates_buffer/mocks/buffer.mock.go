@@ -10,7 +10,7 @@
 package mock_updates_buffer
 
 import (
-	storage "in-memorydb/pkg/storage"
+	storage "in-memorydb/pkg/storage/types"
 	structs "in-memorydb/pkg/structs"
 	reflect "reflect"
 

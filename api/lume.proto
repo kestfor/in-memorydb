@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "api/lumepb";
+
+import "google/protobuf/empty.proto";
+
+enum Type {
+  TYPE_NOT_SPECIFIED = 0;
+  TYPE_PN_COUNTER = 1;
+  TYPE_LWW_REGISTER = 2;
+}
+
+message SetRequest {
+  string key = 1;
+  Type crdt_type = 2;
+}
+
+message DeleteRequest {
+  string key = 1;
+}
+
+message DeleteResponse {
+  bool ok = 1;
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetResponse {
+
+  Type crdt_type = 1;
+  bool ok = 2; // key present
+  oneof data {
+    Counter counter_data = 3;
+    Register register_data = 4;
+  }
+
+  message Counter {
+    int64 val = 1;
+  }
+
+  message Register {
+    bytes val = 1;
+  }
+
+}
+
+message ApplyRequest {
+  string key = 1;
+
+  oneof operation {
+    Register register_operation = 2;
+    CounterInc counter_operation_inc = 3;
+    CounterDec counter_operation_dec = 4;
+  }
+
+  message Register {
+    bytes value = 1;
+  }
+
+  message CounterInc {
+    int64 val = 1;
+  }
+
+  message CounterDec {
+    int64 val = 1;
+  }
+
+}
+
+service Lume {
+  rpc Set(SetRequest) returns (google.protobuf.Empty);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc Apply(ApplyRequest) returns (google.protobuf.Empty);
+}

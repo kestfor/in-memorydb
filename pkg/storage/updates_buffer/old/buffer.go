@@ -2,7 +2,7 @@ package buffer
 
 import (
 	"container/list"
-	"in-memorydb/pkg/storage"
+	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
 	"log/slog"
 	"sort"
@@ -34,7 +34,7 @@ func NewBuffer(maxSize int) *Buffer {
 // Put добавляет или обновляет элемент в буфере.
 // Если элемент существует — обновляет value и перемещает в front.
 // Если новый элемент и размер превысил maxSize — удаляет старейший.
-func (b *Buffer) Put(updates ...*storage.Update) {
+func (b *Buffer) Put(updates ...*types.Update) {
 	b.rwlock.Lock()
 	defer b.rwlock.Unlock()
 
@@ -43,7 +43,7 @@ func (b *Buffer) Put(updates ...*storage.Update) {
 		key    string
 		nodeID string
 	}
-	grouped := make(map[keyNode][]*storage.Update)
+	grouped := make(map[keyNode][]*types.Update)
 	for _, u := range updates {
 		kn := keyNode{u.Key, u.NodeID}
 		grouped[kn] = append(grouped[kn], u)
@@ -61,9 +61,9 @@ func (b *Buffer) Put(updates ...*storage.Update) {
 		existingEls := nodes[kn.nodeID]
 
 		// Collect all existing updates
-		var all []*storage.Update
+		var all []*types.Update
 		for _, el := range existingEls {
-			all = append(all, el.Value.(*storage.Update))
+			all = append(all, el.Value.(*types.Update))
 		}
 
 		// Append incoming
@@ -95,7 +95,7 @@ func (b *Buffer) Put(updates ...*storage.Update) {
 	}
 }
 
-func (b *Buffer) collapseUpdates(upds []*storage.Update) []*storage.Update {
+func (b *Buffer) collapseUpdates(upds []*types.Update) []*types.Update {
 	if len(upds) <= 1 {
 		return upds
 	}
@@ -105,7 +105,7 @@ func (b *Buffer) collapseUpdates(upds []*storage.Update) []*storage.Update {
 		return upds[i].Range.Start < upds[j].Range.Start
 	})
 
-	merged := make([]*storage.Update, 0, len(upds))
+	merged := make([]*types.Update, 0, len(upds))
 	current := upds[0]
 
 	for i := 1; i < len(upds); i++ {
@@ -128,7 +128,7 @@ func (b *Buffer) collapseUpdates(upds []*storage.Update) []*storage.Update {
 
 // Get возвращает элемент и помечает его как недавно использованный.
 // Возвращается (value, true) если найдено, иначе (nil, false).
-func (b *Buffer) Get(key, nodeId string) ([]*storage.Update, bool) {
+func (b *Buffer) Get(key, nodeId string) ([]*types.Update, bool) {
 	b.rwlock.Lock() // мы будем перемещать элемент в front, поэтому нужен write lock
 	defer b.rwlock.Unlock()
 
@@ -143,7 +143,7 @@ func (b *Buffer) Get(key, nodeId string) ([]*storage.Update, bool) {
 
 	// Sort els by range start for consistent order
 	sort.Slice(els, func(i, j int) bool {
-		return els[i].Value.(*storage.Update).Range.Start < els[j].Value.(*storage.Update).Range.Start
+		return els[i].Value.(*types.Update).Range.Start < els[j].Value.(*types.Update).Range.Start
 	})
 
 	// Move to front in reverse to preserve order
@@ -152,9 +152,9 @@ func (b *Buffer) Get(key, nodeId string) ([]*storage.Update, bool) {
 	}
 
 	// Collect updates in sorted order
-	updates := make([]*storage.Update, len(els))
+	updates := make([]*types.Update, len(els))
 	for i, el := range els {
-		updates[i] = el.Value.(*storage.Update)
+		updates[i] = el.Value.(*types.Update)
 	}
 
 	return updates, true
@@ -212,7 +212,7 @@ func (b *Buffer) Len() int {
 }
 
 // PeekOldest возвращает самый старый элемент (LRU) без удаления.
-func (b *Buffer) PeekOldest() (*storage.Update, bool) {
+func (b *Buffer) PeekOldest() (*types.Update, bool) {
 	b.rwlock.RLock()
 	defer b.rwlock.RUnlock()
 
@@ -220,7 +220,7 @@ func (b *Buffer) PeekOldest() (*storage.Update, bool) {
 	if el == nil {
 		return nil, false
 	}
-	if bi, ok := el.Value.(*storage.Update); ok {
+	if bi, ok := el.Value.(*types.Update); ok {
 		return bi, true
 	}
 	return nil, false
@@ -228,16 +228,16 @@ func (b *Buffer) PeekOldest() (*storage.Update, bool) {
 
 // PeekN peeks first n updates and returns it as slice
 // time complexity O(n)
-func (b *Buffer) PeekN(n int) []*storage.Update {
+func (b *Buffer) PeekN(n int) []*types.Update {
 	b.rwlock.RLock()
 	defer b.rwlock.RUnlock()
 	if n > b.items.Len() {
 		n = b.items.Len()
 	}
-	res := make([]*storage.Update, 0, n)
+	res := make([]*types.Update, 0, n)
 	el := b.items.Front()
 	for i := 0; i < n; i++ {
-		if bi, ok := el.Value.(*storage.Update); ok {
+		if bi, ok := el.Value.(*types.Update); ok {
 			res = append(res, bi)
 		}
 		el = el.Next()
@@ -247,13 +247,13 @@ func (b *Buffer) PeekN(n int) []*storage.Update {
 
 // GetCovering returns a list of updates whose ranges overlap with the specified range.
 // time - O(n)
-func (b *Buffer) GetCovering(nodeID string, r structs.Range) []*storage.Update {
+func (b *Buffer) GetCovering(nodeID string, r structs.Range) []*types.Update {
 	b.rwlock.RLock()
 	defer b.rwlock.RUnlock()
-	var result []*storage.Update
+	var result []*types.Update
 
 	for el := b.items.Front(); el != nil; el = el.Next() {
-		if bi, ok := el.Value.(*storage.Update); ok {
+		if bi, ok := el.Value.(*types.Update); ok {
 			if nodeID != bi.NodeID {
 				continue
 			}
@@ -286,7 +286,7 @@ func (b *Buffer) GetCovering(nodeID string, r structs.Range) []*storage.Update {
 }
 
 // PopOldest удаляет и возвращает самый старый элемент (LRU).
-func (b *Buffer) PopOldest() (*storage.Update, bool) {
+func (b *Buffer) PopOldest() (*types.Update, bool) {
 	b.rwlock.Lock()
 	defer b.rwlock.Unlock()
 	val := b.removeOldestLocked()
@@ -299,12 +299,12 @@ func (b *Buffer) PopOldest() (*storage.Update, bool) {
 
 // removeOldestLocked удаляет самый старый элемент. Предполагается, что вызывается
 // с захваченным Lock() (locked).
-func (b *Buffer) removeOldestLocked() *storage.Update {
+func (b *Buffer) removeOldestLocked() *types.Update {
 	el := b.items.Back()
 	if el == nil {
 		return nil
 	}
-	bi := el.Value.(*storage.Update)
+	bi := el.Value.(*types.Update)
 	b.items.Remove(el)
 
 	// Remove from lookup

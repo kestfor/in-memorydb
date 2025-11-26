@@ -82,6 +82,13 @@ func NewLWWHLCRegister(id string) *LWWHLCRegister {
 	}
 }
 
+// Value returns json.RawMessage - current register value
+func (r *LWWHLCRegister) Value() any {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.value
+}
+
 // Write создает новую дельту
 func (r *LWWHLCRegister) Write(value json.RawMessage) Delta {
 	r.mu.Lock()

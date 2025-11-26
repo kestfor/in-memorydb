@@ -1,26 +1,26 @@
-package storage
+package version_manager
 
 import (
 	"in-memorydb/pkg/crdt"
+	"in-memorydb/pkg/storage/engine"
 	"in-memorydb/pkg/storage/history"
+	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 )
 
-type VectorClock = map[string]uint64
-
 type VersionManager struct {
 	nodeID  string           // unique ID of current node
 	seq     atomic.Uint64    // global sequence number of updates for current node
 	history *history.History // nodeID -> seq range
-	engine  *Engine          // thread-safe for read/write, for entry use each entry has its own mutex
+	engine  *engine.Engine   // thread-safe for read/write, for entry use each entry has its own mutex
 	fabric  crdt.CRDTFabric  // thread-safe
 	mu      sync.RWMutex
 }
 
-func NewVersionManager(nodeID string, engine *Engine) *VersionManager {
+func NewVersionManager(nodeID string, engine *engine.Engine) *VersionManager {
 	return &VersionManager{
 		nodeID:  nodeID,
 		history: history.NewHistory(),
@@ -39,15 +39,15 @@ func (vm *VersionManager) getVersion(nodeID string) structs.Range {
 }
 
 // Advance увеличивает локальный счетчик обновлений на 1
-func (vm *VersionManager) Advance() {
-	vm.seq.Add(1)
+func (vm *VersionManager) Advance() uint64 {
+	return vm.seq.Add(1)
 }
 
 // Update applies a set of updates to the version manager while maintaining thread safety using a mutex lock.
 // Returns slice of applied updates
-func (vm *VersionManager) Update(updates ...*Update) []*Update {
+func (vm *VersionManager) Update(updates ...*types.Update) []*types.Update {
 	vm.mu.Lock()
-	applied := make([]*Update, 0, len(updates)/2) // approximate
+	applied := make([]*types.Update, 0, len(updates)/2) // approximate
 	for _, update := range updates {
 		if vm.handleUpdate(update) {
 			applied = append(applied, update)
@@ -57,13 +57,13 @@ func (vm *VersionManager) Update(updates ...*Update) []*Update {
 	return applied
 }
 
-func (vm *VersionManager) VectorClockContiguous() VectorClock {
+func (vm *VersionManager) VectorClockContiguous() types.VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
 	return vm.history.VectorClockContiguous()
 }
 
-func (vm *VersionManager) VectorClockMax() VectorClock {
+func (vm *VersionManager) VectorClockMax() types.VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
 	return vm.history.VectorClockMax()
@@ -97,7 +97,7 @@ func (vm *VersionManager) VersionDiff(remote map[string]uint64) map[string][]str
 
 // handleUpdate processes a single update, applying changes to the VersionManager.
 // Returns true if the update was successfully applied, otherwise false.
-func (vm *VersionManager) handleUpdate(update *Update) bool {
+func (vm *VersionManager) handleUpdate(update *types.Update) bool {
 
 	// old update, already applied
 	if !vm.history.HasRange(update.NodeID, update.Range) {
@@ -114,11 +114,18 @@ func (vm *VersionManager) handleUpdate(update *Update) bool {
 		// TODO рассмотреть этот кейс
 		slog.Warn("WARNING, edge case, key may have been deleted after this delta", "key", key, "node", update.NodeID)
 
-		newCRDT, err := update.Payload.CreateCRDT()
+		newCRDT, err := vm.fabric.New(update.Payload.Type(), vm.nodeID)
+
 		if err != nil {
 			slog.Error("error while creating new CRDT from delta", "err", err, "update", update)
 			return false
 		}
+
+		err = newCRDT.ApplyDelta(update.Payload)
+		if err != nil {
+			slog.Error("error while applying delta", "err", err, "update", update)
+		}
+
 		vm.engine.Put(key, newCRDT)
 		return true
 
@@ -130,21 +137,21 @@ func (vm *VersionManager) handleUpdate(update *Update) bool {
 	// update timestamp newer than existed
 	if entry.LastUpdated.Before(update.TimeStamp) {
 		switch update.Type {
-		case UpdateTypeSet:
+		case types.UpdateTypeSet: // here payload is nil
 
-			newCRDT, err := update.Payload.CreateCRDT()
+			newCRDT, err := vm.fabric.New(update.Payload.Type(), vm.nodeID)
 			if err != nil {
 				slog.Error("error while creating new CRDT from delta", "err", err, "update", update)
 				return false
 			}
 
 			entry.Object = newCRDT
-			entry.LastUpdated = vm.engine.clock.SyncWithRemote(update.TimeStamp)
+			entry.LastUpdated = vm.engine.Clock().SyncWithRemote(update.TimeStamp)
 
-		case UpdateTypeDelete:
+		case types.UpdateTypeDelete:
 			entry.Object = nil
 			entry.Tombstone = true
-		case UpdateTypeDelta:
+		case types.UpdateTypeDelta:
 			err := entry.Object.ApplyDelta(update.Payload)
 			if err != nil {
 				slog.Error("error while applying delta update", "err", err, "update", update)

@@ -1,0 +1,75 @@
+package app
+
+import (
+	"context"
+	"in-memorydb/api/lumepb"
+	"in-memorydb/pkg/config"
+	"in-memorydb/pkg/crdt"
+	"in-memorydb/pkg/storage"
+	"log/slog"
+
+	"github.com/golang/protobuf/ptypes/empty"
+)
+
+var factory = crdt.NewFabric()
+
+type NodeServer struct {
+	lumepb.UnimplementedLumeServer
+
+	storage *storage.Storage
+}
+
+func NewNodeServer(config *config.Config) (*NodeServer, error) {
+	st, err := storage.NewStorage(config)
+	if err != nil {
+		return nil, err
+	}
+	return &NodeServer{storage: st}, nil
+}
+
+func (n *NodeServer) StartStorage(ctx context.Context) error {
+	return n.storage.StartUp(ctx)
+}
+
+func (n *NodeServer) Set(ctx context.Context, request *lumepb.SetRequest) (*empty.Empty, error) {
+	domainType, err := toDomainCRDTType(request.GetCrdtType())
+	if err != nil {
+		return nil, err
+	}
+
+	err = n.storage.Put(request.GetKey(), domainType)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.InfoContext(ctx, "Successfully set key", "key", request.GetKey())
+
+	return &empty.Empty{}, nil
+}
+
+func (n *NodeServer) Get(ctx context.Context, request *lumepb.GetRequest) (*lumepb.GetResponse, error) {
+	val, typ, ok := n.storage.Get(request.GetKey())
+
+	res, err := toGetResponse(val, typ, ok)
+
+	if err != nil {
+		slog.ErrorContext(ctx, "Error while getting key", "err", err)
+	} else {
+		slog.InfoContext(ctx, "Successfully get key", "key", request.GetKey(), "value", val)
+	}
+
+	return res, err
+}
+
+func (n *NodeServer) Delete(ctx context.Context, request *lumepb.DeleteRequest) (*lumepb.DeleteResponse, error) {
+	ok, err := n.storage.Delete(request.GetKey())
+	if err != nil {
+		slog.ErrorContext(ctx, "Error while deleting key", "err", err)
+		return nil, err
+	}
+
+	if ok {
+		slog.InfoContext(ctx, "Successfully delete key", "key", request.GetKey())
+	}
+	return &lumepb.DeleteResponse{Ok: ok}, nil
+}

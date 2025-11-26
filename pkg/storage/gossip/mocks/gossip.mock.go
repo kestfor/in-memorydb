@@ -13,6 +13,7 @@ import (
 	context "context"
 	storage "in-memorydb/pkg/storage"
 	gossip "in-memorydb/pkg/storage/gossip"
+	"in-memorydb/pkg/storage/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -43,7 +44,7 @@ func (m *MockGossip) EXPECT() *MockGossipMockRecorder {
 }
 
 // AsyncSend mocks base method.
-func (m *MockGossip) AsyncSend(ctx context.Context, data []*storage.Update) <-chan error {
+func (m *MockGossip) AsyncSend(ctx context.Context, data []*types.Update) <-chan error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AsyncSend", ctx, data)
 	ret0, _ := ret[0].(<-chan error)
@@ -72,10 +73,10 @@ func (mr *MockGossipMockRecorder) GetVersionVector(ctx any) *gomock.Call {
 }
 
 // Pull mocks base method.
-func (m *MockGossip) Pull(ctx context.Context, versions storage.Version) ([]*storage.Update, error) {
+func (m *MockGossip) Pull(ctx context.Context, versions storage.Version) ([]*types.Update, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Pull", ctx, versions)
-	ret0, _ := ret[0].([]*storage.Update)
+	ret0, _ := ret[0].([]*types.Update)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -87,7 +88,7 @@ func (mr *MockGossipMockRecorder) Pull(ctx, versions any) *gomock.Call {
 }
 
 // Send mocks base method.
-func (m *MockGossip) Send(ctx context.Context, data []*storage.Update) error {
+func (m *MockGossip) Send(ctx context.Context, data []*types.Update) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", ctx, data)
 	ret0, _ := ret[0].(error)

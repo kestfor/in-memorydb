@@ -11,7 +11,7 @@ type walWrapper struct {
 	w *gowal.Wal
 }
 
-func Open(dir string) (WAL, error) {
+func Open(dir string) (WAL, error) { // TODO use persistence config
 	cfg := gowal.Config{
 		Dir:              dir,
 		Prefix:           "segment_",

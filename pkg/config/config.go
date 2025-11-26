@@ -13,7 +13,10 @@ type Config struct {
 	Persistence PersistenceConfig `yaml:"persistence"`
 	Replication ReplicationConfig `yaml:"replication"`
 	Security    SecurityConfig    `yaml:"security"`
+	Transport   TransportConfig   `yaml:"transport"`
 }
+
+type TransportConfig struct{}
 
 type NodeConfig struct {
 	ID          string `yaml:"-"`
@@ -31,6 +34,7 @@ type SecurityConfig struct {
 }
 
 type GossipConfig struct {
+	Port                  int    `yaml:"port"`
 	Protocol              string `yaml:"protocol"`
 	AntiEntropyIntervalMs int    `yaml:"interval"`
 	Fanout                int    `yaml:"fanout"`

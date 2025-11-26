@@ -12,6 +12,7 @@ package mock_transport
 import (
 	context "context"
 	storage "in-memorydb/pkg/storage"
+	"in-memorydb/pkg/storage/types"
 	structs "in-memorydb/pkg/structs"
 	reflect "reflect"
 
@@ -58,10 +59,10 @@ func (mr *MockTransportMockRecorder) GetVersion(ctx, addr any) *gomock.Call {
 }
 
 // Pull mocks base method.
-func (m *MockTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*storage.Update, error) {
+func (m *MockTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*types.Update, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Pull", ctx, addr, versions)
-	ret0, _ := ret[0].([]*storage.Update)
+	ret0, _ := ret[0].([]*types.Update)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -73,7 +74,7 @@ func (mr *MockTransportMockRecorder) Pull(ctx, addr, versions any) *gomock.Call 
 }
 
 // Send mocks base method.
-func (m *MockTransport) Send(ctx context.Context, addr string, data []*storage.Update) error {
+func (m *MockTransport) Send(ctx context.Context, addr string, data []*types.Update) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", ctx, addr, data)
 	ret0, _ := ret[0].(error)

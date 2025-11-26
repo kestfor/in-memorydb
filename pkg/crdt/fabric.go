@@ -27,12 +27,21 @@ var fromBytesConstructors = map[CRDTType]func([]byte) (Delta, error){
 	},
 
 	CRDTTypeLWWHLCRegister: func(bytes []byte) (Delta, error) {
-		var counter LWWHLCRegisterDelta
-		err := json.Unmarshal(bytes, &counter)
+		var reg LWWHLCRegisterDelta
+		err := json.Unmarshal(bytes, &reg)
 		if err != nil {
 			return nil, err
 		}
-		return &counter, nil
+		return &reg, nil
+	},
+}
+
+var nilDeltaConstr = map[CRDTType]func() Delta{
+	CRDTTypePNCounter: func() Delta {
+		return (*PNCounterDelta)(nil)
+	},
+	CRDTTypeLWWHLCRegister: func() Delta {
+		return (*LWWHLCRegisterDelta)(nil)
 	},
 }
 
@@ -51,11 +60,19 @@ func (f *fabric) New(name CRDTType, id string) (CRDT, error) {
 	return constructor(id), nil
 }
 
-func (f *fabric) DeltaFromBytes(typeName string, bytes []byte) (Delta, error) {
+func (f *fabric) DeltaFromBytes(typeName CRDTType, bytes []byte) (Delta, error) {
 
-	fromBytesConstr, ok := fromBytesConstructors[CRDTType(typeName)]
+	fromBytesConstr, ok := fromBytesConstructors[typeName]
 	if !ok {
 		return nil, ErrCRDTNotFound
 	}
 	return fromBytesConstr(bytes)
+}
+
+func (f *fabric) NilDelta(crdtType CRDTType) (Delta, error) {
+	constr, ok := nilDeltaConstr[crdtType]
+	if !ok {
+		return nil, ErrCRDTNotFound
+	}
+	return constr(), nil
 }

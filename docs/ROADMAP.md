@@ -57,7 +57,7 @@ in-memorydb/
 **Implementation**:
 ```bash
 # Create directory structure
-mkdir -p cmd/{node,client} pkg/{crdt,gossip,membership,storage,persistence,grpc,config,crypto,util}
+mkdir -p cmd/{node,client} pkg/{crdt,gossip,membership,storage,persistence,grpc,config,crypto,utils}
 mkdir -p api/proto test/{integration,chaos} scripts configs docs
 
 # Initialize additional modules if needed

@@ -2,11 +2,13 @@ package gossip
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"in-memorydb/pkg/config"
-	"in-memorydb/pkg/storage"
 	"in-memorydb/pkg/storage/gossip"
 	"in-memorydb/pkg/storage/transport"
+	"in-memorydb/pkg/storage/types"
+	"in-memorydb/pkg/storage/version_manager"
 	"in-memorydb/pkg/structs"
 	"log/slog"
 	"math/rand/v2"
@@ -15,32 +17,34 @@ import (
 	"github.com/hashicorp/memberlist"
 )
 
+var ErrNoPeers = errors.New("no peers available")
+
 type DefaultGossip struct {
 	config         *config.GossipConfig
 	memberlist     *memberlist.Memberlist
 	transport      transport.Transport
-	versionManager *storage.VersionManager
+	versionManager *version_manager.VersionManager
 
-	updatesChannel chan []*storage.Update
+	updatesChannel chan []*types.Update
 }
 
-func NewDefaultGossip(config *config.GossipConfig, transport transport.Transport, list *memberlist.Memberlist, manager *storage.VersionManager) *DefaultGossip {
+func NewDefaultGossip(config *config.GossipConfig, transport transport.Transport, list *memberlist.Memberlist, manager *version_manager.VersionManager) *DefaultGossip {
 	return &DefaultGossip{
 		config:         config,
 		transport:      transport,
 		memberlist:     list,
 		versionManager: manager,
-		updatesChannel: make(chan []*storage.Update, 10), // TODO настроить размер
+		updatesChannel: make(chan []*types.Update, 10), // TODO настроить размер
 	}
 }
 
-func (g *DefaultGossip) Start(ctx context.Context) chan<- []*storage.Update {
+func (g *DefaultGossip) Start(ctx context.Context) chan<- []*types.Update {
 	go g.runAntiEntropy(ctx)
 	go g.readUpdates(ctx)
 	return g.updatesChannel
 }
 
-func (g *DefaultGossip) Send(ctx context.Context, data []*storage.Update) error {
+func (g *DefaultGossip) Send(ctx context.Context, data []*types.Update) error {
 	peers := filterOutSelf(g.memberlist.Members(), g.memberlist.LocalNode())
 	picked := structs.NewSet[int]()
 	fanout := min(len(peers), g.config.Fanout)
@@ -72,7 +76,7 @@ func (g *DefaultGossip) Send(ctx context.Context, data []*storage.Update) error 
 	return nil
 }
 
-func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*storage.Update) <-chan error {
+func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*types.Update) <-chan error {
 	ch := make(chan error, 1)
 	go func() {
 		ch <- g.Send(ctx, data)
@@ -82,7 +86,7 @@ func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*storage.Update) <
 	return ch
 }
 
-func (g *DefaultGossip) Pull(ctx context.Context, version map[string][]structs.Range) ([]*storage.Update, error) {
+func (g *DefaultGossip) Pull(ctx context.Context, version map[string][]structs.Range) ([]*types.Update, error) {
 	peer, err := g.getRandomPeer()
 	if err != nil {
 		return nil, err
@@ -110,7 +114,7 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 	sem := make(chan struct{}, 5) // TODO где MaxConcurrentSends в конфиге
 	for updates := range g.updatesChannel {
 		sem <- struct{}{}
-		go func(u []*storage.Update) {
+		go func(u []*types.Update) {
 			defer func() { <-sem }()
 			if err := <-g.AsyncSend(ctx, u); err != nil {
 				slog.Warn("async send failed", "err", err)
@@ -122,7 +126,7 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 func (g *DefaultGossip) getRandomPeer() (*memberlist.Node, error) {
 	peers := filterOutSelf(g.memberlist.Members(), g.memberlist.LocalNode())
 	if len(peers) == 0 {
-		return nil, fmt.Errorf("no peers found")
+		return nil, ErrNoPeers
 	}
 	ind := rand.IntN(len(peers))
 	return peers[ind], nil
@@ -142,17 +146,21 @@ func (g *DefaultGossip) runAntiEntropy(ctx context.Context) {
 }
 
 func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
-	withTimeOut, cancel := context.WithTimeout(ctx, time.Second) // TODO выбрать timeout через конфиг
+	withTimeOut, cancel := context.WithTimeout(ctx, time.Second*20) // TODO выбрать timeout через конфиг
 	received, err := g.GetVersionVector(withTimeOut)
 	cancel()
 	if err != nil {
-		slog.Error("Error getting version vector", err)
+		if errors.Is(err, ErrNoPeers) {
+			slog.Debug("No need for anti-entropy, node in standalone mode", "err", err)
+		} else {
+			slog.Error("anti-entropy failed", "err", err)
+		}
 		return
 	}
 
 	diff := g.versionManager.VersionDiff(received.VectorClock)
 
-	withTimeOut, cancel = context.WithTimeout(ctx, time.Second)
+	withTimeOut, cancel = context.WithTimeout(ctx, time.Second*20)
 	updates, err := g.Pull(withTimeOut, diff)
 	cancel()
 	if err != nil {

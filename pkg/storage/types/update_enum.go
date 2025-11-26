@@ -3,7 +3,7 @@
 
 // Built By: go install
 
-package storage
+package types
 
 import (
 	"errors"
