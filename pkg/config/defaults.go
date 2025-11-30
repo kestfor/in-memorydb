@@ -2,14 +2,13 @@ package config
 
 import (
 	"in-memorydb/pkg/structs"
-
-	"github.com/google/uuid"
 )
 
 var knownProtocols = structs.NewSet("SWIM")
 
 var defaultNode = NodeConfig{
-	ID:          "node",
+	ID:          "node_1",
+	Name:        "node",
 	BindAddress: "127.0.0.1",
 	Port:        9090,
 }
@@ -51,10 +50,6 @@ func (c *NodeConfig) PopulateDefaults() {
 
 	if c.Port == 0 {
 		c.Port = defaultNode.Port
-	}
-
-	if c.ID == "" {
-		c.ID = uuid.New().String()
 	}
 }
 

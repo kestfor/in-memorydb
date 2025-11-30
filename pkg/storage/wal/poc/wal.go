@@ -1,7 +1,10 @@
 package wal
 
 import (
+	"encoding/json"
+	"fmt"
 	"hash/crc32"
+	"in-memorydb/pkg/storage/types"
 	. "in-memorydb/pkg/storage/wal"
 
 	"github.com/vadiminshakov/gowal"
@@ -33,46 +36,69 @@ func createIndex(nodeID string, seqNum uint64) uint64 {
 	return (h << 32) | (seqNum & 0xffffffff)
 }
 
-func (ww *walWrapper) Append(u *Entry) error {
-	walIndex := createIndex(u.NodeID, u.SeqNum)
-	key := u.NodeID
-
-	if err := ww.w.Write(walIndex, key, u.Payload); err != nil {
+func (ww *walWrapper) Append(u *types.Update) error {
+	bytes, err := json.Marshal(u)
+	if err != nil {
 		return err
+	}
+
+	for i := u.Range.Start; i <= u.Range.End; i++ {
+		walIndex := createIndex(u.NodeID, i)
+		if err := ww.w.Write(walIndex, u.NodeID, bytes); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (ww *walWrapper) Get(nodeID string, seq uint64) (*Entry, error) {
+func (ww *walWrapper) Get(nodeID string, seq uint64) (*types.Update, error) {
 	walIndex := createIndex(nodeID, seq)
 
-	k, val, err := ww.w.Get(walIndex)
+	_, val, err := ww.w.Get(walIndex)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w: %w", nodeID, seq, err, ErrNotFound)
 	}
 
-	return &Entry{
-		NodeID:  k,
-		SeqNum:  seq,
-		Payload: val,
-	}, nil
+	var u types.Update
+	err = json.Unmarshal(val, &u)
+	if err != nil {
+		return nil, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
+	}
+
+	return &u, nil
 }
 
-func (ww *walWrapper) Replay(nodeID string, fromSeq uint64, fn func(Entry) error) error {
+func (ww *walWrapper) Replay(nodeID string, fromSeq uint64, fn func(update *types.Update) error) error {
 	for msg := range ww.w.Iterator() {
 		idx := msg.Idx & 0xffffffff
 		key := msg.Key
 		val := msg.Value
 
 		if key == nodeID && idx >= fromSeq {
-			if err := fn(Entry{
-				NodeID:  key,
-				SeqNum:  idx,
-				Payload: val,
-			}); err != nil {
-				return err
+			var u types.Update
+			err := json.Unmarshal(val, &u)
+			if err != nil {
+				return fmt.Errorf("WAL.Replay(node: '%s', seq: '%d'): %w", nodeID, idx, err)
 			}
+			if err := fn(&u); err != nil {
+				return fmt.Errorf("WAL.Replay(node: '%s', seq: '%d'): %w", nodeID, idx, err)
+			}
+
+		}
+	}
+	return nil
+}
+
+func (ww *walWrapper) ReplayAll(fn func(update *types.Update) error) error {
+	var u types.Update
+	for msg := range ww.w.Iterator() {
+		err := json.Unmarshal(msg.Value, &u)
+		if err != nil {
+			return fmt.Errorf("WAL.ReplayAll(node: '%s'): %w", msg.Key, err)
+		}
+		if err := fn(&u); err != nil {
+			return fmt.Errorf("WAL.ReplayAll(node: '%s'): %w", msg.Key, err)
 		}
 	}
 	return nil

@@ -10,6 +10,7 @@ import (
 
 //go:generate go-enum --marshal --nocase
 
+var ErrCannotUnmarshal = errors.New("cannot unmarshal update")
 var ErrCannotMerge = errors.New("cannot merge updates")
 
 /*
@@ -20,6 +21,8 @@ Delete // delete key
 )
 */
 type UpdateType string
+
+var fabric = crdt.NewFabric()
 
 type Payload interface {
 	json.Marshaler
@@ -34,6 +37,45 @@ type Update struct {
 	Range     structs.Range   `json:"range"`
 	Key       string          `json:"key"`
 	Payload   crdt.Delta      `json:"payload,omitempty"`
+}
+
+// types for marshaling data
+type alias Update
+type wrapped struct {
+	CRDTType crdt.CRDTType `json:"crdt_type"`
+	alias
+}
+
+func (u *Update) UnmarshalJSON(b []byte) error {
+	type aux struct {
+		CRDTType crdt.CRDTType `json:"crdt_type"`
+	}
+
+	var t aux
+	err := json.Unmarshal(b, &t)
+	if err != nil {
+		return fmt.Errorf("%w: %w", err, ErrCannotUnmarshal)
+	}
+
+	u.Payload, err = fabric.NilDelta(t.CRDTType)
+	if err != nil {
+		return fmt.Errorf("%w: %w", err, ErrCannotUnmarshal)
+	}
+
+	return json.Unmarshal(b, (*alias)(u))
+}
+
+func (u Update) MarshalJSON() ([]byte, error) {
+
+	if u.Payload == nil {
+		return nil, fmt.Errorf("cannot marshal update with nil payload, use typed nil instead")
+	}
+
+	wrapper := wrapped{
+		alias:    (alias)(u),
+		CRDTType: u.Payload.Type(),
+	}
+	return json.Marshal(wrapper)
 }
 
 // TODO set -> delta transition
@@ -62,5 +104,7 @@ func (u *Update) Merge(new *Update) error {
 	}
 
 	u.Range = mergedRange
+	u.TimeStamp = new.TimeStamp
+
 	return nil
 }

@@ -2,9 +2,7 @@ package grpc
 
 import (
 	"context"
-	"encoding/json"
 	"in-memorydb/pkg/storage/transport/grpc/transportpb"
-	"in-memorydb/pkg/storage/types"
 	buffer "in-memorydb/pkg/storage/updates_buffer"
 	"in-memorydb/pkg/storage/version_manager"
 	"in-memorydb/pkg/storage/wal"
@@ -48,7 +46,7 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 			if len(covering) == 0 {
 				for seq := r.Start; seq <= r.End; seq++ {
 
-					walEntry, err := s.wal.Get(nodeID, seq)
+					upd, err := s.wal.Get(nodeID, seq)
 
 					// fallback for snapshot, currently not supported
 					if err != nil {
@@ -56,16 +54,9 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 						continue
 					}
 
-					var upd types.Update
-					err = json.Unmarshal(walEntry.Payload, &upd)
+					pb, err := fromDomainUpdate(upd)
 					if err != nil {
-						slog.ErrorContext(ctx, "Error unmarshalling update", err, "fromNodeID", nodeID, "seq", seq, "walEntry", walEntry)
-						continue
-					}
-
-					pb, err := fromDomainUpdate(&upd)
-					if err != nil {
-						slog.ErrorContext(ctx, "Error while converting", "fromNodeID", nodeID, "seq", seq, "walEntry", walEntry, "err", err)
+						slog.ErrorContext(ctx, "Error while converting", "fromNodeID", nodeID, "seq", seq, "walEntry", upd, "err", err)
 						continue
 					}
 
@@ -103,17 +94,10 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 		default:
 		}
 
-		bytes, err := json.Marshal(u)
+		err := s.wal.Append(u)
 		if err != nil {
-			slog.ErrorContext(ctx, "Error marshalling update, can't add to WAL", "err", err)
+			slog.ErrorContext(ctx, "Error adding update to WAL", "err", err)
 			continue
-		}
-		for seq := u.Range.Start; seq <= u.Range.End; seq++ {
-			err := s.wal.Append(&wal.Entry{NodeID: u.NodeID, SeqNum: seq, Payload: bytes})
-			if err != nil {
-				slog.ErrorContext(ctx, "Error adding update to WAL", "err", err)
-				continue
-			}
 		}
 	}
 

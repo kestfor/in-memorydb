@@ -64,7 +64,14 @@ func (e *Engine) Get(key string) (*CRDTEntry, bool) {
 	return entry, ok
 }
 
+// Put inserts or updates a CRDT object associated with the specified key and returns the corresponding timestamp.
 func (e *Engine) Put(key string, obj crdt.CRDT) *crdt.Timestamp {
+	return e.PutWithTimeStamp(key, nil, obj)
+}
+
+// PutWithTimeStamp inserts or updates a CRDT object with an associated timestamp. If no timestamp is provided, generates one.
+// Returns the timestamp used or created for the operation.
+func (e *Engine) PutWithTimeStamp(key string, ts *crdt.Timestamp, obj crdt.CRDT) *crdt.Timestamp {
 	shard := e.shardFor(key)
 
 	shard.mu.Lock()
@@ -74,7 +81,9 @@ func (e *Engine) Put(key string, obj crdt.CRDT) *crdt.Timestamp {
 		e.countKeys.Add(1)
 	}
 
-	ts := e.clock.Now()
+	if ts == nil {
+		ts = e.Clock().Now()
+	}
 
 	shard.data[key] = &CRDTEntry{
 		Object:      obj,

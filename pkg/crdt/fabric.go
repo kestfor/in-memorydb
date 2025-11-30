@@ -38,10 +38,10 @@ var fromBytesConstructors = map[CRDTType]func([]byte) (Delta, error){
 
 var nilDeltaConstr = map[CRDTType]func() Delta{
 	CRDTTypePNCounter: func() Delta {
-		return (*PNCounterDelta)(nil)
+		return &PNCounterDelta{}
 	},
 	CRDTTypeLWWHLCRegister: func() Delta {
-		return (*LWWHLCRegisterDelta)(nil)
+		return &LWWHLCRegisterDelta{}
 	},
 }
 

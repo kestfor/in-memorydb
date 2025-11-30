@@ -54,7 +54,7 @@ func toDomainTimeStamp(timeStamp *transportpb.TimeStamp) *crdt.Timestamp {
 }
 
 func fromDomainUpdate(update *types.Update) (*transportpb.Update, error) {
-	jsonPayload, err := json.Marshal(update)
+	jsonPayload, err := json.Marshal(update.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func fromDomainUpdate(update *types.Update) (*transportpb.Update, error) {
 }
 
 func fromDomainUpdates(updates []*types.Update) ([]*transportpb.Update, error) {
-	result := make([]*transportpb.Update, len(updates))
+	result := make([]*transportpb.Update, 0, len(updates))
 	for _, update := range updates {
 		u, err := fromDomainUpdate(update)
 		if err != nil {
@@ -145,7 +145,7 @@ func toDomainVersions(versions map[string]*transportpb.RangeList) map[string][]s
 }
 
 func toDomainUpdates(updates []*transportpb.Update) ([]*types.Update, error) {
-	result := make([]*types.Update, len(updates))
+	result := make([]*types.Update, 0, len(updates))
 	for _, update := range updates {
 		u, err := toDomainUpdate(update)
 		if err != nil {

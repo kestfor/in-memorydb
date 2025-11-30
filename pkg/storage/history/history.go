@@ -198,41 +198,72 @@ func (h *History) VectorClockContiguous() map[string]uint64 {
 	return out
 }
 
-// DiffAll computes, for a remote vector (remote[node] = last seq remote has),
-// which ranges local can send to bring remote up-to-date.
-// Semantics: If local has ranges [s..e] and remoteLast < e, we return [max(s, remoteLast+1)..e].
-// If remote does not contain a node, remoteLast is treated as 0 (or absent).
+// DiffAll computes ranges that are present on remote but missing locally.
+// For each node in remote (remote[node] = last seq remote has) it returns
+// ranges within [1..remoteLast] that local does not have.
+// If local has ranges [s..e], they are considered present and not included in result.
 func (h *History) DiffAll(remote map[string]uint64) map[string][]Range {
 	out := make(map[string][]Range)
-	// For every node local knows about, compute missing vs remote
-	for node, nh := range h.nodes {
-		remoteLast := remote[node] // zero if not present
-		if len(nh.Ranges) == 0 {
+
+	for node, remoteLast := range remote {
+		if remoteLast == 0 {
+			// remote has nothing for this node
 			continue
 		}
-		// if remoteLast >= local max -> skip
-		localMax := nh.Ranges[len(nh.Ranges)-1].End
-		if remoteLast >= localMax {
+
+		nh, ok := h.nodes[node]
+		// if local does not know this node or has no ranges -> request all [1..remoteLast]
+		if !ok || len(nh.Ranges) == 0 {
+			out[node] = []Range{{Start: 1, End: remoteLast}}
 			continue
 		}
-		// collect needed pieces
+
 		var missing []Range
+		cursor := uint64(1)
+
 		for _, r := range nh.Ranges {
-			if r.End <= remoteLast {
+			// stop early if we've already covered up to remoteLast
+			if cursor > remoteLast {
+				break
+			}
+			// skip ranges that end before cursor
+			if r.End < cursor {
 				continue
 			}
-			start := r.Start
-			if remoteLast+1 > start {
-				start = remoteLast + 1
+			// if this local range starts after the remoteLast,
+			// then everything from cursor..remoteLast is missing
+			if r.Start > remoteLast {
+				if cursor <= remoteLast {
+					missing = append(missing, Range{Start: cursor, End: remoteLast})
+				}
+				cursor = remoteLast + 1
+				break
 			}
-			if start <= r.End {
-				missing = append(missing, Range{Start: start, End: r.End})
+			// any gap before this local range is missing
+			if r.Start > cursor {
+				end := r.Start - 1
+				if end > remoteLast {
+					end = remoteLast
+				}
+				if cursor <= end {
+					missing = append(missing, Range{Start: cursor, End: end})
+				}
+			}
+			// advance cursor past this local range
+			if r.End+1 > cursor {
+				cursor = r.End + 1
 			}
 		}
+
+		// trailing missing part after last local range up to remoteLast
+		if cursor <= remoteLast {
+			missing = append(missing, Range{Start: cursor, End: remoteLast})
+		}
+
 		if len(missing) > 0 {
 			out[node] = missing
 		}
 	}
-	// Optionally: consider nodes present in remote but not local -> nothing to send
+
 	return out
 }

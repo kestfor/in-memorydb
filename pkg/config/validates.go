@@ -44,6 +44,9 @@ func (c *SecurityConfig) Validate() error {
 }
 
 func (c *NodeConfig) Validate() error {
+	if c.ID == "" {
+		return ErrMissingNodeID
+	}
 	return nil
 }
 

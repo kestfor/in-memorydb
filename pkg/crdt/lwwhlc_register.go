@@ -7,8 +7,8 @@ import (
 )
 
 type LWWHLCRegisterDelta struct {
-	Value json.RawMessage `json:"value"`
-	TS    *Timestamp      `json:"ts"`
+	Value []byte     `json:"value"`
+	TS    *Timestamp `json:"ts"`
 }
 
 func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
@@ -17,7 +17,7 @@ func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
 		return fmt.Errorf("cannot merge %T with %T", d, other)
 	}
 
-	if d.TS.Before(od.TS) {
+	if d.TS == nil || d.TS.Before(od.TS) {
 		d.Value = od.Value
 		d.TS = od.TS
 	}
@@ -29,7 +29,7 @@ func (d *LWWHLCRegisterDelta) CreateCRDT() (CRDT, error) {
 	return &LWWHLCRegister{
 		value: d.Value,
 		ts:    d.TS,
-		clock: NewHLC(d.TS.ID),
+		clock: nil,
 	}, nil
 }
 
@@ -77,7 +77,7 @@ func NewLWWHLCRegister(id string) *LWWHLCRegister {
 	clock := NewHLC(id)
 	return &LWWHLCRegister{
 		id:    id,
-		ts:    clock.Now(),
+		ts:    nil,
 		clock: clock,
 	}
 }
@@ -117,7 +117,7 @@ func (r *LWWHLCRegister) ApplyDelta(delta Delta) error {
 
 	r.clock.SyncWithRemote(d.TS)
 
-	if r.ts.Before(d.TS) {
+	if r.ts == nil || r.ts.Before(d.TS) {
 		r.value = d.Value
 		r.ts = d.TS
 	}
@@ -144,7 +144,7 @@ func (r *LWWHLCRegister) Merge(other CRDT) error {
 
 	r.clock.SyncWithRemote(o.ts)
 
-	if r.ts.Before(o.ts) {
+	if r.ts == nil || r.ts.Before(o.ts) {
 		r.value = o.value
 		r.ts = o.ts
 	}

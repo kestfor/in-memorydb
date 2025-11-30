@@ -26,6 +26,7 @@ type DefaultGossip struct {
 	versionManager *version_manager.VersionManager
 
 	updatesChannel chan []*types.Update
+	shutdown       context.CancelFunc
 }
 
 func NewDefaultGossip(config *config.GossipConfig, transport transport.Transport, list *memberlist.Memberlist, manager *version_manager.VersionManager) *DefaultGossip {
@@ -39,9 +40,17 @@ func NewDefaultGossip(config *config.GossipConfig, transport transport.Transport
 }
 
 func (g *DefaultGossip) Start(ctx context.Context) chan<- []*types.Update {
+	ctx, cancel := context.WithCancel(ctx)
+	g.shutdown = cancel
 	go g.runAntiEntropy(ctx)
 	go g.readUpdates(ctx)
 	return g.updatesChannel
+}
+
+func (g *DefaultGossip) Shutdown() error {
+	g.shutdown()
+	time.Sleep(time.Second)
+	return nil
 }
 
 func (g *DefaultGossip) Send(ctx context.Context, data []*types.Update) error {
@@ -86,18 +95,25 @@ func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*types.Update) <-c
 	return ch
 }
 
-func (g *DefaultGossip) Pull(ctx context.Context, version map[string][]structs.Range) ([]*types.Update, error) {
-	peer, err := g.getRandomPeer()
-	if err != nil {
-		return nil, err
+// TODO добавить возможность указать конкретного peer
+func (g *DefaultGossip) Pull(ctx context.Context, peer *memberlist.Node, version map[string][]structs.Range) ([]*types.Update, error) {
+	if peer == nil {
+		var err error
+		peer, err = g.getRandomPeer()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return g.transport.Pull(ctx, peer.Addr.String(), version)
 }
 
-func (g *DefaultGossip) GetVersionVector(ctx context.Context) (*gossip.VersionVectorResponse, error) {
-	peer, err := g.getRandomPeer()
-	if err != nil {
-		return nil, err
+func (g *DefaultGossip) GetVersionVector(ctx context.Context, peer *memberlist.Node) (*gossip.VersionVectorResponse, error) {
+	if peer == nil {
+		var err error
+		peer, err = g.getRandomPeer()
+		if err != nil {
+			return nil, err
+		}
 	}
 	version, err := g.transport.GetVersion(ctx, peer.Addr.String())
 	if err != nil {
@@ -138,6 +154,7 @@ func (g *DefaultGossip) runAntiEntropy(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			slog.InfoContext(ctx, "shutting down anti-entropy")
 			return
 		case <-ticker.C:
 			g.antiEntropyRound(ctx)
@@ -146,23 +163,32 @@ func (g *DefaultGossip) runAntiEntropy(ctx context.Context) {
 }
 
 func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
-	withTimeOut, cancel := context.WithTimeout(ctx, time.Second*20) // TODO выбрать timeout через конфиг
-	received, err := g.GetVersionVector(withTimeOut)
-	cancel()
+	withTimeOut, cancel := context.WithTimeout(ctx, time.Second*60) // TODO выбрать timeout через конфиг
+	defer cancel()
+
+	peer, err := g.getRandomPeer()
 	if err != nil {
-		if errors.Is(err, ErrNoPeers) {
-			slog.Debug("No need for anti-entropy, node in standalone mode", "err", err)
-		} else {
-			slog.Error("anti-entropy failed", "err", err)
-		}
+		slog.Debug("No need for anti-entropy, node in standalone mode", "err", err)
+		return
+	}
+
+	received, err := g.GetVersionVector(withTimeOut, peer)
+
+	if err != nil {
+		slog.Error("anti-entropy failed", "err", err)
 		return
 	}
 
 	diff := g.versionManager.VersionDiff(received.VectorClock)
 
-	withTimeOut, cancel = context.WithTimeout(ctx, time.Second*20)
-	updates, err := g.Pull(withTimeOut, diff)
-	cancel()
+	if len(diff) == 0 {
+		slog.DebugContext(ctx, "No difference with peer found")
+		return
+	}
+
+	withTimeOut, cancel = context.WithTimeout(withTimeOut, time.Second*60)
+	defer cancel()
+	updates, err := g.Pull(withTimeOut, peer, diff)
 	if err != nil {
 		slog.Error("Error pulling updates", err)
 		return

@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"google.golang.org/grpc"
 )
@@ -38,6 +40,7 @@ func Run(ctx context.Context, configPath *string) {
 	err = nodeServer.StartStorage(ctx)
 	if err != nil {
 		slog.Error("start storage error:", err)
+		os.Exit(1)
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Node.BindAddress, cfg.Node.Port))
@@ -48,8 +51,23 @@ func Run(ctx context.Context, configPath *string) {
 	grpcServer := grpc.NewServer()
 	lumepb.RegisterLumeServer(grpcServer, nodeServer)
 
-	if err := grpcServer.Serve(lis); err != nil {
-		slog.Error("grpc server start error:", err)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			slog.Error("grpc server start error:", err)
+			os.Exit(1)
+		}
+	}()
+
+	exit := make(chan os.Signal, 1)
+
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case <-exit:
+		slog.Info("shutting down node server")
+
+		grpcServer.GracefulStop()
+		_ = nodeServer.GracefulStopStorage()
 	}
 
 }

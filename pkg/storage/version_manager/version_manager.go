@@ -1,10 +1,12 @@
 package version_manager
 
 import (
+	"context"
 	"in-memorydb/pkg/crdt"
 	"in-memorydb/pkg/storage/engine"
 	"in-memorydb/pkg/storage/history"
 	"in-memorydb/pkg/storage/types"
+	"in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/structs"
 	"log/slog"
 	"sync"
@@ -47,9 +49,9 @@ func (vm *VersionManager) Advance() uint64 {
 // Returns slice of applied updates
 func (vm *VersionManager) Update(updates ...*types.Update) []*types.Update {
 	vm.mu.Lock()
-	applied := make([]*types.Update, 0, len(updates)/2) // approximate
+	applied := make([]*types.Update, 0, len(updates)/2+1) // approximate
 	for _, update := range updates {
-		if vm.handleUpdate(update) {
+		if vm.handleUpdate(update, false) {
 			applied = append(applied, update)
 		}
 	}
@@ -60,13 +62,17 @@ func (vm *VersionManager) Update(updates ...*types.Update) []*types.Update {
 func (vm *VersionManager) VectorClockContiguous() types.VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
-	return vm.history.VectorClockContiguous()
+	vc := vm.history.VectorClockContiguous()
+	vc[vm.nodeID] = vm.seq.Load()
+	return vc
 }
 
 func (vm *VersionManager) VectorClockMax() types.VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
-	return vm.history.VectorClockMax()
+	vc := vm.history.VectorClockMax()
+	vc[vm.nodeID] = vm.seq.Load()
+	return vc
 }
 
 //
@@ -97,10 +103,11 @@ func (vm *VersionManager) VersionDiff(remote map[string]uint64) map[string][]str
 
 // handleUpdate processes a single update, applying changes to the VersionManager.
 // Returns true if the update was successfully applied, otherwise false.
-func (vm *VersionManager) handleUpdate(update *types.Update) bool {
+// If fromWAl flag set as true, updates sets with update's timestamp
+func (vm *VersionManager) handleUpdate(update *types.Update, fromWAL bool) bool {
 
 	// old update, already applied
-	if !vm.history.HasRange(update.NodeID, update.Range) {
+	if vm.history.HasRange(update.NodeID, update.Range) {
 		return false
 	}
 
@@ -110,7 +117,7 @@ func (vm *VersionManager) handleUpdate(update *types.Update) bool {
 	entry, ok := vm.engine.Get(key)
 
 	// key doesn't present
-	if !ok {
+	if !ok && update.Type != types.UpdateTypeDelete {
 		// TODO рассмотреть этот кейс
 		slog.Warn("WARNING, edge case, key may have been deleted after this delta", "key", key, "node", update.NodeID)
 
@@ -121,12 +128,19 @@ func (vm *VersionManager) handleUpdate(update *types.Update) bool {
 			return false
 		}
 
-		err = newCRDT.ApplyDelta(update.Payload)
-		if err != nil {
-			slog.Error("error while applying delta", "err", err, "update", update)
+		if update.Type == types.UpdateTypeDelta {
+			err = newCRDT.ApplyDelta(update.Payload)
+			if err != nil {
+				slog.Error("error while applying delta", "err", err, "update", update)
+			}
 		}
 
-		vm.engine.Put(key, newCRDT)
+		if fromWAL {
+			vm.engine.PutWithTimeStamp(key, update.TimeStamp, newCRDT)
+		} else {
+			vm.engine.Put(key, newCRDT)
+		}
+
 		return true
 
 	}
@@ -135,7 +149,7 @@ func (vm *VersionManager) handleUpdate(update *types.Update) bool {
 	defer entry.Mu.Unlock()
 
 	// update timestamp newer than existed
-	if entry.LastUpdated.Before(update.TimeStamp) {
+	if fromWAL || entry.LastUpdated.Before(update.TimeStamp) {
 		switch update.Type {
 		case types.UpdateTypeSet: // here payload is nil
 
@@ -146,7 +160,11 @@ func (vm *VersionManager) handleUpdate(update *types.Update) bool {
 			}
 
 			entry.Object = newCRDT
-			entry.LastUpdated = vm.engine.Clock().SyncWithRemote(update.TimeStamp)
+			if fromWAL {
+				entry.LastUpdated = update.TimeStamp
+			} else {
+				entry.LastUpdated = vm.engine.Clock().SyncWithRemote(update.TimeStamp)
+			}
 
 		case types.UpdateTypeDelete:
 			entry.Object = nil
@@ -157,6 +175,7 @@ func (vm *VersionManager) handleUpdate(update *types.Update) bool {
 				slog.Error("error while applying delta update", "err", err, "update", update)
 				return false
 			}
+			entry.LastUpdated = vm.engine.Clock().SyncWithRemote(update.TimeStamp) // TODO check if needed here
 		default:
 			slog.Warn("unexpected update type", "type", update.Type)
 			return false
@@ -165,6 +184,31 @@ func (vm *VersionManager) handleUpdate(update *types.Update) bool {
 	}
 
 	return false
+}
+
+// RestoreFromWal iterates through all saved in wal and apply them
+func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error {
+	count := 0
+	err := wal.ReplayAll(func(u *types.Update) error {
+
+		count++
+
+		if count%100 == 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+		}
+
+		if u.NodeID == vm.nodeID {
+			vm.Advance()
+		}
+		vm.handleUpdate(u, true)
+
+		return nil
+	})
+	return err
 }
 
 //func (vm *VersionManager) handleUpdate(update Update) {

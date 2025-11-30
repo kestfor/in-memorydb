@@ -19,7 +19,7 @@ type Config struct {
 type TransportConfig struct{}
 
 type NodeConfig struct {
-	ID          string `yaml:"-"`
+	ID          string `yaml:"id"`
 	Name        string `yaml:"name"`
 	BindAddress string `yaml:"bind_address"`
 	Port        int    `yaml:"port"`

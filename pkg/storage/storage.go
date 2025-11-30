@@ -50,6 +50,7 @@ type Storage struct {
 	markChan        chan listEl
 
 	updatesChan chan<- []*types.Update
+	shutdown    context.CancelFunc
 }
 
 func NewStorage(config *config.Config) (*Storage, error) {
@@ -60,6 +61,7 @@ func NewStorage(config *config.Config) (*Storage, error) {
 
 	memConfig := memberlist.DefaultLocalConfig()
 	memConfig.Name = config.Node.ID
+	memConfig.BindAddr = config.Node.BindAddress
 
 	memList, err := memberlist.Create(memConfig)
 
@@ -99,6 +101,13 @@ func NewStorage(config *config.Config) (*Storage, error) {
 }
 
 func (s *Storage) StartUp(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	s.shutdown = cancel
+
+	if err := s.restoreFromWAL(ctx); err != nil {
+		return err
+	}
+
 	s.updatesChan = s.gossip.Start(ctx)
 	s.startBufferRead(ctx)
 	s.markedGC(ctx)
@@ -110,8 +119,27 @@ func (s *Storage) StartUp(ctx context.Context) error {
 	return nil
 }
 
+// TODO нужно поправить VM
+func (s *Storage) restoreFromWAL(ctx context.Context) error {
+	slog.Info("restoring data from WAL")
+	err := s.vm.RestoreFromWal(ctx, s.wal)
+	if err != nil {
+		return err
+	}
+	slog.Info("data restored successfully", "vectorClock", s.vm.VectorClockContiguous())
+	return nil
+}
+
+func (s *Storage) GracefulStop() error {
+	s.shutdown()
+	_ = s.gossip.Shutdown()
+	_ = s.wal.Close()
+	time.Sleep(time.Second)
+	return nil
+}
+
 func (s *Storage) listenUpdates(ctx context.Context) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.Gossip.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Node.BindAddress, s.config.Gossip.Port))
 	if err != nil {
 		return fmt.Errorf("cannot listen updates on port %d: %w", s.config.Gossip.Port, err)
 	}
@@ -125,13 +153,22 @@ func (s *Storage) listenUpdates(ctx context.Context) error {
 			return
 		}
 	}()
-	slog.InfoContext(ctx, "listening updates", "port", s.config.Gossip.Port)
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			slog.Info("shutting down gossip receiver")
+		}
+	}()
+
+	slog.InfoContext(ctx, "listening gossip updates", "port", s.config.Gossip.Port)
+
 	return nil
 }
 
 func (s *Storage) startBufferRead(ctx context.Context) {
 	go func() {
-		ticker := time.NewTicker(time.Second * 100) // TODO
+		ticker := time.NewTicker(time.Second * 1) // TODO
 		for {
 			select {
 			case <-ticker.C:
@@ -140,7 +177,7 @@ func (s *Storage) startBufferRead(ctx context.Context) {
 					slog.Error("error while reading buffered updates", "error", err)
 				}
 			case <-ctx.Done():
-				slog.Info("buffer read context done")
+				slog.Info("shutting down buffer read")
 				close(s.updatesChan)
 				return
 			}
@@ -149,8 +186,11 @@ func (s *Storage) startBufferRead(ctx context.Context) {
 }
 
 func (s *Storage) bufferReadRound() error {
-	s.updatesChan <- s.buffer.PeekN(100)
-	s.buffer.RemoveN(100)
+	upds := s.buffer.PeekN(100)
+	if len(upds) > 0 {
+		s.updatesChan <- upds
+		s.buffer.RemoveN(len(upds))
+	}
 	return nil
 }
 
@@ -166,6 +206,7 @@ func (s *Storage) markedGC(ctx context.Context) {
 				s.markedForDelete.PushBack(key)
 
 			case <-ctx.Done():
+				slog.Info("shutting down garbage collection")
 				return
 			default:
 
@@ -245,9 +286,7 @@ func (s *Storage) Put(key string, t crdt.CRDTType) error {
 
 	s.buffer.Put(update)
 
-	walEntry := &wal.Entry{NodeID: nodeID, SeqNum: seqNum, Payload: nil} // TODO возможно надо не nil
-
-	err = s.wal.Append(walEntry)
+	err = s.wal.Append(update)
 	if err != nil {
 		slog.Error("cannot append update to wal", "err", err)
 		return ErrInternal
@@ -275,9 +314,7 @@ func (s *Storage) Delete(key string) (bool, error) {
 
 		s.buffer.Put(update)
 
-		walEntry := &wal.Entry{NodeID: s.config.Node.ID, SeqNum: seqNum, Payload: nil} // TODO возможно надо не nil
-		err := s.wal.Append(walEntry)
-		if err != nil {
+		if err := s.wal.Append(update); err != nil {
 			slog.Error("cannot append update to wal", "err", err)
 			return false, ErrInternal
 		}
@@ -287,6 +324,124 @@ func (s *Storage) Delete(key string) (bool, error) {
 	}
 
 	return ok, nil
+}
+
+func (s *Storage) ApplyInc(key string, val int64) (bool, error) {
+	entry, ok := s.engine.Get(key)
+	if !ok {
+		return false, nil
+	}
+
+	entry.Mu.Lock()
+	defer entry.Mu.Unlock()
+	if entry.Tombstone {
+		return false, nil
+	}
+	switch t := entry.Object.(type) {
+	case *crdt.PNCounter:
+
+		seqNum := s.vm.Advance()
+
+		delta := t.Increment(val)
+
+		upd := &types.Update{
+			NodeID:    s.config.Node.ID,
+			Type:      types.UpdateTypeDelta,
+			TimeStamp: s.engine.Clock().Now(),
+			Payload:   delta,
+			Range:     structs.Range{Start: seqNum, End: seqNum},
+			Key:       key,
+		}
+
+		err := s.wal.Append(upd)
+
+		if err != nil {
+			slog.Error("cannot append update to wal", "err", err)
+		}
+
+		s.buffer.Put(upd)
+	default:
+		return false, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object)
+	}
+
+	return true, nil
+}
+
+func (s *Storage) ApplyDec(key string, val int64) (bool, error) {
+	entry, ok := s.engine.Get(key)
+	if !ok {
+		return false, nil
+	}
+	entry.Mu.Lock()
+	defer entry.Mu.Unlock()
+	if entry.Tombstone {
+		return false, nil
+	}
+	switch t := entry.Object.(type) {
+	case *crdt.PNCounter:
+		seqNum := s.vm.Advance()
+		delta := t.Decrement(val)
+
+		upd := &types.Update{
+			NodeID:    s.config.Node.ID,
+			Type:      types.UpdateTypeDelta,
+			TimeStamp: s.engine.Clock().Now(),
+			Payload:   delta,
+			Range:     structs.Range{Start: seqNum, End: seqNum},
+			Key:       key,
+		}
+
+		err := s.wal.Append(upd)
+		if err != nil {
+			slog.Error("cannot append update to wal", "err", err)
+		}
+
+		s.buffer.Put(upd)
+	default:
+		return false, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object)
+	}
+	return true, nil
+}
+
+func (s *Storage) ApplySetRegister(key string, val []byte) (bool, error) {
+	entry, ok := s.engine.Get(key)
+	if !ok {
+		return false, nil
+	}
+
+	entry.Mu.Lock()
+	defer entry.Mu.Unlock()
+	if entry.Tombstone {
+		return false, nil
+	}
+	switch t := entry.Object.(type) {
+	case *crdt.LWWHLCRegister:
+		seqNum := s.vm.Advance()
+
+		delta := t.Write(val)
+
+		upd := &types.Update{
+			NodeID:    s.config.Node.ID,
+			Type:      types.UpdateTypeDelta,
+			TimeStamp: s.engine.Clock().Now(),
+			Payload:   delta,
+			Range:     structs.Range{Start: seqNum, End: seqNum},
+			Key:       key,
+		}
+
+		err := s.wal.Append(upd)
+
+		if err != nil {
+			slog.Error("cannot append update to wal", "err", err) // TODO в этом случае нужно делать декремент seq_num, но такой ситуации не должно быть
+			return false, ErrInternal
+		}
+
+		s.buffer.Put(upd)
+
+	default:
+		return false, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object)
+	}
+	return true, nil
 }
 
 // TODO операции над crdt типами

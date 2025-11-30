@@ -113,7 +113,7 @@ func (c *PNCounter) Increment(delta int64) Delta {
 	c.P[c.id] += delta
 	c.mu.Unlock()
 	return &PNCounterDelta{
-		P: map[string]int64{c.id: delta},
+		P: map[string]int64{c.id: c.P[c.id]},
 	}
 }
 
@@ -122,7 +122,7 @@ func (c *PNCounter) Decrement(delta int64) Delta {
 	c.N[c.id] += delta
 	c.mu.Unlock()
 	return &PNCounterDelta{
-		N: map[string]int64{c.id: delta},
+		N: map[string]int64{c.id: c.N[c.id]},
 	}
 }
 

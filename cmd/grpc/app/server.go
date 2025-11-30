@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"in-memorydb/api/lumepb"
 	"in-memorydb/pkg/config"
 	"in-memorydb/pkg/crdt"
@@ -29,6 +30,10 @@ func NewNodeServer(config *config.Config) (*NodeServer, error) {
 
 func (n *NodeServer) StartStorage(ctx context.Context) error {
 	return n.storage.StartUp(ctx)
+}
+
+func (n *NodeServer) GracefulStopStorage() error {
+	return n.storage.GracefulStop()
 }
 
 func (n *NodeServer) Set(ctx context.Context, request *lumepb.SetRequest) (*empty.Empty, error) {
@@ -72,4 +77,29 @@ func (n *NodeServer) Delete(ctx context.Context, request *lumepb.DeleteRequest) 
 		slog.InfoContext(ctx, "Successfully delete key", "key", request.GetKey())
 	}
 	return &lumepb.DeleteResponse{Ok: ok}, nil
+}
+
+func (n *NodeServer) Apply(ctx context.Context, request *lumepb.ApplyRequest) (*empty.Empty, error) {
+	switch op := request.GetOperation().(type) {
+	case *lumepb.ApplyRequest_CounterOperationInc:
+		_, err := n.storage.ApplyInc(request.Key, op.CounterOperationInc.Val)
+		if err != nil {
+			slog.ErrorContext(ctx, "Error while incrementing counter", "err", err, "key", request.Key)
+		}
+		return &empty.Empty{}, err
+	case *lumepb.ApplyRequest_CounterOperationDec:
+		_, err := n.storage.ApplyDec(request.Key, op.CounterOperationDec.Val)
+		if err != nil {
+			slog.ErrorContext(ctx, "Error while decrementing counter", "err", err, "key", request.Key)
+		}
+		return &empty.Empty{}, err
+	case *lumepb.ApplyRequest_RegisterOperation:
+		_, err := n.storage.ApplySetRegister(request.Key, op.RegisterOperation.Value)
+		if err != nil {
+			slog.ErrorContext(ctx, "Error while registering operation", "err", err, "key", request.Key)
+		}
+		return &empty.Empty{}, err
+	default:
+		return nil, fmt.Errorf("unknown operation type: %T", op)
+	}
 }
