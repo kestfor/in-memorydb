@@ -316,13 +316,13 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 
 	entry, ok := s.engine.Get(ctx, key)
 	if !ok {
-		return false, nil
+		return false, fmt.Errorf("key not found")
 	}
 
 	entry.Mu.Lock()
 	defer entry.Mu.Unlock()
 	if entry.Tombstone {
-		return false, nil
+		return false, fmt.Errorf("key not found")
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
@@ -359,12 +359,12 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 
 	entry, ok := s.engine.Get(ctx, key)
 	if !ok {
-		return false, nil
+		return false, fmt.Errorf("key not found")
 	}
 	entry.Mu.Lock()
 	defer entry.Mu.Unlock()
 	if entry.Tombstone {
-		return false, nil
+		return false, fmt.Errorf("key not found")
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
@@ -398,13 +398,13 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 
 	entry, ok := s.engine.Get(ctx, key)
 	if !ok {
-		return false, nil
+		return false, fmt.Errorf("key not found")
 	}
 
 	entry.Mu.Lock()
 	defer entry.Mu.Unlock()
 	if entry.Tombstone {
-		return false, nil
+		return false, fmt.Errorf("key not found")
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.LWWHLCRegister:
@@ -433,5 +433,3 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 	}
 	return true, nil
 }
-
-// TODO операции над crdt типами

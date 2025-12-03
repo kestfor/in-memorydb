@@ -50,42 +50,131 @@ func main() {
 }
 
 func setCmd() *cobra.Command {
+	var crdtTypeFlag string
+
 	cmd := &cobra.Command{
-		Use:   "set <key> <type>",
-		Short: "Create a new CRDT object",
-		Long:  "Create a new CRDT object with specified key and type (pn_counter or lww_register)",
-		Args:  cobra.ExactArgs(2),
+		Use:   "set <key> [value]",
+		Short: "Create a new CRDT object or set its value",
+		Long: `Create a new CRDT object with specified key and optional value.
+		
+Usage modes:
+  1. set <key> --type <counter|register>
+     Creates an empty CRDT of specified type
+     
+  2. set <key> <value>
+     Auto-detects type from value and applies it:
+     - If value is a number: creates counter and increments by that value
+     - If value is text: creates register and sets to that value`,
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
-			crdtTypeStr := args[1]
-
-			var crdtType pb.Type
-			switch crdtTypeStr {
-			case "counter":
-				crdtType = pb.Type_TYPE_PN_COUNTER
-			case "register":
-				crdtType = pb.Type_TYPE_LWW_REGISTER
-			default:
-				return fmt.Errorf("unknown CRDT type: %s (use 'pn_counter' or 'lww_register')", crdtTypeStr)
-			}
-
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 			defer cancel()
 
-			req := &pb.SetRequest{
+			// Mode 1: Only key provided with --type flag
+			if len(args) == 1 {
+				if crdtTypeFlag == "" {
+					return fmt.Errorf("either provide a value or specify --type flag")
+				}
+
+				var crdtType pb.Type
+				switch crdtTypeFlag {
+				case "counter":
+					crdtType = pb.Type_TYPE_PN_COUNTER
+				case "register":
+					crdtType = pb.Type_TYPE_LWW_REGISTER
+				default:
+					return fmt.Errorf("unknown CRDT type: %s (use 'counter' or 'register')", crdtTypeFlag)
+				}
+
+				req := &pb.SetRequest{
+					Key:      key,
+					CrdtType: crdtType,
+				}
+
+				_, err := client.Set(ctx, req)
+				if err != nil {
+					return fmt.Errorf("failed to set: %v", err)
+				}
+
+				fmt.Printf("✓ Successfully created %s with key '%s'\n", crdtTypeFlag, key)
+				return nil
+			}
+
+			// Mode 2: Key and value provided - auto-detect type and apply
+			value := args[1]
+
+			// Try to parse as integer
+			if numVal, err := strconv.ParseInt(value, 10, 64); err == nil {
+				// It's a number - create counter and increment
+				if crdtTypeFlag != "" && crdtTypeFlag != "counter" {
+					return fmt.Errorf("value is a number but --type is set to '%s'", crdtTypeFlag)
+				}
+
+				// Create counter
+				setReq := &pb.SetRequest{
+					Key:      key,
+					CrdtType: pb.Type_TYPE_PN_COUNTER,
+				}
+				_, err := client.Set(ctx, setReq)
+				if err != nil {
+					return fmt.Errorf("failed to create counter: %v", err)
+				}
+
+				// Apply increment
+				applyReq := &pb.ApplyRequest{
+					Key: key,
+					Operation: &pb.ApplyRequest_CounterOperationInc{
+						CounterOperationInc: &pb.ApplyRequest_CounterInc{
+							Val: numVal,
+						},
+					},
+				}
+				_, err = client.Apply(ctx, applyReq)
+				if err != nil {
+					return fmt.Errorf("failed to increment counter: %v", err)
+				}
+
+				fmt.Printf("✓ Successfully created counter '%s' and set value to %d\n", key, numVal)
+				return nil
+			}
+
+			// It's not a number - create register and set value
+			if crdtTypeFlag != "" && crdtTypeFlag != "register" {
+				return fmt.Errorf("value is text but --type is set to '%s'", crdtTypeFlag)
+			}
+
+			// Create register
+			setReq := &pb.SetRequest{
 				Key:      key,
-				CrdtType: crdtType,
+				CrdtType: pb.Type_TYPE_LWW_REGISTER,
 			}
-
-			_, err := client.Set(ctx, req)
+			_, err := client.Set(ctx, setReq)
 			if err != nil {
-				return fmt.Errorf("failed to set: %v", err)
+				return fmt.Errorf("failed to create register: %v", err)
 			}
 
-			fmt.Printf("✓ Successfully created %s with key '%s'\n", crdtTypeStr, key)
+			// Apply value
+			applyReq := &pb.ApplyRequest{
+				Key: key,
+				Operation: &pb.ApplyRequest_RegisterOperation{
+					RegisterOperation: &pb.ApplyRequest_Register{
+						Value: []byte(value),
+					},
+				},
+			}
+			_, err = client.Apply(ctx, applyReq)
+			if err != nil {
+				return fmt.Errorf("failed to set register value: %v", err)
+			}
+
+			fmt.Printf("✓ Successfully created register '%s' and set value to '%s'\n", key, value)
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&crdtTypeFlag, "type", "", "CRDT type (counter or register)")
+
 	return cmd
 }
 

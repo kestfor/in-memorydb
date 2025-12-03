@@ -1,9 +1,9 @@
 node:
-  id: "node2"
-  bind_address: "127.0.0.2"
+  id: "node1"
+  bind_address: "0.0.0.0"
   port: 50051
 seeds:
-  - "127.0.0.1"
+  - "node-2"
 gossip:
   port: 50052
   fanout: 3
@@ -13,7 +13,7 @@ membership:
   port: 50053
 persistence:
   wal:
-    path: ./wal_data1
+    path: ./wal_data
     segment_threshold: 1000
 trace:
   enable: false

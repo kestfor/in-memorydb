@@ -7,11 +7,13 @@ import (
 	"in-memorydb/pkg/storage/history"
 	"in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/structs"
-	types2 "in-memorydb/pkg/types"
+	types "in-memorydb/pkg/types"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 )
+
+// TODO не прикольно что логика с entry вынесена за engine, как вариант можно попробовать через callback добавлять нужную логику
 
 type VersionManager struct {
 	nodeID  string           // unique ID of current node
@@ -57,9 +59,9 @@ func (vm *VersionManager) Advance() uint64 {
 
 // Update applies a set of updates to the version manager while maintaining thread safety using a mutex lock.
 // Returns slice of applied updates
-func (vm *VersionManager) Update(updates ...*types2.Update) []*types2.Update {
+func (vm *VersionManager) Update(updates ...*types.Update) []*types.Update {
 	vm.mu.Lock()
-	applied := make([]*types2.Update, 0, len(updates)/2+1) // approximate
+	applied := make([]*types.Update, 0, len(updates)/2+1) // approximate
 	for _, update := range updates {
 		if vm.handleUpdate(update, false) {
 			applied = append(applied, update)
@@ -69,7 +71,7 @@ func (vm *VersionManager) Update(updates ...*types2.Update) []*types2.Update {
 	return applied
 }
 
-func (vm *VersionManager) VectorClockContiguous() types2.VectorClock {
+func (vm *VersionManager) VectorClockContiguous() types.VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
 	vc := vm.history.VectorClockContiguous()
@@ -77,30 +79,13 @@ func (vm *VersionManager) VectorClockContiguous() types2.VectorClock {
 	return vc
 }
 
-func (vm *VersionManager) VectorClockMax() types2.VectorClock {
+func (vm *VersionManager) VectorClockMax() types.VectorClock {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
 	vc := vm.history.VectorClockMax()
 	vc[vm.nodeID] = vm.seq.Load()
 	return vc
 }
-
-//
-//// GetKnownNodes возвращает список всех известных нод (включая локальную)
-//// Нода становится "известной" после получения от неё хотя бы одного update
-//func (vm *VersionManager) GetKnownNodes() []string {
-//	vm.mu.RLock()
-//	defer vm.mu.RUnlock()
-//
-//	nodes := make([]string, 0, len(vm.version)+1)
-//	nodes = append(nodes, vm.nodeID)
-//
-//	for nodeID := range vm.version {
-//		nodes = append(nodes, nodeID)
-//	}
-//
-//	return nodes
-//}
 
 // GetCurrentSequence возвращает текущий sequence number локальной ноды
 func (vm *VersionManager) GetCurrentSequence() uint64 {
@@ -116,10 +101,12 @@ func (vm *VersionManager) VersionDiff(remote map[string]uint64) map[string][]str
 	return res
 }
 
+// TODO починить возможные мутации тут когда могут прийти разные типы дельт в разное время, как вариант через эпоху
+
 // handleUpdate processes a single update, applying changes to the VersionManager.
 // Returns true if the update was successfully applied, otherwise false.
 // If fromWAl flag set as true, updates sets with update's timestamp
-func (vm *VersionManager) handleUpdate(update *types2.Update, fromWAL bool) bool {
+func (vm *VersionManager) handleUpdate(update *types.Update, fromWAL bool) bool {
 
 	// old update, already applied
 	if vm.history.HasRange(update.NodeID, update.Range) {
@@ -131,33 +118,13 @@ func (vm *VersionManager) handleUpdate(update *types2.Update, fromWAL bool) bool
 	key := update.Key
 	entry, ok := vm.engine.Get(context.TODO(), key)
 
+	if !ok && update.Type == types.UpdateTypeDelete {
+		return false
+	}
+
 	// key doesn't present
-	if !ok && update.Type != types2.UpdateTypeDelete {
-		// TODO рассмотреть этот кейс
-		//slog.Debug("WARNING, edge case, key may have been deleted after this delta", "key", key, "node", update.NodeID)
-
-		newCRDT, err := vm.fabric.New(update.Payload.Type(), vm.nodeID)
-
-		if err != nil {
-			slog.Error("version_manager.handleUpdate: error while creating new CRDT from delta", "err", err, "update", update)
-			return false
-		}
-
-		if update.Type == types2.UpdateTypeDelta {
-			err = newCRDT.ApplyDelta(update.Payload)
-			if err != nil {
-				slog.Error("version_manager.handleUpdate: error while applying delta", "err", err, "update", update)
-			}
-		}
-
-		if fromWAL {
-			vm.engine.PutWithTimeStamp(context.TODO(), key, update.TimeStamp.Copy(), newCRDT)
-		} else {
-			vm.engine.Put(context.TODO(), key, newCRDT)
-		}
-
-		return true
-
+	if !ok {
+		return vm.handleSetNotExist(update, fromWAL)
 	}
 
 	entry.Mu.Lock()
@@ -166,45 +133,92 @@ func (vm *VersionManager) handleUpdate(update *types2.Update, fromWAL bool) bool
 	// update timestamp newer than existed >=
 	if !entry.LastUpdated.After(update.TimeStamp) {
 		switch update.Type {
-		case types2.UpdateTypeSet: // here payload is nil
+		case types.UpdateTypeSet:
+			return vm.handleSet(entry, update, fromWAL)
 
-			newCRDT, err := vm.fabric.New(update.Payload.Type(), vm.nodeID)
-			if err != nil {
-				slog.Error("version_manager.handleUpdate: error while creating new CRDT from delta", "err", err, "update", update)
-				return false
-			}
+		case types.UpdateTypeDelta:
+			return vm.handleDelta(entry, update, fromWAL)
 
-			entry.Object = newCRDT
-			if fromWAL {
-				entry.LastUpdated = update.TimeStamp.Copy()
-			}
-
-		case types2.UpdateTypeDelete:
-			entry.Object = nil // for gc
-			entry.Tombstone = true
-		case types2.UpdateTypeDelta:
-
-			err := entry.Object.ApplyDelta(update.Payload)
-
-			if err != nil {
-				slog.Error("version_manager.handleUpdate: error while applying delta update", "err", err, "update", update)
-				return false
-			}
+		case types.UpdateTypeDelete:
+			vm.handleDelete(entry, update)
+			return true
 
 		default:
 			slog.Warn("version_manager.handleUpdate: unexpected update type", "type", update.Type)
 			return false
 		}
-		return true
 	}
 
 	return false
 }
 
+func (vm *VersionManager) handleSetNotExist(update *types.Update, fromWAL bool) (ok bool) {
+	newCRDT, err := vm.fabric.New(update.Payload.Type(), vm.nodeID)
+
+	if err != nil {
+		slog.Error("version_manager.handleUpdate: error while creating new CRDT from delta", "err", err, "update", update)
+		return false
+	}
+
+	if update.Type == types.UpdateTypeDelta {
+		err = newCRDT.ApplyDelta(update.Payload)
+		if err != nil {
+			slog.Error("version_manager.handleUpdate: error while applying delta", "err", err, "update", update)
+		}
+	}
+
+	if fromWAL {
+		vm.engine.PutWithTimeStamp(context.TODO(), update.Key, update.TimeStamp.Copy(), newCRDT)
+	} else {
+		vm.engine.Put(context.TODO(), update.Key, newCRDT)
+	}
+
+	return true
+}
+
+func (vm *VersionManager) handleSet(entry *engine.CRDTEntry, update *types.Update, fromWAL bool) (ok bool) {
+	newCRDT, err := vm.fabric.New(update.Payload.Type(), vm.nodeID)
+	if err != nil {
+		slog.Error("version_manager.handleSet: error while creating new CRDT from delta", "err", err, "update", update)
+		return false
+	}
+
+	entry.Object = newCRDT
+	entry.Tombstone = false
+
+	if fromWAL {
+		entry.LastUpdated = update.TimeStamp.Copy()
+	}
+
+	return true
+}
+
+func (vm *VersionManager) handleDelta(entry *engine.CRDTEntry, update *types.Update, fromWAL bool) (ok bool) {
+	if entry.Object == nil || entry.Object.Type() != update.Payload.Type() {
+		vm.handleSet(entry, update, fromWAL)
+	}
+
+	err := entry.Object.ApplyDelta(update.Payload)
+	entry.Tombstone = false
+
+	if err != nil {
+		slog.Error("version_manager.handleDelta: error while applying delta update", "err", err, "update", update)
+		return false
+	}
+
+	return true
+}
+
+func (vm *VersionManager) handleDelete(entry *engine.CRDTEntry, update *types.Update) {
+	entry.Object = nil // for gc
+	entry.Tombstone = true
+	entry.LastUpdated = vm.engine.Clock().SyncWithRemote(update.TimeStamp)
+}
+
 // RestoreFromWal iterates through all saved in wal and apply them
 func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error {
 	count := 0
-	err := wal.ReplayAll(ctx, func(u *types2.Update) error {
+	err := wal.ReplayAll(ctx, func(u *types.Update) error {
 
 		count++
 
