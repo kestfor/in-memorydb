@@ -1,16 +1,21 @@
 node:
-  id: "node1"
-  bind_address: "127.0.0.1"
-  port: 9090
+  id: "node1" # node identification, must be unique across cluster
+  bind_address: "127.0.0.1" # main node bind address
+  port: 9090 # node port that listens for clients requests
 gossip:
-  protocol: "SWIM"
-  interval: 500
-  fanout: 3
-  retries: 3
+  port: 9091 # port for peer-to-peer communication inside the cluster for update transfer
+  protocol: "SWIM" # protocol name
+  interval: 500 # interval in ms between anti-entropy
+  fanout: 3 # num of nodes for random updates distribution
+  retries: 3 # num of retries to send data for each node
+membership:
+  port: 9092 # port for peer-to-peer communication inside the cluster for membership checking
 seeds:
-  - "195.0.0.2:9090"
+  - "195.0.0.2:9090" # list of known seeds to join the cluster
 persistence:
-  wal_dir: "wal"
+  wal:
+    path: "wal_dir"
+    segment_threshold: 1000 # num of entry in one segment file
   snap_dir: "snap"
   snapshot_interval: 10
 security:
