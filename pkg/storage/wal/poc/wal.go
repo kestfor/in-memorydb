@@ -14,17 +14,50 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const (
+	defaultWalPath          = "./wal"
+	defaultSegmentThreshold = 1000
+	defaultMaxSegments      = 100000000
+)
+
+type Config struct {
+
+	// Path specifies the file system location to be used.
+	Path string `yaml:"path"`
+
+	// SegmentThreshold is the number of records after which a new segment is created
+	SegmentThreshold int `yaml:"segment_threshold"`
+
+	// MaxSegments is the maximum number of segments allowed before the oldest segment is deleted
+	MaxSegmentsNum int `yaml:"-"` // TODO add yaml tag after snapshot implementation
+}
+
 type walWrapper struct {
 	w *gowal.Wal
 }
 
-func Open(dir string) (WAL, error) { // TODO use persistence config
-	cfg := gowal.Config{
-		Dir:              dir,
-		Prefix:           "segment_",
-		SegmentThreshold: 1000,  // TODO в конфиг
-		MaxSegments:      10000, // TODO поставить порог
+func (c *Config) populateMissed() {
+	if c.Path == "" {
+		c.Path = defaultWalPath
 	}
+	if c.SegmentThreshold == 0 {
+		c.SegmentThreshold = defaultSegmentThreshold
+	}
+	if c.MaxSegmentsNum == 0 {
+		c.MaxSegmentsNum = defaultMaxSegments
+	}
+}
+
+func New(config Config) (WAL, error) {
+	config.populateMissed()
+
+	cfg := gowal.Config{
+		Dir:              config.Path,
+		Prefix:           "segment_",
+		SegmentThreshold: config.SegmentThreshold,
+		MaxSegments:      config.MaxSegmentsNum,
+	}
+
 	w, err := gowal.NewWAL(cfg)
 	if err != nil {
 		return nil, err

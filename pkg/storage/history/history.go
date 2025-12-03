@@ -30,6 +30,10 @@ func (h *History) getOrCreate(node string) *NodeHistory {
 	return nh
 }
 
+func (h *History) Clear(node string) {
+	delete(h.nodes, node)
+}
+
 func (h *History) Add(node string, seq uint64) {
 	h.AddRange(node, Range{Start: seq, End: seq})
 }

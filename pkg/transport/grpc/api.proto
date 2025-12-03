@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package transport;
 
-option go_package = "pkg/storage/transport/grpc/transportpb";
+option go_package = "pkg/transport/grpc/transportpb";
 
 import "google/protobuf/empty.proto";
 
@@ -54,8 +54,13 @@ message GetVersionVectorResponse {
   map<string, uint64> VectorClock = 1;
 }
 
+message RestoreSeqRequest {
+  string node_id = 1;
+}
+
 service Updates {
   rpc Publish(PublishRequest) returns (google.protobuf.Empty);
+  rpc RestoreSeq(RestoreSeqRequest) returns (google.protobuf.Empty);
   rpc Get(GetRequest) returns (GetResponse);
   rpc GetVersionVector(google.protobuf.Empty) returns (GetVersionVectorResponse);
 }

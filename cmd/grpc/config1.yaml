@@ -1,19 +1,20 @@
 node:
   id: "node1"
   bind_address: "127.0.0.1"
-  port: 9090
+  port: 50051
 seeds:
   - "127.0.0.2"
 gossip:
-  address: "127.0.0.1"
-  port: 443 #TODO set in gossip
+  port: 50052
   fanout: 3
   interval: 30000
   retries: 2
 membership:
-  port: 1000
+  port: 50053
 persistence:
-  wal_dir: ./wal_data_1
+  wal:
+    path: ./wal_data1
+    segment_threshold: 1000
 trace:
   enable: false
 

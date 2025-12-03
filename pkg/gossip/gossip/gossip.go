@@ -265,9 +265,9 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 // It registers the updates server, begins serving requests, and monitors the context for shutdown signals.
 // Returns an error if the server fails to start or encounters issues during execution.
 func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", g.config.Address, g.config.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", g.config.BindAddress, g.config.Port))
 	if err != nil {
-		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.Address, g.config.Port, err)
+		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.BindAddress, g.config.Port, err)
 	}
 
 	updatesServer := grpc.NewUpdatesServer(g.buffer, g.wal, g.versionManager)
@@ -275,7 +275,7 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 	transportpb.RegisterUpdatesServer(serv, updatesServer)
 	go func() {
 		if err := serv.Serve(lis); err != nil {
-			slog.ErrorContext(ctx, "storage.listenUpdates: failed to serve", "err", err)
+			slog.ErrorContext(ctx, "gossip.listenUpdates: failed to serve", "err", err)
 			return
 		}
 	}()
@@ -283,11 +283,11 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 	go func() {
 		select {
 		case <-ctx.Done():
-			slog.Info("storage.listenUpdates: shutting down gossip receiver")
+			slog.Info("gossip.listenUpdates: shutting down gossip receiver")
 		}
 	}()
 
-	slog.InfoContext(ctx, "storage.listenUpdates: listening gossip updates", "address", fmt.Sprintf("%s:%d", g.config.Address, g.config.Port))
+	slog.InfoContext(ctx, "gossip.listenUpdates: listening gossip updates", "address", fmt.Sprintf("%s:%d", g.config.BindAddress, g.config.Port))
 
 	return nil
 }

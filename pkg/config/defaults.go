@@ -4,24 +4,35 @@ import (
 	"in-memorydb/pkg/structs"
 )
 
+const (
+	defaultNodeID         = "node_1"
+	defaultBindAddress    = "0.0.0.0"
+	defaultExternalPort   = 50051
+	defaultMembershipPort = 50052
+	defaultGossipPort     = 50053
+
+	defaultGossipProtocol   = "SWIM"
+	defaultGossipIntervalMs = 500
+	defaultGossipFanout     = 3
+	defaultGossipRetries    = 3
+)
+
 var knownProtocols = structs.NewSet("SWIM")
 
 var defaultNode = NodeConfig{
-	ID:          "node_1",
-	Name:        "node",
-	BindAddress: "127.0.0.1",
-	Port:        9090,
+	ID:          defaultNodeID,
+	BindAddress: defaultBindAddress,
+	Port:        defaultExternalPort,
 }
 
 var defaultGossip = GossipConfig{
-	Protocol:              "SWIM",
-	AntiEntropyIntervalMs: 500,
-	Fanout:                3,
-	Retries:               3,
+	Protocol:              defaultGossipProtocol,
+	AntiEntropyIntervalMs: defaultGossipIntervalMs,
+	Fanout:                defaultGossipFanout,
+	Retries:               defaultGossipRetries,
 }
 
 var defaultPersistence = PersistenceConfig{
-	WalDir:             "wal",
 	SnapDir:            "snap",
 	SnapshotIntervalMs: 10,
 }
@@ -72,10 +83,6 @@ func (c *GossipConfig) PopulateDefaults() {
 }
 
 func (c *PersistenceConfig) PopulateDefaults() {
-	if c.WalDir == "" {
-		c.WalDir = defaultPersistence.WalDir
-	}
-
 	if c.SnapDir == "" {
 		c.SnapDir = defaultPersistence.SnapDir
 	}
@@ -95,10 +102,20 @@ func (c *SecurityConfig) PopulateDefaults() {
 	}
 }
 
+func (m *MembershipConfig) PopulateDefaults() {
+	if m.Port == 0 {
+		m.Port = defaultMembershipPort
+	}
+}
+
 func (c *Config) PopulateDefaults() {
 	c.Node.PopulateDefaults()
 	c.Gossip.PopulateDefaults()
 	c.Persistence.PopulateDefaults()
 	c.Replication.PopulateDefaults()
 	c.Security.PopulateDefaults()
+	c.Membership.PopulateDefaults()
+
+	c.Gossip.BindAddress = c.Node.BindAddress
+
 }

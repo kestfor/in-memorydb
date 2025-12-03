@@ -6,7 +6,7 @@ import (
 	"in-memorydb/pkg/storage/version_manager"
 	"in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/structs"
-	transportpb "in-memorydb/pkg/transport/grpc/transportpb"
+	"in-memorydb/pkg/transport/grpc/transportpb"
 	"log/slog"
 
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -109,3 +109,7 @@ func (s *updatesServer) GetVersionVector(ctx context.Context, request *emptypb.E
 	slog.InfoContext(ctx, "grpc.GetVersionVector: Successfully sent version vector", "versionVector", versVect)
 	return &transportpb.GetVersionVectorResponse{VectorClock: versVect}, nil
 }
+
+//func (s *updatesServer) RestoreSeq(ctx context.Context, request *transportpb.RestoreSeqRequest) (*emptypb.Empty, error) {
+//
+//}

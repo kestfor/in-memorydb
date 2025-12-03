@@ -2,13 +2,12 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.33.1
-// source: pkg/storage/transport/grpc/api.proto
+// source: pkg/transport/grpc/api.proto
 
 package transportpb
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -22,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Updates_Publish_FullMethodName          = "/transport.Updates/Publish"
+	Updates_RestoreSeq_FullMethodName       = "/transport.Updates/RestoreSeq"
 	Updates_Get_FullMethodName              = "/transport.Updates/Get"
 	Updates_GetVersionVector_FullMethodName = "/transport.Updates/GetVersionVector"
 )
@@ -31,6 +31,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UpdatesClient interface {
 	Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RestoreSeq(ctx context.Context, in *RestoreSeqRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	GetVersionVector(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetVersionVectorResponse, error)
 }
@@ -47,6 +48,16 @@ func (c *updatesClient) Publish(ctx context.Context, in *PublishRequest, opts ..
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Updates_Publish_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *updatesClient) RestoreSeq(ctx context.Context, in *RestoreSeqRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Updates_RestoreSeq_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +89,7 @@ func (c *updatesClient) GetVersionVector(ctx context.Context, in *emptypb.Empty,
 // for forward compatibility.
 type UpdatesServer interface {
 	Publish(context.Context, *PublishRequest) (*emptypb.Empty, error)
+	RestoreSeq(context.Context, *RestoreSeqRequest) (*emptypb.Empty, error)
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	GetVersionVector(context.Context, *emptypb.Empty) (*GetVersionVectorResponse, error)
 	mustEmbedUnimplementedUpdatesServer()
@@ -92,6 +104,9 @@ type UnimplementedUpdatesServer struct{}
 
 func (UnimplementedUpdatesServer) Publish(context.Context, *PublishRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
+}
+func (UnimplementedUpdatesServer) RestoreSeq(context.Context, *RestoreSeqRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreSeq not implemented")
 }
 func (UnimplementedUpdatesServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
@@ -134,6 +149,24 @@ func _Updates_Publish_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UpdatesServer).Publish(ctx, req.(*PublishRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Updates_RestoreSeq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreSeqRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UpdatesServer).RestoreSeq(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Updates_RestoreSeq_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UpdatesServer).RestoreSeq(ctx, req.(*RestoreSeqRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -186,6 +219,10 @@ var Updates_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Updates_Publish_Handler,
 		},
 		{
+			MethodName: "RestoreSeq",
+			Handler:    _Updates_RestoreSeq_Handler,
+		},
+		{
 			MethodName: "Get",
 			Handler:    _Updates_Get_Handler,
 		},
@@ -195,5 +232,5 @@ var Updates_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/storage/transport/grpc/api.proto",
+	Metadata: "pkg/transport/grpc/api.proto",
 }

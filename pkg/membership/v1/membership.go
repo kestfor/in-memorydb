@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/binary"
+	"in-memorydb/pkg/config"
 	"in-memorydb/pkg/membership"
 	"in-memorydb/pkg/types"
 	"time"
@@ -46,6 +47,16 @@ type Config struct {
 	GossipPort     uint16
 	MembershipPort uint16
 	ExternalPort   uint16
+}
+
+func ConfigFromGlobal(config *config.Config) *Config {
+	return &Config{
+		NodeName:       config.Node.ID,
+		BindAddr:       config.Node.BindAddress,
+		ExternalPort:   config.Node.Port,
+		GossipPort:     config.Gossip.Port,
+		MembershipPort: config.Membership.Port,
+	}
 }
 
 type memImpl struct {

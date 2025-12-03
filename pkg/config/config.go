@@ -1,6 +1,7 @@
 package config
 
 import (
+	wal "in-memorydb/pkg/storage/wal/poc"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -9,12 +10,17 @@ import (
 type Config struct {
 	Node        NodeConfig        `yaml:"node"`
 	Gossip      GossipConfig      `yaml:"gossip"`
+	Membership  MembershipConfig  `yaml:"membership"`
 	Seeds       []string          `yaml:"seeds"`
 	Persistence PersistenceConfig `yaml:"persistence"`
 	Replication ReplicationConfig `yaml:"replication"`
 	Security    SecurityConfig    `yaml:"security"`
 	Transport   TransportConfig   `yaml:"transport"`
 	TraceConfig TraceConfig       `yaml:"trace"`
+}
+
+type MembershipConfig struct {
+	Port uint16 `yaml:"port"`
 }
 
 type TraceConfig struct {
@@ -25,9 +31,8 @@ type TransportConfig struct{}
 
 type NodeConfig struct {
 	ID          string `yaml:"id"`
-	Name        string `yaml:"name"`
 	BindAddress string `yaml:"bind_address"`
-	Port        int    `yaml:"port"`
+	Port        uint16 `yaml:"port"`
 }
 
 type SecurityConfig struct {
@@ -39,8 +44,8 @@ type SecurityConfig struct {
 }
 
 type GossipConfig struct {
-	Address               string `yaml:"address"`
-	Port                  int    `yaml:"port"`
+	BindAddress           string `yaml:"-"`
+	Port                  uint16 `yaml:"port"`
 	Protocol              string `yaml:"protocol"`
 	AntiEntropyIntervalMs int    `yaml:"interval"`
 	Fanout                int    `yaml:"fanout"`
@@ -48,9 +53,9 @@ type GossipConfig struct {
 }
 
 type PersistenceConfig struct {
-	WalDir             string `yaml:"wal_dir"`
-	SnapDir            string `yaml:"snap_dir"`
-	SnapshotIntervalMs int    `yaml:"snapshot_interval"`
+	WalConfig          wal.Config `yaml:"wal"`
+	SnapDir            string     `yaml:"snap_dir"`
+	SnapshotIntervalMs int        `yaml:"snapshot_interval"`
 }
 
 type ReplicationConfig struct {

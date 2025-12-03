@@ -40,6 +40,12 @@ func (vm *VersionManager) getVersion(nodeID string) structs.Range {
 	return structs.Range{End: vclock[nodeID]}
 }
 
+func (vm *VersionManager) RestoreSeq(nodeID string) {
+	vm.mu.Lock()
+	defer vm.mu.Unlock()
+	vm.history.Clear(nodeID)
+}
+
 // Advance увеличивает локальный счетчик обновлений на 1, добавляет в историю
 func (vm *VersionManager) Advance() uint64 {
 	res := vm.seq.Add(1)

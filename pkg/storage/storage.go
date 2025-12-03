@@ -62,19 +62,13 @@ func NewStorage(config *config.Config) (*Storage, error) {
 	vm := version_manager.NewVersionManager(config.Node.ID, eng)
 	transport := grpc2.NewGRPCTransport(&config.Transport)
 
-	members, err := membershipv1.New(&membershipv1.Config{
-		NodeName:       config.Node.ID,
-		BindAddr:       config.Node.BindAddress,
-		MembershipPort: 7777,                       // TODO в конфиге
-		GossipPort:     uint16(config.Gossip.Port), // TODO в конфиге
-		ExternalPort:   uint16(config.Node.Port),   // TODO в конфиге
-	})
+	members, err := membershipv1.New(membershipv1.ConfigFromGlobal(config))
 
 	if err != nil {
 		return nil, err
 	}
 
-	writeLog, err := walimpl.Open(config.Persistence.WalDir)
+	writeLog, err := walimpl.New(config.Persistence.WalConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +101,7 @@ func (s *Storage) StartUp(ctx context.Context) error {
 
 	if len(s.config.Seeds) > 0 {
 		err := s.memberlist.Join(s.config.Seeds)
-		if err != nil {
+		if err != nil || len(s.memberlist.Members()) == 1 {
 			n := s.memberlist.LocalNode()
 			slog.Debug("storage.NewStorage: cannot join cluster, choosing standalone mode", "known seeds", s.config.Seeds, "node", n)
 		}
