@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8888']
+
+  # Пример: если ваше приложение запускается на хосте (вне Docker),
+  # Prometheus внутри Docker может достучаться до хоста через host.docker.internal (Mac/Windows).
+  # На Linux добавьте в prometheus сервис extra_hosts: - "host.docker.internal:host-gateway"
+  - job_name: 'go-app-on-host'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+        labels:
+          instance: host-app

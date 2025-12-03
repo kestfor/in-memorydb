@@ -10,8 +10,8 @@
 package mock_updates_buffer
 
 import (
-	storage "in-memorydb/pkg/storage/types"
 	structs "in-memorydb/pkg/structs"
+	storage "in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

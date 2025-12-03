@@ -42,39 +42,39 @@ func (n *NodeServer) Set(ctx context.Context, request *lumepb.SetRequest) (*empt
 		return nil, err
 	}
 
-	err = n.storage.Put(request.GetKey(), domainType)
+	err = n.storage.Put(ctx, request.GetKey(), domainType)
 	if err != nil {
 		return nil, err
 	}
 
-	slog.InfoContext(ctx, "Successfully set key", "key", request.GetKey())
+	slog.InfoContext(ctx, "node.Set: Successfully set key", "key", request.GetKey())
 
 	return &empty.Empty{}, nil
 }
 
 func (n *NodeServer) Get(ctx context.Context, request *lumepb.GetRequest) (*lumepb.GetResponse, error) {
-	val, typ, ok := n.storage.Get(request.GetKey())
+	val, typ, ok := n.storage.Get(ctx, request.GetKey())
 
 	res, err := toGetResponse(val, typ, ok)
 
 	if err != nil {
-		slog.ErrorContext(ctx, "Error while getting key", "err", err)
+		slog.ErrorContext(ctx, "node.Get: Error while getting key", "err", err)
 	} else {
-		slog.InfoContext(ctx, "Successfully get key", "key", request.GetKey(), "value", val)
+		slog.InfoContext(ctx, "node.Get: Successfully get key", "key", request.GetKey(), "value", fmt.Sprintf("%v", val))
 	}
 
 	return res, err
 }
 
 func (n *NodeServer) Delete(ctx context.Context, request *lumepb.DeleteRequest) (*lumepb.DeleteResponse, error) {
-	ok, err := n.storage.Delete(request.GetKey())
+	ok, err := n.storage.Delete(ctx, request.GetKey())
 	if err != nil {
-		slog.ErrorContext(ctx, "Error while deleting key", "err", err)
+		slog.ErrorContext(ctx, "node.Delete: Error while deleting key", "err", err)
 		return nil, err
 	}
 
 	if ok {
-		slog.InfoContext(ctx, "Successfully delete key", "key", request.GetKey())
+		slog.InfoContext(ctx, "node.Delete: Successfully delete key", "key", request.GetKey())
 	}
 	return &lumepb.DeleteResponse{Ok: ok}, nil
 }
@@ -82,21 +82,21 @@ func (n *NodeServer) Delete(ctx context.Context, request *lumepb.DeleteRequest) 
 func (n *NodeServer) Apply(ctx context.Context, request *lumepb.ApplyRequest) (*empty.Empty, error) {
 	switch op := request.GetOperation().(type) {
 	case *lumepb.ApplyRequest_CounterOperationInc:
-		_, err := n.storage.ApplyInc(request.Key, op.CounterOperationInc.Val)
+		_, err := n.storage.ApplyInc(ctx, request.Key, op.CounterOperationInc.Val)
 		if err != nil {
-			slog.ErrorContext(ctx, "Error while incrementing counter", "err", err, "key", request.Key)
+			slog.ErrorContext(ctx, "node.Do: Error while incrementing counter", "err", err, "key", request.Key)
 		}
 		return &empty.Empty{}, err
 	case *lumepb.ApplyRequest_CounterOperationDec:
-		_, err := n.storage.ApplyDec(request.Key, op.CounterOperationDec.Val)
+		_, err := n.storage.ApplyDec(ctx, request.Key, op.CounterOperationDec.Val)
 		if err != nil {
-			slog.ErrorContext(ctx, "Error while decrementing counter", "err", err, "key", request.Key)
+			slog.ErrorContext(ctx, "node.Do: Error while decrementing counter", "err", err, "key", request.Key)
 		}
 		return &empty.Empty{}, err
 	case *lumepb.ApplyRequest_RegisterOperation:
-		_, err := n.storage.ApplySetRegister(request.Key, op.RegisterOperation.Value)
+		_, err := n.storage.ApplySetRegister(ctx, request.Key, op.RegisterOperation.Value)
 		if err != nil {
-			slog.ErrorContext(ctx, "Error while registering operation", "err", err, "key", request.Key)
+			slog.ErrorContext(ctx, "node.Do: Error while registering operation", "err", err, "key", request.Key)
 		}
 		return &empty.Empty{}, err
 	default:

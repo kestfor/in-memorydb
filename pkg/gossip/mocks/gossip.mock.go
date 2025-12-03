@@ -11,9 +11,9 @@ package mock_gossip
 
 import (
 	context "context"
+	"in-memorydb/pkg/gossip"
 	storage "in-memorydb/pkg/storage"
-	gossip "in-memorydb/pkg/storage/gossip"
-	"in-memorydb/pkg/storage/types"
+	"in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

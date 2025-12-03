@@ -21,6 +21,14 @@ type Timestamp struct {
 	ID       string `json:"id"`
 }
 
+func (t *Timestamp) Copy() *Timestamp {
+	return &Timestamp{
+		WallTime: t.WallTime,
+		Lamport:  t.Lamport,
+		ID:       t.ID,
+	}
+}
+
 func (t *Timestamp) Before(other *Timestamp) bool { return Compare(t, other) == Lower }
 func (t *Timestamp) After(other *Timestamp) bool  { return Compare(t, other) == Greater }
 func (t *Timestamp) String() string {

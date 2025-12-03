@@ -5,9 +5,16 @@ node:
 seeds:
   - "127.0.0.2"
 gossip:
+  address: "127.0.0.1"
   port: 443 #TODO set in gossip
   fanout: 3
   interval: 30000
   retries: 2
+membership:
+  port: 1000
 persistence:
   wal_dir: ./wal_data_1
+trace:
+  enable: false
+
+# TODO external/client port, gossip port, membership port

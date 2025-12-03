@@ -4,34 +4,34 @@ import (
 	"encoding/json"
 	"errors"
 	"in-memorydb/pkg/crdt"
-	"in-memorydb/pkg/storage/transport/grpc/transportpb"
-	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
+	"in-memorydb/pkg/transport/grpc/transportpb"
+	types2 "in-memorydb/pkg/types"
 )
 
 var fabr = crdt.NewFabric()
 
-func fromDomainType(updateType types.UpdateType) transportpb.UpdateType {
+func fromDomainType(updateType types2.UpdateType) transportpb.UpdateType {
 	switch updateType {
-	case types.UpdateTypeDelete:
+	case types2.UpdateTypeDelete:
 		return transportpb.UpdateType_UPDATE_TYPE_DELETE
-	case types.UpdateTypeSet:
+	case types2.UpdateTypeSet:
 		return transportpb.UpdateType_UPDATE_TYPE_SET
-	case types.UpdateTypeDelta:
+	case types2.UpdateTypeDelta:
 		return transportpb.UpdateType_UPDATE_TYPE_DELTA
 	default:
 		return transportpb.UpdateType_UPDATE_TYPE_UNSPECIFIED
 	}
 }
 
-func toDomainType(updateType transportpb.UpdateType) (types.UpdateType, error) {
+func toDomainType(updateType transportpb.UpdateType) (types2.UpdateType, error) {
 	switch updateType {
 	case transportpb.UpdateType_UPDATE_TYPE_DELETE:
-		return types.UpdateTypeDelete, nil
+		return types2.UpdateTypeDelete, nil
 	case transportpb.UpdateType_UPDATE_TYPE_SET:
-		return types.UpdateTypeSet, nil
+		return types2.UpdateTypeSet, nil
 	case transportpb.UpdateType_UPDATE_TYPE_DELTA:
-		return types.UpdateTypeDelta, nil
+		return types2.UpdateTypeDelta, nil
 	default:
 		return "", errors.New("unknown update type")
 	}
@@ -53,7 +53,7 @@ func toDomainTimeStamp(timeStamp *transportpb.TimeStamp) *crdt.Timestamp {
 	}
 }
 
-func fromDomainUpdate(update *types.Update) (*transportpb.Update, error) {
+func fromDomainUpdate(update *types2.Update) (*transportpb.Update, error) {
 	jsonPayload, err := json.Marshal(update.Payload)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func fromDomainUpdate(update *types.Update) (*transportpb.Update, error) {
 	}, nil
 }
 
-func fromDomainUpdates(updates []*types.Update) ([]*transportpb.Update, error) {
+func fromDomainUpdates(updates []*types2.Update) ([]*transportpb.Update, error) {
 	result := make([]*transportpb.Update, 0, len(updates))
 	for _, update := range updates {
 		u, err := fromDomainUpdate(update)
@@ -85,7 +85,7 @@ func fromDomainUpdates(updates []*types.Update) ([]*transportpb.Update, error) {
 	return result, nil
 }
 
-func toDomainUpdate(update *transportpb.Update) (*types.Update, error) {
+func toDomainUpdate(update *transportpb.Update) (*types2.Update, error) {
 
 	delta, err := fabr.DeltaFromBytes(crdt.CRDTType(update.CrdtType), update.Payload)
 	if err != nil {
@@ -97,7 +97,7 @@ func toDomainUpdate(update *transportpb.Update) (*types.Update, error) {
 		return nil, err
 	}
 
-	return &types.Update{
+	return &types2.Update{
 		NodeID: update.NodeId,
 		Key:    update.Key,
 		Range: structs.Range{
@@ -114,7 +114,7 @@ func fromDomainVersions(versions map[string][]structs.Range) map[string]*transpo
 	result := make(map[string]*transportpb.RangeList, len(versions))
 	for k, v := range versions {
 
-		arr := make([]*transportpb.Range, len(v))
+		arr := make([]*transportpb.Range, 0, len(v))
 		for _, r := range v {
 			arr = append(arr, &transportpb.Range{
 				Start: r.Start,
@@ -144,8 +144,8 @@ func toDomainVersions(versions map[string]*transportpb.RangeList) map[string][]s
 	return result
 }
 
-func toDomainUpdates(updates []*transportpb.Update) ([]*types.Update, error) {
-	result := make([]*types.Update, 0, len(updates))
+func toDomainUpdates(updates []*transportpb.Update) ([]*types2.Update, error) {
+	result := make([]*types2.Update, 0, len(updates))
 	for _, update := range updates {
 		u, err := toDomainUpdate(update)
 		if err != nil {

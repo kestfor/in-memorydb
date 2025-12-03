@@ -3,9 +3,9 @@ package grpc
 import (
 	"context"
 	"in-memorydb/pkg/config"
-	"in-memorydb/pkg/storage/transport/grpc/transportpb"
-	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
+	transportpb2 "in-memorydb/pkg/transport/grpc/transportpb"
+	"in-memorydb/pkg/types"
 	"log/slog"
 	"sync"
 
@@ -30,22 +30,23 @@ func NewClientPool() *ClientPool {
 	}
 }
 
-func (p *ClientPool) GetClient(peer string, addr string) (transportpb.UpdatesClient, error) {
+func (p *ClientPool) GetClient(peer string, addr string) (transportpb2.UpdatesClient, error) {
 	p.mu.Lock()
 	conn, ok := p.clients[peer]
 	p.mu.Unlock()
 
 	if ok {
 		if conn.GetState() == connectivity.Ready {
-			return transportpb.NewUpdatesClient(conn), nil
+			return transportpb2.NewUpdatesClient(conn), nil
 		}
 
 		if err := conn.Close(); err != nil {
-			slog.Error("Failed to close client connection", "peer", peer, "addr", addr, "err", err)
+			slog.Error("grpc.Transport: Failed to close client connection", "peer", peer, "addr", addr, "err", err)
 		}
 	}
 
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	maxSize := 1024 * 1024 * 1024 // TODO
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize)))
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +55,7 @@ func (p *ClientPool) GetClient(peer string, addr string) (transportpb.UpdatesCli
 	p.clients[peer] = conn
 	p.mu.Unlock()
 
-	return transportpb.NewUpdatesClient(conn), nil
+	return transportpb2.NewUpdatesClient(conn), nil
 }
 
 func (p *ClientPool) CloseAll() {
@@ -62,7 +63,7 @@ func (p *ClientPool) CloseAll() {
 	defer p.mu.Unlock()
 	for _, conn := range p.clients {
 		if err := conn.Close(); err != nil {
-			slog.Error("Failed to close client connection", "peer", conn.GetState(), "err", err)
+			slog.Error("grpc.Transport: Failed to close client connection", "peer", conn.GetState(), "err", err)
 		}
 	}
 	p.clients = make(map[string]*grpc.ClientConn)
@@ -85,7 +86,7 @@ func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*types.
 		return err
 	}
 
-	_, err = client.Publish(ctx, &transportpb.PublishRequest{Updates: upd})
+	_, err = client.Publish(ctx, &transportpb2.PublishRequest{Updates: upd})
 	return err
 }
 
@@ -95,7 +96,7 @@ func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[stri
 		return nil, err
 	}
 
-	res, err := client.Get(ctx, &transportpb.GetRequest{Versions: fromDomainVersions(versions)})
+	res, err := client.Get(ctx, &transportpb2.GetRequest{Versions: fromDomainVersions(versions)})
 	if err != nil {
 		return nil, err
 	}

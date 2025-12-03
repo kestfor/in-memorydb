@@ -14,6 +14,11 @@ type Config struct {
 	Replication ReplicationConfig `yaml:"replication"`
 	Security    SecurityConfig    `yaml:"security"`
 	Transport   TransportConfig   `yaml:"transport"`
+	TraceConfig TraceConfig       `yaml:"trace"`
+}
+
+type TraceConfig struct {
+	Enable bool `yaml:"enable"`
 }
 
 type TransportConfig struct{}
@@ -34,6 +39,7 @@ type SecurityConfig struct {
 }
 
 type GossipConfig struct {
+	Address               string `yaml:"address"`
 	Port                  int    `yaml:"port"`
 	Protocol              string `yaml:"protocol"`
 	AntiEntropyIntervalMs int    `yaml:"interval"`

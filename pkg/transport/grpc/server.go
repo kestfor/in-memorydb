@@ -2,14 +2,13 @@ package grpc
 
 import (
 	"context"
-	"in-memorydb/pkg/storage/transport/grpc/transportpb"
 	buffer "in-memorydb/pkg/storage/updates_buffer"
 	"in-memorydb/pkg/storage/version_manager"
 	"in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/structs"
+	transportpb "in-memorydb/pkg/transport/grpc/transportpb"
 	"log/slog"
 
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -20,14 +19,11 @@ type updatesServer struct {
 	wal    wal.WAL
 }
 
-func RegisterUpdatesService(server *grpc.Server) {
-	transportpb.RegisterUpdatesServer(server, &updatesServer{})
-}
-
 func NewUpdatesServer(buffer buffer.UpdatesBuffer, wal wal.WAL, vm *version_manager.VersionManager) *updatesServer {
 	return &updatesServer{buffer: buffer, wal: wal, vm: vm}
 }
 
+// Get retrieves the updates for the requested version ranges, using both buffer and WAL as data sources.
 func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest) (*transportpb.GetResponse, error) {
 	missedRanges := request.GetVersions()
 	var result []*transportpb.Update
@@ -50,13 +46,13 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 
 					// fallback for snapshot, currently not supported
 					if err != nil {
-						slog.ErrorContext(ctx, "Error getting update from WAL", "err", err, "fromNodeID", nodeID, "seq", seq)
+						slog.ErrorContext(ctx, "grpc.Get: Error getting update from WAL", "err", err, "fromNodeID", nodeID, "seq", seq)
 						continue
 					}
 
 					pb, err := fromDomainUpdate(upd)
 					if err != nil {
-						slog.ErrorContext(ctx, "Error while converting", "fromNodeID", nodeID, "seq", seq, "walEntry", upd, "err", err)
+						slog.ErrorContext(ctx, "grpc.Get: Error while converting", "fromNodeID", nodeID, "seq", seq, "walEntry", upd, "err", err)
 						continue
 					}
 
@@ -66,7 +62,7 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 			} else {
 				pbs, err := fromDomainUpdates(covering)
 				if err != nil {
-					slog.ErrorContext(ctx, "Error while converting", "fromNodeID", nodeID, "updates", covering, "err", err)
+					slog.ErrorContext(ctx, "grpc.Get: Error while converting", "fromNodeID", nodeID, "updates", covering, "err", err)
 					continue
 				}
 				result = append(result, pbs...)
@@ -74,10 +70,12 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 		}
 	}
 
-	slog.InfoContext(ctx, "Successfully sent requested updates", "count", len(result))
+	slog.InfoContext(ctx, "grpc.Get: Successfully sent requested updates", "count", len(result))
 	return &transportpb.GetResponse{Updates: result}, nil
 }
 
+// Publish receives updates from another peer and updates the local state via versionManager.
+// New updates will be added to buffer and WAL.
 func (s *updatesServer) Publish(ctx context.Context, request *transportpb.PublishRequest) (*emptypb.Empty, error) {
 	domainUpdates, err := toDomainUpdates(request.Updates)
 	if err != nil {
@@ -94,19 +92,20 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 		default:
 		}
 
-		err := s.wal.Append(u)
+		err := s.wal.Append(ctx, u)
 		if err != nil {
-			slog.ErrorContext(ctx, "Error adding update to WAL", "err", err)
+			slog.ErrorContext(ctx, "grpc.Publish: Error adding update to WAL", "err", err)
 			continue
 		}
 	}
 
-	slog.InfoContext(ctx, "Successfully sent published updates", "count", len(applied))
+	slog.InfoContext(ctx, "grpc.Publish: Successfully sent published updates", "count", len(applied))
 	return &emptypb.Empty{}, nil
 }
 
+// GetVersionVector handles the retrieval of the version vector from the version manager and returns it in the response.
 func (s *updatesServer) GetVersionVector(ctx context.Context, request *emptypb.Empty) (*transportpb.GetVersionVectorResponse, error) {
 	versVect := s.vm.VectorClockContiguous()
-	slog.InfoContext(ctx, "Successfully sent version vector", "versionVector", versVect)
+	slog.InfoContext(ctx, "grpc.GetVersionVector: Successfully sent version vector", "versionVector", versVect)
 	return &transportpb.GetVersionVectorResponse{VectorClock: versVect}, nil
 }

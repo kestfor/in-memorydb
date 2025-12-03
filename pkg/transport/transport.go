@@ -2,8 +2,8 @@ package transport
 
 import (
 	"context"
-	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
+	types "in-memorydb/pkg/types"
 )
 
 //go:generate mockgen -source=transport.go -destination=mocks/transport.mock.go Transport

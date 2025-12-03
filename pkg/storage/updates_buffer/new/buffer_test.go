@@ -2,8 +2,8 @@ package buffer
 
 import (
 	mock_crdt "in-memorydb/pkg/crdt/mocks"
-	"in-memorydb/pkg/storage/types"
 	"in-memorydb/pkg/structs"
+	"in-memorydb/pkg/types"
 	"strconv"
 	"testing"
 

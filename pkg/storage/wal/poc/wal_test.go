@@ -1,10 +1,11 @@
 package wal
 
 import (
+	"context"
 	"in-memorydb/pkg/crdt"
-	"in-memorydb/pkg/storage/types"
 	. "in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/structs"
+	types2 "in-memorydb/pkg/types"
 	"os"
 	"strconv"
 	"testing"
@@ -50,14 +51,14 @@ func (s *WALSuite) TestAppendAndGet() {
 
 	for _, tt := range tests {
 
-		u := &types.Update{
+		u := &types2.Update{
 			NodeID:  tt.node,
 			Range:   structs.Range{Start: tt.seq, End: tt.seq},
 			Payload: typedNil,
-			Type:    types.UpdateTypeDelete,
+			Type:    types2.UpdateTypeDelete,
 		}
 
-		err := s.wal.Append(u)
+		err := s.wal.Append(context.Background(), u)
 		require.NoError(s.T(), err)
 	}
 
@@ -70,13 +71,13 @@ func (s *WALSuite) TestAppendAndGet() {
 }
 
 func (s *WALSuite) TestReplay() {
-	_ = s.wal.Append(&types.Update{NodeID: "A", Range: structs.Range{Start: 1, End: 1}, Payload: typedNil, Type: types.UpdateTypeDelete})
-	_ = s.wal.Append(&types.Update{NodeID: "A", Range: structs.Range{Start: 2, End: 2}, Payload: typedNil, Type: types.UpdateTypeDelete})
-	_ = s.wal.Append(&types.Update{NodeID: "A", Range: structs.Range{Start: 3, End: 3}, Payload: typedNil, Type: types.UpdateTypeDelete})
+	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 1, End: 1}, Payload: typedNil, Type: types2.UpdateTypeDelete})
+	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 2, End: 2}, Payload: typedNil, Type: types2.UpdateTypeDelete})
+	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 3, End: 3}, Payload: typedNil, Type: types2.UpdateTypeDelete})
 
 	var seqs []uint64
 
-	err := s.wal.Replay("A", 2, func(u *types.Update) error {
+	err := s.wal.Replay(context.Background(), "A", 2, func(u *types2.Update) error {
 		seqs = append(seqs, u.Range.Start)
 		return nil
 	})
@@ -105,8 +106,8 @@ func BenchmarkAppendSequential(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 
-		u := &types.Update{NodeID: "node-" + strconv.Itoa(i%16), Range: structs.Range{Start: uint64(i), End: uint64(i)}, Payload: typedNil, Type: types.UpdateTypeDelete}
-		if err := w.Append(u); err != nil {
+		u := &types2.Update{NodeID: "node-" + strconv.Itoa(i%16), Range: structs.Range{Start: uint64(i), End: uint64(i)}, Payload: typedNil, Type: types2.UpdateTypeDelete}
+		if err := w.Append(context.Background(), u); err != nil {
 			b.Fatalf("Append: %v", err)
 		}
 	}

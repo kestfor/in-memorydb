@@ -1,12 +1,17 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"in-memorydb/pkg/crdt"
+	"in-memorydb/pkg/observability/tracing"
 	"in-memorydb/pkg/utils"
 	"log/slog"
 	"sync"
 	"sync/atomic"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // есть проблемы с удалением
@@ -56,7 +61,10 @@ func NewEngine(initialShards int, nodeID string) *Engine {
 	return s
 }
 
-func (e *Engine) Get(key string) (*CRDTEntry, bool) {
+func (e *Engine) Get(ctx context.Context, key string) (*CRDTEntry, bool) {
+	_, span := tracing.StartSpan(ctx, "engine.Get", trace.WithAttributes(attribute.String("key", key)))
+	defer span.End()
+
 	shard := e.shardFor(key)
 	shard.mu.RLock()
 	entry, ok := shard.data[key]
@@ -65,13 +73,16 @@ func (e *Engine) Get(key string) (*CRDTEntry, bool) {
 }
 
 // Put inserts or updates a CRDT object associated with the specified key and returns the corresponding timestamp.
-func (e *Engine) Put(key string, obj crdt.CRDT) *crdt.Timestamp {
-	return e.PutWithTimeStamp(key, nil, obj)
+func (e *Engine) Put(ctx context.Context, key string, obj crdt.CRDT) *crdt.Timestamp {
+	return e.PutWithTimeStamp(ctx, key, nil, obj)
 }
 
 // PutWithTimeStamp inserts or updates a CRDT object with an associated timestamp. If no timestamp is provided, generates one.
 // Returns the timestamp used or created for the operation.
-func (e *Engine) PutWithTimeStamp(key string, ts *crdt.Timestamp, obj crdt.CRDT) *crdt.Timestamp {
+func (e *Engine) PutWithTimeStamp(ctx context.Context, key string, ts *crdt.Timestamp, obj crdt.CRDT) *crdt.Timestamp {
+	_, span := tracing.StartSpan(ctx, "engine.PutWithTimeStamp", trace.WithAttributes(attribute.String("key", key)))
+	defer span.End()
+
 	shard := e.shardFor(key)
 
 	shard.mu.Lock()
@@ -100,7 +111,10 @@ func (e *Engine) Clock() *crdt.Time {
 
 // MarkDeleted marks the specified key as deleted by setting its tombstone flag and updates its last modification time.
 // returns true if entry was marked in this call
-func (e *Engine) MarkDeleted(key string) (*CRDTEntry, bool) {
+func (e *Engine) MarkDeleted(ctx context.Context, key string) (*CRDTEntry, bool) {
+	_, span := tracing.StartSpan(ctx, "engine.MarkDeleted", trace.WithAttributes(attribute.String("key", key)))
+	defer span.End()
+
 	shard := e.shardFor(key)
 	shard.mu.Lock()
 	defer shard.mu.Unlock()
@@ -119,7 +133,10 @@ func (e *Engine) MarkDeleted(key string) (*CRDTEntry, bool) {
 
 // Delete deletes key from shard, decrease keys num
 // shouldn't be used, gc of engine exists for this purpose
-func (e *Engine) Delete(key string) {
+func (e *Engine) Delete(ctx context.Context, key string) {
+	_, span := tracing.StartSpan(ctx, "engine.Delete", trace.WithAttributes(attribute.String("key", key)))
+	defer span.End()
+
 	shard := e.shardFor(key)
 	shard.mu.Lock()
 	defer shard.mu.Unlock()
@@ -190,5 +207,5 @@ func (e *Engine) growShards() {
 
 	e.shards.Store(&newArr)
 	e.numShards.Store(newCount)
-	slog.Info(fmt.Sprintf("[store] scaled to %d shards\n", newCount))
+	slog.Info(fmt.Sprintf("engine.growShards: scaled to %d shards\n", newCount))
 }

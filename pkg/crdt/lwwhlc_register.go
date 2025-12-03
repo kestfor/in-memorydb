@@ -17,7 +17,7 @@ func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
 		return fmt.Errorf("cannot merge %T with %T", d, other)
 	}
 
-	if d.TS == nil || d.TS.Before(od.TS) {
+	if d.TS == nil || (od.TS != nil && d.TS.Before(od.TS)) {
 		d.Value = od.Value
 		d.TS = od.TS
 	}
@@ -117,7 +117,7 @@ func (r *LWWHLCRegister) ApplyDelta(delta Delta) error {
 
 	r.clock.SyncWithRemote(d.TS)
 
-	if r.ts == nil || r.ts.Before(d.TS) {
+	if r.ts == nil || (r.ts != nil && r.ts.Before(d.TS)) {
 		r.value = d.Value
 		r.ts = d.TS
 	}
