@@ -23,13 +23,13 @@ const (
 type Config struct {
 
 	// Path specifies the file system location to be used.
-	Path string `yaml:"path"`
+	Path string `yaml:"path" env:"WAL_PATH" default:"./wal"`
 
 	// SegmentThreshold is the number of records after which a new segment is created
-	SegmentThreshold int `yaml:"segment_threshold"`
+	SegmentThreshold int `yaml:"segment_threshold" env:"WAL_SEGMENT_THRESHOLD" default:"1000"`
 
 	// MaxSegments is the maximum number of segments allowed before the oldest segment is deleted
-	MaxSegmentsNum int `yaml:"-"` // TODO add yaml tag after snapshot implementation
+	MaxSegmentsNum int `yaml:"-" default:"100000000"` // TODO add yaml tag after snapshot implementation
 }
 
 type walWrapper struct {

@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"in-memorydb/pkg/config"
 	"in-memorydb/pkg/structs"
 	transportpb2 "in-memorydb/pkg/transport/grpc/transportpb"
 	"in-memorydb/pkg/types"
@@ -14,6 +13,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+type TransportConfig struct{}
 
 type ClientPool struct {
 	mu      sync.Mutex
@@ -69,7 +70,7 @@ func (p *ClientPool) CloseAll() {
 	p.clients = make(map[string]*grpc.ClientConn)
 }
 
-func NewGRPCTransport(config *config.TransportConfig) *GRPCTransport {
+func NewGRPCTransport(config *TransportConfig) *GRPCTransport {
 	return &GRPCTransport{
 		pool: NewClientPool(),
 	}

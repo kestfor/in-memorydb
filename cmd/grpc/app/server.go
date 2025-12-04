@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"in-memorydb/api/lumepb"
-	"in-memorydb/pkg/config"
 	"in-memorydb/pkg/crdt"
 	"in-memorydb/pkg/storage"
 	"log/slog"
@@ -20,7 +19,7 @@ type NodeServer struct {
 	storage *storage.Storage
 }
 
-func NewNodeServer(config *config.Config) (*NodeServer, error) {
+func NewNodeServer(config *storage.Config) (*NodeServer, error) {
 	st, err := storage.NewStorage(config)
 	if err != nil {
 		return nil, err

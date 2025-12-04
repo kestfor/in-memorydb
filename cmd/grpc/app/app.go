@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"in-memorydb/api/lumepb"
-	"in-memorydb/pkg/config"
+	configpkg "in-memorydb/pkg/configx/v2"
 	"in-memorydb/pkg/observability"
 	"in-memorydb/pkg/observability/tracing"
+	config "in-memorydb/pkg/storage"
 	"in-memorydb/pkg/utils/logging"
 	"log/slog"
 	"net"
@@ -23,9 +24,9 @@ func Run(ctx context.Context, configPath *string) {
 		os.Exit(1)
 	}
 
-	cfg, err := config.Read(*configPath)
-	if err != nil {
-		slog.Error("app.Run: load config file error:", err)
+	var cfg config.Config
+	if err := configpkg.Load(*configPath, &cfg); err != nil {
+		slog.Error("app.Run: load config file error:", "err", err)
 		os.Exit(1)
 	}
 
@@ -33,7 +34,7 @@ func Run(ctx context.Context, configPath *string) {
 
 	slog.Info("app.Run: config file loaded successfully", "cfg", cfg)
 
-	nodeServer, err := NewNodeServer(cfg)
+	nodeServer, err := NewNodeServer(&cfg)
 	if err != nil {
 		slog.Error("app.Run: create node server error:", err)
 		os.Exit(1)
@@ -46,7 +47,7 @@ func Run(ctx context.Context, configPath *string) {
 	}
 
 	if cfg.TraceConfig.Enable {
-		err = observability.InitTracer(ctx)
+		err = observability.InitTracerWithEndpoint(ctx, cfg.TraceConfig.Endpoint)
 		if err != nil {
 			slog.Error("app.Run: init tracer error:", err)
 		}

@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
-const defaultEndpoint = "localhost:4318"
 const serviceName = "Lume-db"
 
 var noopProvider = noop.NewTracerProvider()
@@ -21,10 +20,6 @@ var (
 	mu             sync.Mutex
 	tracerProvider trace.TracerProvider = noopProvider
 )
-
-func InitTracer(ctx context.Context) error {
-	return InitTracerWithEndpoint(ctx, defaultEndpoint)
-}
 
 func InitTracerWithEndpoint(ctx context.Context, endpoint string) error {
 	exporter, err := otlptracehttp.New(ctx,

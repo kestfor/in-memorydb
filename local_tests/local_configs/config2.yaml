@@ -1,10 +1,11 @@
 node:
   id: "node2"
-  bind_address: "0.0.0.0"
+  bind_address: "127.0.0.2"
   port: 50051
 seeds:
-  - "node-1"
+  - "127.0.0.1"
 gossip:
+  bind_address: "127.0.0.2"
   port: 50052
   fanout: 3
   interval: 30000
@@ -17,5 +18,3 @@ persistence:
     segment_threshold: 1000
 trace:
   enable: false
-
-# TODO external/client port, gossip port, membership port

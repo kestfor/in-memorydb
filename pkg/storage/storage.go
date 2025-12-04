@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"in-memorydb/pkg/config"
 	"in-memorydb/pkg/crdt"
 	"in-memorydb/pkg/gossip"
 	gossipimpl "in-memorydb/pkg/gossip/gossip"
@@ -13,20 +12,20 @@ import (
 	membershipv1 "in-memorydb/pkg/membership/v1"
 	"in-memorydb/pkg/observability/spans"
 	"in-memorydb/pkg/observability/tracing"
-	engine "in-memorydb/pkg/storage/engine"
+	"in-memorydb/pkg/storage/engine"
 	"in-memorydb/pkg/storage/updates_buffer"
 	bufferimpl "in-memorydb/pkg/storage/updates_buffer/new"
 	"in-memorydb/pkg/storage/version_manager"
 	"in-memorydb/pkg/storage/wal"
 	walimpl "in-memorydb/pkg/storage/wal/poc"
 	"in-memorydb/pkg/structs"
-	grpc2 "in-memorydb/pkg/transport/grpc"
-	types2 "in-memorydb/pkg/types"
+	"in-memorydb/pkg/transport/grpc"
+	"in-memorydb/pkg/types"
 	"log/slog"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-	codes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -40,7 +39,7 @@ type listEl struct {
 }
 
 type Storage struct {
-	config *config.Config // config
+	config *Config // config
 
 	engine     *engine.Engine                  // controls key-value mapping, sharding
 	vm         *version_manager.VersionManager // controls current version of data
@@ -52,17 +51,17 @@ type Storage struct {
 	markedForDelete *list.List
 	markChan        chan listEl
 
-	updatesChan chan<- []*types2.Update
+	updatesChan chan<- []*types.Update
 	shutdown    context.CancelFunc
 }
 
-func NewStorage(config *config.Config) (*Storage, error) {
+func NewStorage(config *Config) (*Storage, error) {
 
 	eng := engine.NewEngine(256, config.Node.ID) // TODO initial shards value from config
 	vm := version_manager.NewVersionManager(config.Node.ID, eng)
-	transport := grpc2.NewGRPCTransport(&config.Transport)
+	transport := grpc.NewGRPCTransport(&config.Transport)
 
-	members, err := membershipv1.New(membershipv1.ConfigFromGlobal(config))
+	members, err := membershipv1.New(globalCfg2Mem(config))
 
 	if err != nil {
 		return nil, err
@@ -256,9 +255,9 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 	// increase sequence num
 	seqNum := s.vm.Advance()
 
-	update := &types2.Update{
+	update := &types.Update{
 		NodeID:    nodeID,
-		Type:      types2.UpdateTypeSet,
+		Type:      types.UpdateTypeSet,
 		TimeStamp: ts,
 		Range:     structs.Range{Start: seqNum, End: seqNum},
 		Key:       key,
@@ -287,9 +286,9 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 
 		seqNum := s.vm.Advance()
 
-		update := &types2.Update{
+		update := &types.Update{
 			NodeID:    s.config.Node.ID,
-			Type:      types2.UpdateTypeDelete,
+			Type:      types.UpdateTypeDelete,
 			TimeStamp: entry.LastUpdated,
 			Range:     structs.Range{Start: seqNum, End: seqNum},
 			Key:       key,
@@ -331,9 +330,9 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 
 		delta := t.Increment(val)
 
-		upd := &types2.Update{
+		upd := &types.Update{
 			NodeID:    s.config.Node.ID,
-			Type:      types2.UpdateTypeDelta,
+			Type:      types.UpdateTypeDelta,
 			TimeStamp: s.engine.Clock().Now(),
 			Payload:   delta,
 			Range:     structs.Range{Start: seqNum, End: seqNum},
@@ -371,9 +370,9 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 		seqNum := s.vm.Advance()
 		delta := t.Decrement(val)
 
-		upd := &types2.Update{
+		upd := &types.Update{
 			NodeID:    s.config.Node.ID,
-			Type:      types2.UpdateTypeDelta,
+			Type:      types.UpdateTypeDelta,
 			TimeStamp: s.engine.Clock().Now(),
 			Payload:   delta,
 			Range:     structs.Range{Start: seqNum, End: seqNum},
@@ -412,9 +411,9 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 
 		delta := t.Write(val)
 
-		upd := &types2.Update{
+		upd := &types.Update{
 			NodeID:    s.config.Node.ID,
-			Type:      types2.UpdateTypeDelta,
+			Type:      types.UpdateTypeDelta,
 			TimeStamp: s.engine.Clock().Now(),
 			Payload:   delta,
 			Range:     structs.Range{Start: seqNum, End: seqNum},

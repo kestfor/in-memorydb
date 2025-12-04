@@ -1,0 +1,20 @@
+node:
+  id: "node2"
+  bind_address: "0.0.0.0"
+  port: 50051
+seeds:
+  - "node-1"
+gossip:
+  bind_address: "0.0.0.0"
+  port: 50052
+  fanout: 3
+  interval: 30000
+  retries: 2
+membership:
+  port: 50053
+persistence:
+  wal:
+    path: ./wal_data
+    segment_threshold: 1000
+trace:
+  enable: false

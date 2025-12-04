@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"in-memorydb/pkg/config"
 	"in-memorydb/pkg/gossip"
 	"in-memorydb/pkg/membership"
 	"in-memorydb/pkg/observability/tracing"
@@ -26,6 +25,15 @@ import (
 	grpcserver "google.golang.org/grpc"
 )
 
+type Config struct {
+	AdvertiseAddress      string `yaml:"bind_address" env:"GOSSIP_BIND_ADDRESS" required:"true"`
+	Port                  uint16 `yaml:"port" env:"GOSSIP_PORT" default:"50052" required:"true"`
+	Protocol              string `yaml:"protocol" env:"GOSSIP_PROTOCOL" default:"SWIM"`
+	AntiEntropyIntervalMs int    `yaml:"interval" env:"GOSSIP_ANT_ENTROPY_INTERVAL" default:"5000"`
+	Fanout                int    `yaml:"fanout" env:"GOSSIP_FANOUT" default:"3"`
+	Retries               int    `yaml:"retries" env:"GOSSIP_RETRIES" default:"3"`
+}
+
 var ErrNoPeers = errors.New("no peers available")
 
 // DefaultGossip implements both client and server for gossip updates.
@@ -36,7 +44,7 @@ var ErrNoPeers = errors.New("no peers available")
 // Server answers to incoming other clients messages
 // Client calls other servers to receive updates
 type DefaultGossip struct {
-	config         *config.GossipConfig
+	config         *Config
 	memberlist     membership.Membership
 	transport      transport.Transport
 	versionManager *version_manager.VersionManager
@@ -47,7 +55,7 @@ type DefaultGossip struct {
 	shutdown       context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
 }
 
-func NewDefaultGossip(config *config.GossipConfig, transport transport.Transport, list membership.Membership, manager *version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
+func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager *version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
 	return &DefaultGossip{
 		config:         config,
 		transport:      transport,
@@ -265,9 +273,9 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 // It registers the updates server, begins serving requests, and monitors the context for shutdown signals.
 // Returns an error if the server fails to start or encounters issues during execution.
 func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", g.config.BindAddress, g.config.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", g.config.AdvertiseAddress, g.config.Port))
 	if err != nil {
-		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.BindAddress, g.config.Port, err)
+		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.AdvertiseAddress, g.config.Port, err)
 	}
 
 	updatesServer := grpc.NewUpdatesServer(g.buffer, g.wal, g.versionManager)
@@ -287,7 +295,7 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 		}
 	}()
 
-	slog.InfoContext(ctx, "gossip.listenUpdates: listening gossip updates", "address", fmt.Sprintf("%s:%d", g.config.BindAddress, g.config.Port))
+	slog.InfoContext(ctx, "gossip.listenUpdates: listening gossip updates", "address", fmt.Sprintf("%s:%d", g.config.AdvertiseAddress, g.config.Port))
 
 	return nil
 }
