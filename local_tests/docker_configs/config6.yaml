@@ -1,9 +1,9 @@
 node:
-  id: "node2"
+  id: "node6"
   bind_address: "0.0.0.0"
   port: 50051
 seeds:
-  - "node-1"
+  - "node-2"
   - "node-3"
 gossip:
   bind_address: "0.0.0.0"
@@ -18,4 +18,5 @@ persistence:
     path: ./wal_data
     segment_threshold: 1000
 trace:
-  enable: false
+  #endpoint: 192.168.56.1:4318
+  #enable: true

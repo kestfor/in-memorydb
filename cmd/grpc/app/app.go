@@ -11,6 +11,8 @@ import (
 	"in-memorydb/pkg/utils/logging"
 	"log/slog"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,6 +25,10 @@ func Run(ctx context.Context, configPath *string) {
 		slog.Error("app.Run: specify a config file path")
 		os.Exit(1)
 	}
+
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 
 	var cfg config.Config
 	if err := configpkg.Load(*configPath, &cfg); err != nil {

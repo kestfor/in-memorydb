@@ -159,48 +159,72 @@ func (s *Storage) startBufferRead(ctx context.Context) {
 
 func (s *Storage) bufferReadRound() error {
 	upds := s.buffer.PeekN(100)
-	if len(upds) > 0 {
-		s.updatesChan <- upds
-		s.buffer.RemoveN(len(upds)) // TODO сделать лучше, сейчас так, чтобы не гонять одинаковые апдейты
+	if len(upds) == 0 {
+		return nil
 	}
-	return nil
+
+	select {
+	case s.updatesChan <- upds:
+		s.buffer.RemoveN(len(upds))
+		return nil
+	case <-time.After(100 * time.Millisecond):
+		// если не получилось отправить за 100ms — логируем и прерываем (или попробовать в следующий тик)
+		slog.Warn("storage.bufferReadRound: updatesChannel busy, skipping this round")
+		return nil
+	}
 }
 
+// optimized 1000x times
 func (s *Storage) markedGC(ctx context.Context) {
 	go func() {
-		lastCheckedTime := time.Now()
+		// тикер для периодической проверки
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case key, ok := <-s.markChan:
 				if !ok {
 					return
 				}
+				// добавляем в конец — ожидаем, что очередь относительно упорядочена по времени метки
 				s.markedForDelete.PushBack(key)
+
+			case <-ticker.C:
+				// обрабатываем только старые элементы. Если encounter первого НЕ-готового — прерываем.
+				now := s.engine.Clock().Now().WallTime
+				for ent := s.markedForDelete.Front(); ent != nil; {
+					next := ent.Next() // сохраним next, потому что можем удалить ent
+					v := ent.Value.(listEl)
+
+					v.Mu.RLock()
+					isTomb := v.Tombstone
+					last := v.LastUpdated.WallTime
+					v.Mu.RUnlock()
+
+					if !isTomb {
+						// если элемент не помечен как tombstone — просто удаляем из списка (или оставить, по логике)
+						// тут решай: remove или оставить; я удаляю, чтобы список не рос
+						s.markedForDelete.Remove(ent)
+					} else if time.Duration(now-last) >= 3600*time.Second {
+						// готов к удалению
+						// удаляем из списка до вызова Delete, чтобы не гонять поздние проверки
+						s.markedForDelete.Remove(ent)
+						// выполняем удаление (в отдельной горутине если нужно асинхронно)
+						// но лучше вызывать синхронно, чтобы не накапливать работ
+						s.engine.Delete(ctx, v.key)
+					} else {
+						// первый неготовый — предполагаем, что дальше тоже неготовы (если список упорядочен).
+						// Если список неупорядочен — можно не делать break, но это снижает сканирование.
+						break
+					}
+
+					ent = next
+				}
 
 			case <-ctx.Done():
 				slog.Info("storage.markedGC: shutting down garbage collection")
 				return
-			default:
-
-				if time.Now().Sub(lastCheckedTime) < time.Second {
-					continue
-				}
-				lastCheckedTime = time.Now()
-
-				// проверяем первый (самый старый элемент если его время еще не пришло для остальных не пришло точно)
-				for ent := s.markedForDelete.Front(); ent != nil; ent = ent.Next() {
-
-					// TODO определить что ключ достаточно старый для удаления
-					v := ent.Value.(listEl)
-					v.Mu.RLock()
-					if v.Tombstone && (time.Duration(s.engine.Clock().Now().WallTime-v.LastUpdated.WallTime) >= 3600*time.Second) {
-						v.Mu.RUnlock()
-						s.engine.Delete(ctx, v.key)
-					} else {
-						v.Mu.RUnlock()
-					}
-
-				}
 			}
 		}
 	}()

@@ -305,7 +305,8 @@ func filterOutSelf(peers []types.Node, ourSelf types.Node) []types.Node {
 	for ind := range peers {
 		if peers[ind].ID() == ourSelf.ID() {
 			peers[ind], peers[n] = peers[n], peers[ind]
+			return peers[:n]
 		}
 	}
-	return peers[:n]
+	return peers
 }
