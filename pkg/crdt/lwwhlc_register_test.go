@@ -3,6 +3,7 @@ package crdt
 import (
 	"encoding/json"
 	"fmt"
+	"in-memorydb/pkg/crdt/hlc"
 	"sync"
 	"testing"
 	"time"
@@ -14,57 +15,57 @@ import (
 func TestCompare(t *testing.T) {
 	tests := []struct {
 		name string
-		a    Timestamp
-		b    Timestamp
+		a    hlc.Timestamp
+		b    hlc.Timestamp
 		want int
 	}{
 		{
 			name: "a walltime < b walltime",
-			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
-			b:    Timestamp{WallTime: 200, Lamport: 3, ID: "node2"},
+			a:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			b:    hlc.Timestamp{WallTime: 200, Lamport: 3, ID: "node2"},
 			want: -1,
 		},
 		{
 			name: "a walltime > b walltime",
-			a:    Timestamp{WallTime: 300, Lamport: 1, ID: "node1"},
-			b:    Timestamp{WallTime: 200, Lamport: 10, ID: "node2"},
+			a:    hlc.Timestamp{WallTime: 300, Lamport: 1, ID: "node1"},
+			b:    hlc.Timestamp{WallTime: 200, Lamport: 10, ID: "node2"},
 			want: 1,
 		},
 		{
 			name: "equal walltime, a lamport < b lamport",
-			a:    Timestamp{WallTime: 100, Lamport: 3, ID: "node1"},
-			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    hlc.Timestamp{WallTime: 100, Lamport: 3, ID: "node1"},
+			b:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: -1,
 		},
 		{
 			name: "equal walltime, a lamport > b lamport",
-			a:    Timestamp{WallTime: 100, Lamport: 7, ID: "node1"},
-			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    hlc.Timestamp{WallTime: 100, Lamport: 7, ID: "node1"},
+			b:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: 1,
 		},
 		{
 			name: "equal walltime and lamport, a ID < b ID",
-			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
-			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			b:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: -1,
 		},
 		{
 			name: "equal walltime and lamport, a ID > b ID",
-			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node3"},
-			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+			a:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node3"},
+			b:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			want: 1,
 		},
 		{
 			name: "completely equal timestamps",
-			a:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
-			b:    Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			a:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
+			b:    hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node1"},
 			want: 0,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := Compare(&tc.a, &tc.b)
+			got := hlc.Compare(&tc.a, &tc.b)
 			if got != tc.want {
 				t.Errorf("Compare(%+v, %+v) = %d, want %d", tc.a, tc.b, got, tc.want)
 			}
@@ -357,7 +358,7 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			name: "valid delta",
 			delta: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"test"`),
-				TS: &Timestamp{
+				TS: &hlc.Timestamp{
 					WallTime: 123456789,
 					Lamport:  5,
 					ID:       "node1",
@@ -369,7 +370,7 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			name: "delta with complex value",
 			delta: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`{"key":"value"}`),
-				TS: &Timestamp{
+				TS: &hlc.Timestamp{
 					WallTime: 987654321,
 					Lamport:  10,
 					ID:       "node2",
@@ -381,7 +382,7 @@ func TestLWWHLCRegisterDelta_JSONSerialization(t *testing.T) {
 			name: "delta with null value",
 			delta: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`null`),
-				TS: &Timestamp{
+				TS: &hlc.Timestamp{
 					WallTime: 111111111,
 					Lamport:  0,
 					ID:       "node3",
@@ -457,11 +458,11 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with newer delta",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"old"`),
-				TS:    &Timestamp{WallTime: 100, Lamport: 1, ID: "node1"},
+				TS:    &hlc.Timestamp{WallTime: 100, Lamport: 1, ID: "node1"},
 			},
 			delta2: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"new"`),
-				TS:    &Timestamp{WallTime: 200, Lamport: 1, ID: "node2"},
+				TS:    &hlc.Timestamp{WallTime: 200, Lamport: 1, ID: "node2"},
 			},
 			wantValue: json.RawMessage(`"new"`),
 			wantErr:   false,
@@ -470,11 +471,11 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with older delta - keep current",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"newer"`),
-				TS:    &Timestamp{WallTime: 300, Lamport: 5, ID: "node1"},
+				TS:    &hlc.Timestamp{WallTime: 300, Lamport: 5, ID: "node1"},
 			},
 			delta2: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"older"`),
-				TS:    &Timestamp{WallTime: 200, Lamport: 3, ID: "node2"},
+				TS:    &hlc.Timestamp{WallTime: 200, Lamport: 3, ID: "node2"},
 			},
 			wantValue: json.RawMessage(`"newer"`),
 			wantErr:   false,
@@ -483,11 +484,11 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with equal walltime, newer lamport",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"first"`),
-				TS:    &Timestamp{WallTime: 100, Lamport: 3, ID: "node1"},
+				TS:    &hlc.Timestamp{WallTime: 100, Lamport: 3, ID: "node1"},
 			},
 			delta2: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"second"`),
-				TS:    &Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
+				TS:    &hlc.Timestamp{WallTime: 100, Lamport: 5, ID: "node2"},
 			},
 			wantValue: json.RawMessage(`"second"`),
 			wantErr:   false,
@@ -496,7 +497,7 @@ func TestLWWHLCRegisterDelta_Merge(t *testing.T) {
 			name: "merge with wrong type",
 			delta1: &LWWHLCRegisterDelta{
 				Value: json.RawMessage(`"value"`),
-				TS:    &Timestamp{WallTime: 100, Lamport: 1, ID: "node1"},
+				TS:    &hlc.Timestamp{WallTime: 100, Lamport: 1, ID: "node1"},
 			},
 			delta2:    nil,
 			wantValue: json.RawMessage(`"value"`),
@@ -648,7 +649,7 @@ func TestLWWHLCRegister_HLCAdvancement(t *testing.T) {
 	d2 := delta2.(*LWWHLCRegisterDelta)
 
 	// The second write should have advanced timestamp
-	cmp := Compare(d1.TS, d2.TS)
+	cmp := hlc.Compare(d1.TS, d2.TS)
 	if cmp >= 0 {
 		t.Errorf("Second write timestamp should be greater than first, got %+v vs %+v", d2.TS, d1.TS)
 	}
@@ -669,7 +670,7 @@ func TestLWWHLCRegister_ClockSyncOnApplyDelta(t *testing.T) {
 	r := NewLWWHLCRegister(nodeID)
 
 	// Create a delta with a future timestamp
-	futureClock := NewHLC("remote-node")
+	futureClock := hlc.NewHLC("remote-node")
 	futureClock.WithOffset(time.Hour) // 1 hour in future
 	futureTS := futureClock.Now()
 

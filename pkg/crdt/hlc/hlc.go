@@ -1,4 +1,4 @@
-package crdt
+package hlc
 
 import (
 	"fmt"
@@ -6,17 +6,14 @@ import (
 	"time"
 )
 
-// Результаты сравнения
 const (
 	Lower   = -1
 	Equal   = 0
 	Greater = 1
 )
 
-// Timestamp — публичная временная метка HLC.
-// WallTime в наносекундах (UnixNano).
 type Timestamp struct {
-	WallTime uint64 `json:"wall_time"`
+	WallTime uint64 `json:"wall_time"` // Наносекунды (UnixNano)
 	Lamport  uint64 `json:"lamport"`
 	ID       string `json:"id"`
 }
@@ -27,6 +24,20 @@ func (t *Timestamp) Copy() *Timestamp {
 		Lamport:  t.Lamport,
 		ID:       t.ID,
 	}
+}
+
+// Time возвращает time.Time из наносекунд
+func (t *Timestamp) Time() time.Time {
+	return time.Unix(0, int64(t.WallTime))
+}
+
+func (t *Timestamp) LamportTime() uint64 {
+	return t.Lamport
+}
+
+// Equal compares the current Timestamp with another Timestamp and returns true if they are equal in WallTime and Lamport values.
+func (t *Timestamp) Equal(another *Timestamp) bool {
+	return t.WallTime == another.WallTime && t.Lamport == another.Lamport
 }
 
 func (t *Timestamp) Before(other *Timestamp) bool { return Compare(t, other) == Lower }
@@ -59,31 +70,25 @@ func Compare(a, b *Timestamp) int {
 	return Equal
 }
 
-// приватная структура состояния, на которую будем держать atomic.Pointer
 type pair struct {
 	wall    uint64
 	logical uint64
 }
 
-// Time — HLC генератор без блокировок (использует atomic.Pointer на pair)
 type Time struct {
 	nodeID string
-	st     atomic.Pointer[pair] // указывает на текущее (wall, logical)
-	offset atomic.Int64         // смещение в наносекундах (для тестов/симуляции)
+	st     atomic.Pointer[pair]
+	offset atomic.Int64
 }
 
-// NewHLC создаёт HLC-генератор для указанного nodeID.
 func NewHLC(nodeID string) *Time {
 	t := &Time{
 		nodeID: nodeID,
 	}
-	// инициализируем состояние (0,0)
 	t.st.Store(&pair{wall: 0, logical: 0})
 	return t
 }
 
-// WithOffset задаёт смещение системного времени (для симуляций / тестов).
-// Принимает time.Duration (можно передать 0).
 func (h *Time) WithOffset(offset time.Duration) *Time {
 	h.offset.Store(int64(offset))
 	return h
@@ -94,16 +99,10 @@ func (h *Time) nowNano() uint64 {
 	return uint64(time.Now().Add(off).UnixNano())
 }
 
-// Now генерирует локальную метку.
-// Алгоритм:
-//   - читаем текущее состояние p
-//   - вычисляем новое состояние newP в соответствии с HLC rules
-//   - пытаемся CAS заменить p -> newP
-//   - при неудаче повторяем
 func (h *Time) Now() *Timestamp {
 	for {
 		now := h.nowNano()
-		p := h.st.Load() // *pair (snapshot)
+		p := h.st.Load()
 
 		lastWall := p.wall
 		logical := p.logical
@@ -113,22 +112,21 @@ func (h *Time) Now() *Timestamp {
 			newPair.wall = now
 			newPair.logical = 0
 		} else {
-			// now <= lastWall
 			newPair.wall = lastWall
 			newPair.logical = logical + 1
 		}
 
-		// CAS: заменяем старый указатель на новый (новая структура)
 		newPtr := &newPair
 		if h.st.CompareAndSwap(p, newPtr) {
-			return &Timestamp{WallTime: newPtr.wall, Lamport: newPtr.logical, ID: h.nodeID}
+			return &Timestamp{
+				WallTime: newPtr.wall,
+				Lamport:  newPtr.logical,
+				ID:       h.nodeID,
+			}
 		}
-		// иначе кто-то другой изменил состояние — повторяем
 	}
 }
 
-// SyncWithRemote сливает удалённую метку remote и возвращает новую локальную метку.
-// remote может быть nil — тогда поведение эквивалентно Now() с учётом now.
 func (h *Time) SyncWithRemote(remote *Timestamp) *Timestamp {
 	for {
 		now := h.nowNano()
@@ -137,7 +135,6 @@ func (h *Time) SyncWithRemote(remote *Timestamp) *Timestamp {
 		lastWall := p.wall
 		logical := p.logical
 
-		// вычисляем новый wall = max(lastWall, now, remote.WallTime)
 		newWall := lastWall
 		if now > newWall {
 			newWall = now
@@ -149,28 +146,27 @@ func (h *Time) SyncWithRemote(remote *Timestamp) *Timestamp {
 		var newLogical uint64
 		switch {
 		case remote != nil && newWall == remote.WallTime && newWall == now:
-			// если равны все три — берём max(localLogical, remote.Lamport) + 1
 			if remote.Lamport >= logical {
 				newLogical = remote.Lamport + 1
 			} else {
 				newLogical = logical + 1
 			}
 		case remote != nil && newWall == remote.WallTime:
-			// remote выиграл -> remote.Lamport + 1
 			newLogical = remote.Lamport + 1
 		case newWall == now && now > lastWall:
-			// локальное физическое время продвинулось -> logical = 0
 			newLogical = 0
 		default:
-			// старый локальный wall остался максимальным -> logical++
 			newLogical = logical + 1
 		}
 
 		newPtr := &pair{wall: newWall, logical: newLogical}
 
 		if h.st.CompareAndSwap(p, newPtr) {
-			return &Timestamp{WallTime: newWall, Lamport: newLogical, ID: h.nodeID}
+			return &Timestamp{
+				WallTime: newWall,
+				Lamport:  newLogical,
+				ID:       h.nodeID,
+			}
 		}
-		// повторяем при неудачном CAS
 	}
 }

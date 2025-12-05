@@ -14,19 +14,19 @@ import (
 
 type updatesServer struct {
 	transportpb.UnimplementedUpdatesServer
-	vm     *version_manager.VersionManager
+	vm     version_manager.VersionManager
 	buffer buffer.UpdatesBuffer
 	wal    wal.WAL
 }
 
-func NewUpdatesServer(buffer buffer.UpdatesBuffer, wal wal.WAL, vm *version_manager.VersionManager) *updatesServer {
+func NewUpdatesServer(buffer buffer.UpdatesBuffer, wal wal.WAL, vm version_manager.VersionManager) *updatesServer {
 	return &updatesServer{buffer: buffer, wal: wal, vm: vm}
 }
 
 // Get retrieves the updates for the requested version ranges, using both buffer and WAL as data sources.
 func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest) (*transportpb.GetResponse, error) {
 	missedRanges := request.GetVersions()
-	var result []*transportpb.Update
+	var result [][]byte
 
 	for nodeID, missedRange := range missedRanges {
 		for _, r := range missedRange.GetRanges() {
@@ -82,7 +82,7 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 		return nil, err
 	}
 
-	applied := s.vm.Update(domainUpdates...)
+	applied := s.vm.Update(ctx, domainUpdates...)
 	s.buffer.Put(applied...)
 	for _, u := range applied {
 

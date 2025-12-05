@@ -4,8 +4,8 @@ import (
 	"hash/fnv"
 )
 
-func HashKey(key string) uint32 {
-	h := fnv.New32a()
+func HashKey(key string) uint64 {
+	h := fnv.New64a()
 	h.Write([]byte(key))
-	return h.Sum32()
+	return h.Sum64()
 }

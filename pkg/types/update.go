@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"in-memorydb/pkg/crdt"
+	"in-memorydb/pkg/crdt/hlc"
 	"in-memorydb/pkg/structs"
 )
 
@@ -31,19 +32,20 @@ type Payload interface {
 }
 
 type Update struct {
-	NodeID    string          `json:"node_id"`
-	Type      UpdateType      `json:"type"`
-	TimeStamp *crdt.Timestamp `json:"time_stamp"`
-	Range     structs.Range   `json:"range"`
-	Key       string          `json:"key"`
-	Payload   crdt.Delta      `json:"payload,omitempty"`
+	NodeID       string         `json:"node_id"`
+	Type         UpdateType     `json:"type"`
+	TimeStamp    *hlc.Timestamp `json:"time_stamp"`     // timestamp of current update
+	SetTimeStamp *hlc.Timestamp `json:"set_time_stamp"` // oldest update's timestamp, associated with same key and type
+	Range        structs.Range  `json:"range"`
+	Key          string         `json:"key"`
+	Payload      crdt.Delta     `json:"payload,omitempty"`
 }
 
 // types for marshaling data
 type alias Update
 type wrapped struct {
 	CRDTType crdt.CRDTType `json:"crdt_type"`
-	alias
+	*alias
 }
 
 func (u *Update) UnmarshalJSON(b []byte) error {
@@ -72,7 +74,7 @@ func (u Update) MarshalJSON() ([]byte, error) {
 	}
 
 	wrapper := wrapped{
-		alias:    (alias)(u),
+		alias:    (*alias)(&u),
 		CRDTType: u.Payload.Type(),
 	}
 	return json.Marshal(wrapper)

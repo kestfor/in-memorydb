@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"container/list"
 	"context"
 	"errors"
 	"fmt"
@@ -13,11 +12,13 @@ import (
 	"in-memorydb/pkg/observability/spans"
 	"in-memorydb/pkg/observability/tracing"
 	"in-memorydb/pkg/storage/engine"
+	enginev1 "in-memorydb/pkg/storage/engine/v1"
 	"in-memorydb/pkg/storage/updates_buffer"
 	bufferimpl "in-memorydb/pkg/storage/updates_buffer/new"
 	"in-memorydb/pkg/storage/version_manager"
+	"in-memorydb/pkg/storage/version_manager/v1"
 	"in-memorydb/pkg/storage/wal"
-	walimpl "in-memorydb/pkg/storage/wal/poc"
+	walimpl "in-memorydb/pkg/storage/wal/v1"
 	"in-memorydb/pkg/structs"
 	"in-memorydb/pkg/transport/grpc"
 	"in-memorydb/pkg/types"
@@ -33,23 +34,15 @@ var ErrInternal = errors.New("internal error")
 
 var fabric = crdt.NewFabric()
 
-type listEl struct {
-	key string
-	*engine.CRDTEntry
-}
-
 type Storage struct {
 	config *Config // config
 
-	engine     *engine.Engine                  // controls key-value mapping, sharding
-	vm         *version_manager.VersionManager // controls current version of data
-	gossip     gossip.Gossip                   // controls data transfer between nodes
-	buffer     updates_buffer.UpdatesBuffer    // for efficient data transfer
-	memberlist membership.Membership           // controls membership
-	wal        wal.WAL                         // write-ahead-log
-
-	markedForDelete *list.List
-	markChan        chan listEl
+	engine     engine.Engine                  // controls key-value mapping, sharding
+	vm         version_manager.VersionManager // controls current version of data
+	gossip     gossip.Gossip                  // controls data transfer between nodes
+	buffer     updates_buffer.UpdatesBuffer   // for efficient data transfer
+	memberlist membership.Membership          // controls membership
+	wal        wal.WAL                        // write-ahead-log
 
 	updatesChan chan<- []*types.Update
 	shutdown    context.CancelFunc
@@ -57,8 +50,8 @@ type Storage struct {
 
 func NewStorage(config *Config) (*Storage, error) {
 
-	eng := engine.NewEngine(256, config.Node.ID) // TODO initial shards value from config
-	vm := version_manager.NewVersionManager(config.Node.ID, eng)
+	eng := enginev1.NewEngine(enginev1.WithNodeID(config.Node.ID)) // TODO initial shards value from config
+	vm := v1.NewVersionManager(config.Node.ID, eng)
 	transport := grpc.NewGRPCTransport(&config.Transport)
 
 	members, err := membershipv1.New(globalCfg2Mem(config))
@@ -75,24 +68,24 @@ func NewStorage(config *Config) (*Storage, error) {
 	buffer := bufferimpl.NewBuffer(1000)                                                          // TODO прокидывание из конфига
 	goss := gossipimpl.NewDefaultGossip(&config.Gossip, transport, members, vm, writeLog, buffer) // TODO choose transport
 
-	marked := list.New()
-
 	return &Storage{
-		config:          config,
-		engine:          eng,
-		gossip:          goss,
-		vm:              vm,
-		memberlist:      members,
-		wal:             writeLog,
-		buffer:          buffer,
-		markedForDelete: marked,
-		markChan:        make(chan listEl, 100), // TODO
+		config:     config,
+		engine:     eng,
+		gossip:     goss,
+		vm:         vm,
+		memberlist: members,
+		wal:        writeLog,
+		buffer:     buffer,
 	}, nil
 }
 
 func (s *Storage) StartUp(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.shutdown = cancel
+
+	if err := s.engine.Start(ctx); err != nil {
+		return err
+	}
 
 	if err := s.restoreFromWAL(ctx); err != nil {
 		return err
@@ -113,8 +106,6 @@ func (s *Storage) StartUp(ctx context.Context) error {
 	}
 
 	s.startBufferRead(ctx)
-	s.markedGC(ctx)
-
 	return nil
 }
 
@@ -134,6 +125,7 @@ func (s *Storage) GracefulStop() error {
 	s.shutdown()
 	_ = s.gossip.Shutdown()
 	_ = s.wal.Close()
+	s.engine.Stop()
 	time.Sleep(time.Second)
 	return nil
 }
@@ -172,62 +164,6 @@ func (s *Storage) bufferReadRound() error {
 		slog.Warn("storage.bufferReadRound: updatesChannel busy, skipping this round")
 		return nil
 	}
-}
-
-// optimized 1000x times
-func (s *Storage) markedGC(ctx context.Context) {
-	go func() {
-		// тикер для периодической проверки
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case key, ok := <-s.markChan:
-				if !ok {
-					return
-				}
-				// добавляем в конец — ожидаем, что очередь относительно упорядочена по времени метки
-				s.markedForDelete.PushBack(key)
-
-			case <-ticker.C:
-				// обрабатываем только старые элементы. Если encounter первого НЕ-готового — прерываем.
-				now := s.engine.Clock().Now().WallTime
-				for ent := s.markedForDelete.Front(); ent != nil; {
-					next := ent.Next() // сохраним next, потому что можем удалить ent
-					v := ent.Value.(listEl)
-
-					v.Mu.RLock()
-					isTomb := v.Tombstone
-					last := v.LastUpdated.WallTime
-					v.Mu.RUnlock()
-
-					if !isTomb {
-						// если элемент не помечен как tombstone — просто удаляем из списка (или оставить, по логике)
-						// тут решай: remove или оставить; я удаляю, чтобы список не рос
-						s.markedForDelete.Remove(ent)
-					} else if time.Duration(now-last) >= 3600*time.Second {
-						// готов к удалению
-						// удаляем из списка до вызова Delete, чтобы не гонять поздние проверки
-						s.markedForDelete.Remove(ent)
-						// выполняем удаление (в отдельной горутине если нужно асинхронно)
-						// но лучше вызывать синхронно, чтобы не накапливать работ
-						s.engine.Delete(ctx, v.key)
-					} else {
-						// первый неготовый — предполагаем, что дальше тоже неготовы (если список упорядочен).
-						// Если список неупорядочен — можно не делать break, но это снижает сканирование.
-						break
-					}
-
-					ent = next
-				}
-
-			case <-ctx.Done():
-				slog.Info("storage.markedGC: shutting down garbage collection")
-				return
-			}
-		}
-	}()
 }
 
 // нужно извлекать значение из crdt типа под мьютексом, отдавать crdt дальше не стоит, хоть они и потоко-безопасны, но от этого наверное нужно избавиться
@@ -274,18 +210,19 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 	// на этом этапе уже можно возвращать результат пользователю, остальное делать в другой горутине (worker pool чтобы не грузить)
 
 	// put value
-	ts := s.engine.Put(ctx, key, val)
+	ts := s.engine.Put(ctx, key, val, nil)
 
 	// increase sequence num
 	seqNum := s.vm.Advance()
 
 	update := &types.Update{
-		NodeID:    nodeID,
-		Type:      types.UpdateTypeSet,
-		TimeStamp: ts,
-		Range:     structs.Range{Start: seqNum, End: seqNum},
-		Key:       key,
-		Payload:   nilDelta, // since there is no data
+		NodeID:       nodeID,
+		Type:         types.UpdateTypeSet,
+		TimeStamp:    ts,
+		SetTimeStamp: ts, // since its set update
+		Range:        structs.Range{Start: seqNum, End: seqNum},
+		Key:          key,
+		Payload:      nilDelta, // since there is no data
 	}
 
 	s.buffer.Put(update)
@@ -304,19 +241,20 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 	ctx, span := tracing.StartSpan(ctx, spans.SpanDeleteKey, trace.WithAttributes(attribute.String("key", key)), trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
-	entry, ok := s.engine.MarkDeleted(ctx, key)
+	entry, ok := s.engine.Delete(ctx, key)
 
 	if ok {
 
 		seqNum := s.vm.Advance()
 
 		update := &types.Update{
-			NodeID:    s.config.Node.ID,
-			Type:      types.UpdateTypeDelete,
-			TimeStamp: entry.LastUpdated,
-			Range:     structs.Range{Start: seqNum, End: seqNum},
-			Key:       key,
-			Payload:   &crdt.PNCounterDelta{}, // since its delete update, no data specified
+			NodeID:       s.config.Node.ID,
+			Type:         types.UpdateTypeDelete,
+			TimeStamp:    entry.SetTimeStamp,
+			SetTimeStamp: entry.SetTimeStamp, // delete action equal to set action for conflict resolving
+			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Key:          key,
+			Payload:      &crdt.PNCounterDelta{}, // since its delete update, no data specified
 		}
 
 		s.buffer.Put(update)
@@ -325,8 +263,6 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 			slog.Error("storage.Delete: cannot append update to wal", "err", err)
 			return false, tracing.RecordError(ctx, ErrInternal)
 		}
-
-		s.markChan <- listEl{key, entry}
 
 	}
 
@@ -355,12 +291,13 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 		delta := t.Increment(val)
 
 		upd := &types.Update{
-			NodeID:    s.config.Node.ID,
-			Type:      types.UpdateTypeDelta,
-			TimeStamp: s.engine.Clock().Now(),
-			Payload:   delta,
-			Range:     structs.Range{Start: seqNum, End: seqNum},
-			Key:       key,
+			NodeID:       s.config.Node.ID,
+			Type:         types.UpdateTypeDelta,
+			TimeStamp:    s.engine.Clock().Now(),
+			SetTimeStamp: entry.SetTimeStamp,
+			Payload:      delta,
+			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Key:          key,
 		}
 
 		if err := s.wal.Append(ctx, upd); err != nil {
@@ -395,12 +332,13 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 		delta := t.Decrement(val)
 
 		upd := &types.Update{
-			NodeID:    s.config.Node.ID,
-			Type:      types.UpdateTypeDelta,
-			TimeStamp: s.engine.Clock().Now(),
-			Payload:   delta,
-			Range:     structs.Range{Start: seqNum, End: seqNum},
-			Key:       key,
+			NodeID:       s.config.Node.ID,
+			Type:         types.UpdateTypeDelta,
+			TimeStamp:    s.engine.Clock().Now(),
+			SetTimeStamp: entry.SetTimeStamp,
+			Payload:      delta,
+			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Key:          key,
 		}
 
 		if err := s.wal.Append(ctx, upd); err != nil {
@@ -436,12 +374,13 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 		delta := t.Write(val)
 
 		upd := &types.Update{
-			NodeID:    s.config.Node.ID,
-			Type:      types.UpdateTypeDelta,
-			TimeStamp: s.engine.Clock().Now(),
-			Payload:   delta,
-			Range:     structs.Range{Start: seqNum, End: seqNum},
-			Key:       key,
+			NodeID:       s.config.Node.ID,
+			Type:         types.UpdateTypeDelta,
+			TimeStamp:    s.engine.Clock().Now(),
+			SetTimeStamp: entry.SetTimeStamp,
+			Payload:      delta,
+			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Key:          key,
 		}
 
 		if err := s.wal.Append(ctx, upd); err != nil {

@@ -9,6 +9,7 @@ import (
 	"in-memorydb/pkg/observability/tracing"
 	buffer "in-memorydb/pkg/storage/updates_buffer"
 	"in-memorydb/pkg/storage/version_manager"
+	"in-memorydb/pkg/storage/version_manager/v1"
 	"in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/structs"
 	"in-memorydb/pkg/transport"
@@ -47,7 +48,7 @@ type DefaultGossip struct {
 	config         *Config
 	memberlist     membership.Membership
 	transport      transport.Transport
-	versionManager *version_manager.VersionManager
+	versionManager version_manager.VersionManager
 	buffer         buffer.UpdatesBuffer
 	wal            wal.WAL
 
@@ -55,7 +56,7 @@ type DefaultGossip struct {
 	shutdown       context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
 }
 
-func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager *version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
+func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager *v1.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
 	return &DefaultGossip{
 		config:         config,
 		transport:      transport,
@@ -243,7 +244,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 
 	diff := g.versionManager.VersionDiff(received.VectorClock)
 	if len(diff) == 0 {
-		slog.DebugContext(ctx, "gossip.antiEntropyRound: No difference with peer found")
+		slog.DebugContext(ctx, "gossip.antiEntropyRound: No difference with peer found", "peer_id", peer.ID())
 		return
 	}
 
@@ -256,9 +257,11 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 		return
 	}
 
+	slog.InfoContext(ctx, "gossip.antiEntropyRound: Successfully pulled requested updates", "received_num", len(updates), "from_peer", peer.ID())
+
 	if len(updates) > 0 {
 		go func() {
-			g.versionManager.Update(updates...)
+			g.versionManager.Update(ctx, updates...)
 			for _, upd := range updates {
 				err := g.wal.Append(ctx, upd)
 				if err != nil {

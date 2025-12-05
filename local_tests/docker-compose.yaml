@@ -1,9 +1,9 @@
 services:
   node-1:
     container_name: node-1
-#    cpus: "2.0"
-#    mem_limit: "1Gb"
-#    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
+    cpus: "2.0"
+    mem_limit: "1Gb"
+    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
     build:
       context: ../
       dockerfile: local_tests/Dockerfile
@@ -17,113 +17,23 @@ services:
     networks:
       - cluster_network
 
-#  node-2:
-#    container_name: node-2
-#    cpus: "2.0"
-#    mem_limit: "1Gb"
-#    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
-#    build:
-#      context: ../
-#      dockerfile: local_tests/Dockerfile
-#    ports:
-#      - "50052:50051"
-#    environment:
-#      - LOG_LEVEL=DEBUG
-#    volumes:
-#      - ./wal_data_2:/wal_data
-#    command: [ "./lume", "--config", "./configs/config2.yaml" ]
-#    networks:
-#      - cluster_network
-#
-#  node-3:
-#    container_name: node-3
-#    cpus: "2.0"
-#    mem_limit: "1Gb"
-#    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
-#    build:
-#      context: ../
-#      dockerfile: local_tests/Dockerfile
-#    ports:
-#      - "50053:50051"
-#    environment:
-#      - LOG_LEVEL=DEBUG
-#    volumes:
-#      - ./wal_data_3:/wal_data
-#    command: [ "./lume", "--config", "./configs/config3.yaml" ]
-#    networks:
-#      - cluster_network
-#
-#  node-4:
-#    container_name: node-4
-#    cpus: "2.0"
-#    mem_limit: "1Gb"
-#    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
-#    build:
-#      context: ../
-#      dockerfile: local_tests/Dockerfile
-#    ports:
-#      - "50054:50051"
-#    environment:
-#      - LOG_LEVEL=DEBUG
-#    volumes:
-#      - ./wal_data_4:/wal_data
-#    command: [ "./lume", "--config", "./configs/config4.yaml" ]
-#    networks:
-#      - cluster_network
-#
-#  node-5:
-#    container_name: node-5
-#    cpus: "2.0"
-#    mem_limit: "1Gb"
-#    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
-#    build:
-#      context: ../
-#      dockerfile: local_tests/Dockerfile
-#    ports:
-#      - "50055:50051"
-#    environment:
-#      - LOG_LEVEL=DEBUG
-#    volumes:
-#      - ./wal_data_5:/wal_data
-#    command: [ "./lume", "--config", "./configs/config5.yaml" ]
-#    networks:
-#      - cluster_network
-#
-#  node-6:
-#    container_name: node-6
-#    cpus: "2.0"
-#    mem_limit: "1Gb"
-#    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
-#    build:
-#      context: ../
-#      dockerfile: local_tests/Dockerfile
-#    ports:
-#      - "50056:50051"
-#    environment:
-#      - LOG_LEVEL=DEBUG
-#    volumes:
-#      - ./wal_data_6:/wal_data
-#    command: [ "./lume", "--config", "./configs/config6.yaml" ]
-#    networks:
-#      - cluster_network
-#
-#  node-7:
-#    container_name: node-7
-#    cpus: "2.0"
-#    mem_limit: "1Gb"
-#    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
-#    build:
-#      context: ../
-#      dockerfile: local_tests/Dockerfile
-#    ports:
-#      - "50057:50051"
-#    environment:
-#      - LOG_LEVEL=DEBUG
-#    volumes:
-#      - ./wal_data_7:/wal_data
-#    command: [ "./lume", "--config", "./configs/config7.yaml" ]
-#    networks:
-#      - cluster_network
+  node-2:
+    container_name: node-2
+    cpus: "2.0"
+    mem_limit: "1Gb"
+    mem_reservation: "512Mb"  # мягкий лимит, контейнер попробует держаться ниже
+    build:
+      context: ../
+      dockerfile: local_tests/Dockerfile
+    ports:
+      - "50052:50051"
+    environment:
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./wal_data_2:/wal_data
+    command: [ "./lume", "--config", "./configs/config2.yaml" ]
+    networks:
+      - cluster_network
 
 
 networks:

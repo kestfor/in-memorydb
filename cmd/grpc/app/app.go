@@ -11,7 +11,6 @@ import (
 	"in-memorydb/pkg/utils/logging"
 	"log/slog"
 	"net"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
@@ -26,9 +25,9 @@ func Run(ctx context.Context, configPath *string) {
 		os.Exit(1)
 	}
 
-	go func() {
-		http.ListenAndServe("localhost:6060", nil)
-	}()
+	//go func() {
+	//	http.ListenAndServe("localhost:6060", nil)
+	//}()
 
 	var cfg config.Config
 	if err := configpkg.Load(*configPath, &cfg); err != nil {

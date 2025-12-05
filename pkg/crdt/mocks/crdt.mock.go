@@ -40,6 +40,21 @@ func (m *MockCRDTFabric) EXPECT() *MockCRDTFabricMockRecorder {
 	return m.recorder
 }
 
+// DeltaFromBytes mocks base method.
+func (m *MockCRDTFabric) DeltaFromBytes(crdtType crdt.CRDTType, bytes []byte) (crdt.Delta, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeltaFromBytes", crdtType, bytes)
+	ret0, _ := ret[0].(crdt.Delta)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeltaFromBytes indicates an expected call of DeltaFromBytes.
+func (mr *MockCRDTFabricMockRecorder) DeltaFromBytes(crdtType, bytes any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeltaFromBytes", reflect.TypeOf((*MockCRDTFabric)(nil).DeltaFromBytes), crdtType, bytes)
+}
+
 // New mocks base method.
 func (m *MockCRDTFabric) New(crdtType crdt.CRDTType, id string) (crdt.CRDT, error) {
 	m.ctrl.T.Helper()
@@ -53,6 +68,21 @@ func (m *MockCRDTFabric) New(crdtType crdt.CRDTType, id string) (crdt.CRDT, erro
 func (mr *MockCRDTFabricMockRecorder) New(crdtType, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockCRDTFabric)(nil).New), crdtType, id)
+}
+
+// NilDelta mocks base method.
+func (m *MockCRDTFabric) NilDelta(crdtType crdt.CRDTType) (crdt.Delta, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NilDelta", crdtType)
+	ret0, _ := ret[0].(crdt.Delta)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NilDelta indicates an expected call of NilDelta.
+func (mr *MockCRDTFabricMockRecorder) NilDelta(crdtType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NilDelta", reflect.TypeOf((*MockCRDTFabric)(nil).NilDelta), crdtType)
 }
 
 // MockCRDT is a mock of CRDT interface.
@@ -148,6 +178,20 @@ func (m *MockCRDT) UnmarshalJSON(data []byte) error {
 func (mr *MockCRDTMockRecorder) UnmarshalJSON(data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnmarshalJSON", reflect.TypeOf((*MockCRDT)(nil).UnmarshalJSON), data)
+}
+
+// Value mocks base method.
+func (m *MockCRDT) Value() any {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Value")
+	ret0, _ := ret[0].(any)
+	return ret0
+}
+
+// Value indicates an expected call of Value.
+func (mr *MockCRDTMockRecorder) Value() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockCRDT)(nil).Value))
 }
 
 // MockDelta is a mock of Delta interface.

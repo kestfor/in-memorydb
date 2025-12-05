@@ -3,12 +3,13 @@ package crdt
 import (
 	"encoding/json"
 	"fmt"
+	"in-memorydb/pkg/crdt/hlc"
 	"sync"
 )
 
 type LWWHLCRegisterDelta struct {
-	Value []byte     `json:"value"`
-	TS    *Timestamp `json:"ts"`
+	Value []byte         `json:"value"`
+	TS    *hlc.Timestamp `json:"ts"`
 }
 
 func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
@@ -69,12 +70,12 @@ type LWWHLCRegister struct {
 	mu    sync.RWMutex
 	id    string
 	value json.RawMessage
-	ts    *Timestamp
-	clock *Time
+	ts    *hlc.Timestamp
+	clock *hlc.Time
 }
 
 func NewLWWHLCRegister(id string) *LWWHLCRegister {
-	clock := NewHLC(id)
+	clock := hlc.NewHLC(id)
 	return &LWWHLCRegister{
 		id:    id,
 		ts:    nil,
@@ -160,7 +161,7 @@ func (r *LWWHLCRegister) MarshalJSON() ([]byte, error) {
 	data := struct {
 		ID        string          `json:"id"`
 		Value     json.RawMessage `json:"value"`
-		Timestamp *Timestamp      `json:"timestamp"`
+		Timestamp *hlc.Timestamp  `json:"timestamp"`
 	}{
 		ID:        r.id,
 		Value:     r.value,
@@ -175,7 +176,7 @@ func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 	var tmp struct {
 		ID        string          `json:"id"`
 		Value     json.RawMessage `json:"value"`
-		Timestamp *Timestamp      `json:"timestamp"`
+		Timestamp *hlc.Timestamp  `json:"timestamp"`
 	}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
@@ -188,7 +189,7 @@ func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 	r.id = tmp.ID
 	r.value = tmp.Value
 	r.ts = tmp.Timestamp
-	r.clock = NewHLC(r.id)
+	r.clock = hlc.NewHLC(r.id)
 
 	if r.ts != nil {
 		r.clock.SyncWithRemote(r.ts)

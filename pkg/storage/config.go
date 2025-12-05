@@ -2,7 +2,7 @@ package storage
 
 import (
 	"in-memorydb/pkg/gossip/gossip"
-	wal "in-memorydb/pkg/storage/wal/poc"
+	"in-memorydb/pkg/storage/wal/v1"
 	transport "in-memorydb/pkg/transport/grpc"
 )
 
