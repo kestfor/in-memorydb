@@ -14,7 +14,7 @@ import (
 	"in-memorydb/pkg/storage/engine"
 	enginev1 "in-memorydb/pkg/storage/engine/v1"
 	"in-memorydb/pkg/storage/updates_buffer"
-	bufferimpl "in-memorydb/pkg/storage/updates_buffer/new"
+	bufferimpl "in-memorydb/pkg/storage/updates_buffer/v2"
 	"in-memorydb/pkg/storage/version_manager"
 	"in-memorydb/pkg/storage/version_manager/v1"
 	"in-memorydb/pkg/storage/wal"

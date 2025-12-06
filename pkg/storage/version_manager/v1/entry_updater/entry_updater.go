@@ -116,7 +116,7 @@ func (eu *EntryUpdater) applyDelta(entry *engine.CRDTEntry, update *types.Update
 			}
 
 			// теперь типы совпадают, можно делать apply заново
-			eu.applyDelta(entry, update)
+			return eu.applyDelta(entry, update)
 
 		}
 

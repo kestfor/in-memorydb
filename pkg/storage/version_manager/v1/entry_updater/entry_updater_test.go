@@ -195,17 +195,20 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaDifferentTypeNewerSetTS() {
 	}
 
 	newCRDT := s.newMockCRDT("register")
+	delta := s.newMockDelta("register")
 	update := &types.Update{
 		Type:         types.UpdateTypeDelta,
 		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
 		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"}, // Newer!
-		Payload:      s.newMockDelta("register"),
+		Payload:      delta,
 	}
 
 	// Должен создать новый CRDT (как Set)
 	s.fabric.EXPECT().
 		New(crdt.CRDTType("register"), "test-node").
 		Return(newCRDT, nil)
+
+	newCRDT.EXPECT().ApplyDelta(delta).Return(nil)
 
 	result := s.updater.ApplyUpdate(entry, update)
 
