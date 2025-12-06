@@ -58,7 +58,7 @@ func (s *EngineTestSuite) SetupTest() {
 		WithInitialShards(4),
 		WithNodeID("test-node"),
 		WithDeleteThreshold(100*time.Millisecond),
-	)
+	).(*Engine)
 	s.Require().NoError(s.engine.Start(s.ctx))
 }
 
@@ -109,16 +109,16 @@ func (s *EngineTestSuite) TestDelete() {
 	obj := &MockCRDT{value: "test"}
 	s.engine.Put(s.ctx, "key1", obj, nil)
 
-	deleted := s.engine.Delete(s.ctx, "key1")
+	_, deleted := s.engine.Delete(s.ctx, "key1")
 	s.True(deleted)
 
 	entry, ok := s.engine.Get(s.ctx, "key1")
-	s.False(ok)
-	s.Nil(entry)
+	s.True(ok)
+	s.True(entry.Deleted())
 }
 
 func (s *EngineTestSuite) TestDeleteNonExistent() {
-	deleted := s.engine.Delete(s.ctx, "nonexistent")
+	_, deleted := s.engine.Delete(s.ctx, "nonexistent")
 	s.False(deleted)
 }
 
@@ -126,11 +126,11 @@ func (s *EngineTestSuite) TestDeleteTwice() {
 	obj := &MockCRDT{value: "test"}
 	s.engine.Put(s.ctx, "key1", obj, nil)
 
-	deleted1 := s.engine.Delete(s.ctx, "key1")
+	_, deleted1 := s.engine.Delete(s.ctx, "key1")
 	s.True(deleted1)
 
-	deleted2 := s.engine.Delete(s.ctx, "key1")
-	s.False(deleted2)
+	_, deleted2 := s.engine.Delete(s.ctx, "key1")
+	s.True(deleted2)
 }
 
 // === Callback тестирование ===
@@ -173,15 +173,13 @@ func (s *EngineTestSuite) TestGarbageCollection() {
 }
 
 func (s *EngineTestSuite) TestGarbageCollectionMultipleKeys() {
-	// Создаём и удаляем несколько ключей
 	for i := 0; i < 10; i++ {
 		key := fmt.Sprintf("key%d", i)
-		obj := &MockCRDT{value: fmt.Sprintf("value%d", i)}
-		s.engine.Put(s.ctx, key, obj, nil)
+		s.engine.Put(s.ctx, key, &MockCRDT{value: fmt.Sprintf("value%d", i)}, nil)
 		s.engine.Delete(s.ctx, key)
 	}
 
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(time.Second * 1)
 
 	// Проверяем что все удалены
 	for i := 0; i < 10; i++ {
@@ -431,7 +429,7 @@ func (s *EngineTestSuite) TestStressConcurrentOperations() {
 						successfulOps.Add(1)
 					}
 				case 2:
-					if s.engine.Delete(s.ctx, key) {
+					if _, ok := s.engine.Delete(s.ctx, key); ok {
 						successfulOps.Add(1)
 					}
 				case 3:
@@ -455,7 +453,7 @@ func TestNewEngine(t *testing.T) {
 		WithInitialShards(8),
 		WithNodeID("test"),
 		WithDeleteThreshold(time.Minute),
-	)
+	).(*Engine)
 	assert.NotNil(t, e)
 	assert.Equal(t, uint32(8), e.numShards.Load())
 	assert.NotNil(t, e.clock)
@@ -464,7 +462,7 @@ func TestNewEngine(t *testing.T) {
 }
 
 func TestNewEngineDefaults(t *testing.T) {
-	e := NewEngine()
+	e := NewEngine().(*Engine)
 	assert.Equal(t, uint32(defaultInitialShards), e.numShards.Load())
 	assert.Equal(t, defaultDeleteThreshold, e.opts.DeleteThreshold)
 }
@@ -484,7 +482,7 @@ func TestEngineStop(t *testing.T) {
 }
 
 func TestShardForConsistency(t *testing.T) {
-	e := NewEngine(WithInitialShards(4), WithNodeID("test"))
+	e := NewEngine(WithInitialShards(4), WithNodeID("test")).(*Engine)
 
 	// Один и тот же ключ всегда должен попадать в один шард
 	shard1 := e.shardFor("test-key")

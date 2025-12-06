@@ -43,7 +43,7 @@ func main() {
 			_, err = client2.Set(ctx, &req)
 		}
 		if err != nil {
-			slog.Error("error setting key: %v", err)
+			slog.Error("error setting key", "err", err)
 		}
 	}
 }

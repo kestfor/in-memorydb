@@ -27,7 +27,7 @@ func (s *WALSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.dir = tmpDir
 
-	w, err := Open(s.dir)
+	w, err := New(Config{tmpDir, 1000, 10000000})
 	s.Require().NoError(err)
 	s.wal = w
 }
@@ -95,7 +95,7 @@ func BenchmarkAppendSequential(b *testing.B) {
 	b.ReportAllocs()
 
 	dir := os.TempDir()
-	w, err := Open(dir)
+	w, err := New(Config{dir, 1000, 10000000})
 	if err != nil {
 		b.Fatalf("Open WAL: %v", err)
 	}

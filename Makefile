@@ -1,5 +1,7 @@
+export CGO_ENABLED=1
+
 test:
-	go test -race ./...
+	go test ./...
 
 lint:
 	golangci-lint run

@@ -36,8 +36,8 @@ func (h *expiryHeap) Peek() (markItem, bool) {
 	return x, true
 }
 
-func newExpiryHeap() expiryHeap {
+func newExpiryHeap() *expiryHeap {
 	h := expiryHeap{}
 	heap.Init(&h)
-	return h
+	return &h
 }

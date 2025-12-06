@@ -11,9 +11,8 @@ package mock_transport
 
 import (
 	context "context"
-	storage "in-memorydb/pkg/storage"
 	structs "in-memorydb/pkg/structs"
-	"in-memorydb/pkg/types"
+	types "in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -44,10 +43,10 @@ func (m *MockTransport) EXPECT() *MockTransportMockRecorder {
 }
 
 // GetVersion mocks base method.
-func (m *MockTransport) GetVersion(ctx context.Context, addr string) (storage.VectorClock, error) {
+func (m *MockTransport) GetVersion(ctx context.Context, addr string) (types.VectorClock, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVersion", ctx, addr)
-	ret0, _ := ret[0].(storage.VectorClock)
+	ret0, _ := ret[0].(types.VectorClock)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

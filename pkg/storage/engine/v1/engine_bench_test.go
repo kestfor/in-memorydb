@@ -211,7 +211,7 @@ func BenchmarkShardFor(b *testing.B) {
 	e := NewEngine(
 		WithInitialShards(256),
 		WithNodeID("bench-node"),
-	)
+	).(*Engine)
 	defer e.Stop()
 
 	keys := make([]string, 1000)
@@ -231,7 +231,7 @@ func BenchmarkShardForConcurrent(b *testing.B) {
 	e := NewEngine(
 		WithInitialShards(256),
 		WithNodeID("bench-node"),
-	)
+	).(*Engine)
 	defer e.Stop()
 
 	keys := make([]string, 1000)

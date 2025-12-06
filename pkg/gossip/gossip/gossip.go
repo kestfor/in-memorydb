@@ -252,7 +252,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	defer cancel()
 	updates, err := g.Pull(withTimeOut, peer, diff)
 	if err != nil {
-		slog.Error("gossip.antiEntropyRound: Error pulling updates", err)
+		slog.Error("gossip.antiEntropyRound: Error pulling updates", "err", err)
 		_ = tracing.RecordError(ctx, err)
 		return
 	}

@@ -34,11 +34,10 @@ type markItem struct {
 }
 
 type Engine struct {
-	nodeID     string
-	shards     atomic.Pointer[[]*shard]
-	numShards  atomic.Uint32
-	growthLock sync.Mutex
-	clock      *hlc.Time
+	nodeID    string
+	shards    atomic.Pointer[[]*shard]
+	numShards atomic.Uint32
+	clock     *hlc.Time
 
 	opts Options
 
@@ -211,9 +210,9 @@ func (e *Engine) DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key
 	sh.mu.Unlock()
 
 	item := markItem{
-		setTimeStamp: ts,
+		setTimeStamp: ts.Copy(),
 		key:          key,
-		expiryAt:     int64(ts.WallTime) + int64(e.opts.DeleteThreshold),
+		expiryAt:     time.Now().UnixNano() + int64(e.opts.DeleteThreshold),
 	}
 
 	select {
@@ -282,10 +281,10 @@ func (e *Engine) runGC(ctx context.Context) {
 
 		case <-ticker.C:
 			// Периодически drain fallback
-			e.drainFallback(&heap)
+			e.drainFallback(heap)
 
 			// Обрабатываем expired items
-			e.processExpiredItems(&heap)
+			e.processExpiredItems(heap)
 		}
 	}
 }
@@ -301,18 +300,18 @@ func (e *Engine) drainFallback(heap *expiryHeap) {
 	e.fallbackMu.Unlock()
 }
 
+// TODO здесь какая-то шиза с кучей происходит, peek и pop смотрят на разные элементы
 func (e *Engine) processExpiredItems(heap *expiryHeap) {
 	currTime := time.Now().UnixNano()
-
+	deletedKeys := structs.NewSet[string]()
 	for {
-		deletedKeys := structs.NewSet[string]()
 
 		item, ok := heap.Peek()
 		if !ok || item.expiryAt > currTime {
 			break
 		}
 
-		heap.Pop()
+		item = heap.Pop().(markItem)
 
 		sh := e.shardFor(item.key)
 		sh.mu.Lock()
@@ -324,6 +323,8 @@ func (e *Engine) processExpiredItems(heap *expiryHeap) {
 		}
 
 		sh.mu.Unlock()
+	}
+	if len(deletedKeys) > 0 {
 		slog.Debug("engine.processExpiredItems: Items processed", "deleted", deletedKeys.Slice())
 	}
 }

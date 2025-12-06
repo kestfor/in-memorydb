@@ -21,7 +21,7 @@ func TestFullLifecycle(t *testing.T) {
 		WithInitialShards(4),
 		WithNodeID("lifecycle-test"),
 		WithDeleteThreshold(50*time.Millisecond),
-	)
+	).(*Engine)
 	ctx := context.Background()
 	_ = e.Start(ctx)
 	defer e.Stop()
@@ -47,13 +47,13 @@ func TestFullLifecycle(t *testing.T) {
 	assert.Equal(t, "updated", entry2.Object.(*MockCRDT).value)
 
 	// 4. Delete
-	deleted := e.Delete(ctx, "test-key")
+	_, deleted := e.Delete(ctx, "test-key")
 	assert.True(t, deleted)
 
 	// 5. Verify tombstone
 	entry3, ok := e.Get(ctx, "test-key")
-	assert.False(t, ok)
-	assert.Nil(t, entry3)
+	assert.True(t, ok)
+	assert.True(t, entry3.Deleted())
 
 	// 6. Wait for GC
 	time.Sleep(200 * time.Millisecond)
@@ -73,7 +73,7 @@ func TestMultiNodeSimulation(t *testing.T) {
 		nodes[i] = NewEngine(
 			WithInitialShards(4),
 			WithNodeID(fmt.Sprintf("node-%d", i)),
-		)
+		).(*Engine)
 		defer nodes[i].Stop()
 	}
 
@@ -139,7 +139,7 @@ func TestGarbageCollectionUnderLoad(t *testing.T) {
 		WithInitialShards(4),
 		WithNodeID("gc-test"),
 		WithDeleteThreshold(50*time.Millisecond),
-	)
+	).(*Engine)
 	ctx := context.Background()
 
 	_ = e.Start(ctx)
@@ -170,7 +170,7 @@ func TestGarbageCollectionUnderLoad(t *testing.T) {
 
 		for i := 0; i < numKeys/2; i++ {
 			key := fmt.Sprintf("key-%d", i)
-			if e.Delete(ctx, key) {
+			if _, ok := e.Delete(ctx, key); ok {
 				deletedKeys.Add(1)
 			}
 			time.Sleep(time.Microsecond * 200)
@@ -304,7 +304,7 @@ func TestEmptyEngineOperations(t *testing.T) {
 	assert.Nil(t, entry)
 
 	// Delete на пустом engine
-	deleted := e.Delete(ctx, "nonexistent")
+	_, deleted := e.Delete(ctx, "nonexistent")
 	assert.False(t, deleted)
 
 	// Проверяем что engine остался в консистентном состоянии
@@ -347,7 +347,7 @@ func TestLargeKeyValues(t *testing.T) {
 	assert.Equal(t, string(longValue), entry.Object.(*MockCRDT).value)
 
 	// Delete
-	deleted := e.Delete(ctx, string(longKey))
+	_, deleted := e.Delete(ctx, string(longKey))
 	assert.True(t, deleted)
 }
 

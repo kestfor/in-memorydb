@@ -11,9 +11,9 @@ package mock_gossip
 
 import (
 	context "context"
-	"in-memorydb/pkg/gossip"
-	storage "in-memorydb/pkg/storage"
-	"in-memorydb/pkg/types"
+	gossip "in-memorydb/pkg/gossip"
+	structs "in-memorydb/pkg/structs"
+	types "in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -58,33 +58,33 @@ func (mr *MockGossipMockRecorder) AsyncSend(ctx, data any) *gomock.Call {
 }
 
 // GetVersionVector mocks base method.
-func (m *MockGossip) GetVersionVector(ctx context.Context) (*gossip.VersionVectorResponse, error) {
+func (m *MockGossip) GetVersionVector(ctx context.Context, peer types.Node) (*gossip.VersionVectorResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetVersionVector", ctx)
+	ret := m.ctrl.Call(m, "GetVersionVector", ctx, peer)
 	ret0, _ := ret[0].(*gossip.VersionVectorResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVersionVector indicates an expected call of GetVersionVector.
-func (mr *MockGossipMockRecorder) GetVersionVector(ctx any) *gomock.Call {
+func (mr *MockGossipMockRecorder) GetVersionVector(ctx, peer any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersionVector", reflect.TypeOf((*MockGossip)(nil).GetVersionVector), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersionVector", reflect.TypeOf((*MockGossip)(nil).GetVersionVector), ctx, peer)
 }
 
 // Pull mocks base method.
-func (m *MockGossip) Pull(ctx context.Context, versions storage.Version) ([]*types.Update, error) {
+func (m *MockGossip) Pull(ctx context.Context, peer types.Node, versions map[string][]structs.Range) ([]*types.Update, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Pull", ctx, versions)
+	ret := m.ctrl.Call(m, "Pull", ctx, peer, versions)
 	ret0, _ := ret[0].([]*types.Update)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Pull indicates an expected call of Pull.
-func (mr *MockGossipMockRecorder) Pull(ctx, versions any) *gomock.Call {
+func (mr *MockGossipMockRecorder) Pull(ctx, peer, versions any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pull", reflect.TypeOf((*MockGossip)(nil).Pull), ctx, versions)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pull", reflect.TypeOf((*MockGossip)(nil).Pull), ctx, peer, versions)
 }
 
 // Send mocks base method.
@@ -101,28 +101,31 @@ func (mr *MockGossipMockRecorder) Send(ctx, data any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockGossip)(nil).Send), ctx, data)
 }
 
-// Start mocks base method.
-func (m *MockGossip) Start() error {
+// Shutdown mocks base method.
+func (m *MockGossip) Shutdown() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start")
+	ret := m.ctrl.Call(m, "Shutdown")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Start indicates an expected call of Start.
-func (mr *MockGossipMockRecorder) Start() *gomock.Call {
+// Shutdown indicates an expected call of Shutdown.
+func (mr *MockGossipMockRecorder) Shutdown() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockGossip)(nil).Start))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockGossip)(nil).Shutdown))
 }
 
-// Stop mocks base method.
-func (m *MockGossip) Stop() {
+// Start mocks base method.
+func (m *MockGossip) Start(ctx context.Context) (chan<- []*types.Update, error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Stop")
+	ret := m.ctrl.Call(m, "Start", ctx)
+	ret0, _ := ret[0].(chan<- []*types.Update)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Stop indicates an expected call of Stop.
-func (mr *MockGossipMockRecorder) Stop() *gomock.Call {
+// Start indicates an expected call of Start.
+func (mr *MockGossipMockRecorder) Start(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockGossip)(nil).Stop))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockGossip)(nil).Start), ctx)
 }

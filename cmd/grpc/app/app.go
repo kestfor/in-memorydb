@@ -41,27 +41,27 @@ func Run(ctx context.Context, configPath *string) {
 
 	nodeServer, err := NewNodeServer(&cfg)
 	if err != nil {
-		slog.Error("app.Run: create node server error:", err)
+		slog.Error("app.Run: create node server error", "err", err)
 		os.Exit(1)
 	}
 
 	err = nodeServer.StartStorage(ctx)
 	if err != nil {
-		slog.Error("app.Run: start storage error:", err)
+		slog.Error("app.Run: start storage error", "err", err)
 		os.Exit(1)
 	}
 
 	if cfg.TraceConfig.Enable {
 		err = observability.InitTracerWithEndpoint(ctx, cfg.TraceConfig.Endpoint)
 		if err != nil {
-			slog.Error("app.Run: init tracer error:", err)
+			slog.Error("app.Run: init tracer error", "err", err)
 		}
 		slog.Info("app.Run: init tracer successfully")
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Node.BindAddress, cfg.Node.Port))
 	if err != nil {
-		slog.Error("app.Run: listen error:", err)
+		slog.Error("app.Run: listen error", "err", err)
 		os.Exit(1)
 	}
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(tracing.UnaryServerInterceptor()))
@@ -69,7 +69,7 @@ func Run(ctx context.Context, configPath *string) {
 
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
-			slog.Error("app.Run: grpc server start error:", err)
+			slog.Error("app.Run: grpc server start error", "err", err)
 			os.Exit(1)
 		}
 	}()
