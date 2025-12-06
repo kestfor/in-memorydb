@@ -14,7 +14,7 @@ membership:
   port: 50053
 persistence:
   wal:
-    path: ./wal_data
+    path: ./wal_data_2
     segment_threshold: 1000
 trace:
   enable: false

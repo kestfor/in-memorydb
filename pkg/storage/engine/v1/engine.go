@@ -170,7 +170,7 @@ func (e *Engine) PutWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key st
 	}
 
 	val.Object = obj
-	val.SetTimeStamp = ts
+	val.SetTimeStamp = ts.Copy()
 	val.Tombstone = false
 
 	if !ok {
@@ -206,13 +206,8 @@ func (e *Engine) DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key
 		return nil, false
 	}
 
-	if ent.Tombstone {
-		sh.mu.Unlock()
-		return ent, false
-	}
-
 	ent.Tombstone = true
-	ent.SetTimeStamp = ts
+	ent.SetTimeStamp = ts.Copy()
 	sh.mu.Unlock()
 
 	item := markItem{
@@ -230,6 +225,46 @@ func (e *Engine) DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key
 		e.fallbackMu.Unlock()
 	}
 	return ent, true
+}
+
+// Update выполняет atomic update entry
+func (e *Engine) Update(ctx context.Context, key string, updateFunc engine.UpdateFunc) (modified bool, err error) {
+	sh := e.shardFor(key)
+	sh.mu.Lock()
+
+	ent, ok := sh.data[key]
+	if !ok {
+		sh.mu.Unlock()
+		return false, nil
+	}
+
+	ent.Mu.Lock()
+	sh.mu.Unlock()
+	defer ent.Mu.Unlock()
+
+	return updateFunc(ctx, ent)
+}
+
+// GetOrCreate получает существующий entry или создаёт новый
+func (e *Engine) GetOrCreate(ctx context.Context, key string, createFunc engine.CreateFunc) (*engine.CRDTEntry, bool, error) {
+	sh := e.shardFor(key)
+	sh.mu.Lock()
+	defer sh.mu.Unlock()
+
+	// Проверяем существование
+	if ent, ok := sh.data[key]; ok && !ent.Tombstone {
+		return ent, false, nil
+	}
+
+	// Создаём новый entry
+	newEntry, err := createFunc(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+
+	sh.data[key] = newEntry
+
+	return newEntry, true, nil
 }
 
 func (e *Engine) runGC(ctx context.Context) {

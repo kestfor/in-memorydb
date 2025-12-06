@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+//go:generate mockgen -source=engine.go -destination=mocks/engine.mock.go Engine
+
 type CRDTEntry struct {
 	Mu           sync.RWMutex
 	Object       crdt.CRDT      // сам CRDT-объект (интерфейс)
@@ -22,6 +24,13 @@ func (e *CRDTEntry) DeletedAt() *hlc.Timestamp {
 	return e.SetTimeStamp
 }
 
+// UpdateFunc - функция для безопасного обновления entry
+// Возвращает true если изменения должны быть сохранены
+type UpdateFunc = func(ctx context.Context, entry *CRDTEntry) (modified bool, err error)
+
+// CreateFunc is a function type that constructs and returns a new CRDTEntry or an error during initialization.
+type CreateFunc = func(ctx context.Context) (*CRDTEntry, error)
+
 type Callback = func(entry *CRDTEntry)
 
 type Engine interface {
@@ -36,4 +45,12 @@ type Engine interface {
 
 	Delete(ctx context.Context, key string) (*CRDTEntry, bool)
 	DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string) (*CRDTEntry, bool)
+
+	// Update выполняет atomic update entry через callback
+	// Возвращает true если entry был модифицирован
+	Update(ctx context.Context, key string, updateFunc UpdateFunc) (modified bool, err error)
+
+	// GetOrCreate получает существующий entry или создаёт новый
+	// CreateFunc вызывается только при создании
+	GetOrCreate(ctx context.Context, key string, createFunc CreateFunc) (*CRDTEntry, bool, error)
 }

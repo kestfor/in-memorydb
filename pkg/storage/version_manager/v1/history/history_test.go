@@ -1,11 +1,10 @@
 package history_test
 
 import (
+	"in-memorydb/pkg/storage/version_manager/v1/history"
 	"in-memorydb/pkg/structs"
 	"reflect"
 	"testing"
-
-	"in-memorydb/pkg/storage/history"
 )
 
 func TestAddAndMerge(t *testing.T) {
