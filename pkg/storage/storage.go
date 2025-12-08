@@ -214,6 +214,7 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 	ts := s.engine.Put(ctx, key, val, nil)
 
 	// increase sequence num
+
 	seqNum := s.vm.Advance()
 
 	update := &types.Update{
@@ -226,7 +227,9 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 		Payload:      nilDelta, // since there is no data
 	}
 
+	_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
 	s.buffer.Put(update)
+	putSpan.End()
 
 	if err = s.wal.Append(ctx, update); err != nil {
 		slog.Error("storage.Put: cannot append update to wal", "err", err)
@@ -306,7 +309,10 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 			_ = tracing.RecordError(ctx, err)
 		}
 
+		_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
 		s.buffer.Put(upd)
+		putSpan.End()
+
 	default:
 		return false, tracing.RecordError(ctx, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object))
 	}
@@ -347,7 +353,10 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 			_ = tracing.RecordError(ctx, err)
 		}
 
+		_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
 		s.buffer.Put(upd)
+		putSpan.End()
+
 	default:
 		return false, tracing.RecordError(ctx, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object))
 	}
@@ -389,10 +398,12 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 			return false, tracing.RecordError(ctx, ErrInternal)
 		}
 
+		_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
 		s.buffer.Put(upd)
+		putSpan.End()
 
 	default:
-		return false, tracing.RecordError(ctx, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object))
+		return false, tracing.RecordError(ctx, fmt.Errorf("unexpected type for set register, expected: crdt.LWWHLCRegister, got: %T", entry.Object))
 	}
 	return true, nil
 }

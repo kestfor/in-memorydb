@@ -74,20 +74,24 @@ func createIndex(nodeID string, seqNum uint64) uint64 {
 }
 
 func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
-	_, span := tracing.StartSpan(ctx, "wal.Append", trace.WithAttributes(attribute.String("node_id", u.NodeID)))
+	ctx, span := tracing.StartSpan(ctx, "wal.Append", trace.WithAttributes(attribute.String("node_id", u.NodeID)))
 	defer span.End()
 
+	_, marshSpan := tracing.StartSpan(ctx, "wal.Append.marshal")
 	bytes, err := json.Marshal(u)
 	if err != nil {
 		return tracing.RecordError(ctx, err)
 	}
+	marshSpan.End()
 
+	_, writeSpan := tracing.StartSpan(ctx, "wal.Append.write", trace.WithAttributes(attribute.Int("write_count", int(u.Range.End-u.Range.Start+1))))
 	for i := u.Range.Start; i <= u.Range.End; i++ {
 		walIndex := createIndex(u.NodeID, i)
 		if err := ww.w.Write(walIndex, u.NodeID, bytes); err != nil {
 			return tracing.RecordError(ctx, err)
 		}
 	}
+	writeSpan.End()
 
 	return nil
 }

@@ -15,6 +15,7 @@ membership:
 persistence:
   wal:
     path: ./wal_data_1
-    segment_threshold: 1000
+    segment_threshold: 10000
 trace:
-  enable: false
+  enable: true
+  endpoint: 192.168.56.1:4318
