@@ -8,7 +8,7 @@ gossip:
   bind_address: "127.0.0.2"
   port: 50052
   fanout: 3
-  interval: 300
+  interval: 10000
   retries: 2
 membership:
   port: 50053

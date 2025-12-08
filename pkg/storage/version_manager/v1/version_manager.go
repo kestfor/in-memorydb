@@ -58,8 +58,8 @@ func (vm *VersionManager) RestoreSeq(nodeID string) {
 
 // Advance увеличивает локальный счетчик обновлений на 1, добавляет в историю
 func (vm *VersionManager) Advance() uint64 {
-	res := vm.seq.Add(1)
 	vm.mu.Lock()
+	res := vm.seq.Add(1)
 	defer vm.mu.Unlock()
 	vm.history.Add(vm.nodeID, res)
 	return res
@@ -312,6 +312,7 @@ func (vm *VersionManager) handleNewEntry(ctx context.Context, update *types.Upda
 // RestoreFromWal iterates through all saved in wal and apply them
 func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error {
 	count := 0
+	localUpdatesNumber := 0
 	vm.mu.Lock()
 	err := wal.ReplayAll(ctx, func(u *types.Update) error {
 
@@ -328,11 +329,12 @@ func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error
 		vm.handleUpdate(ctx, u)
 
 		if u.NodeID == vm.nodeID {
-			vm.Advance()
+			localUpdatesNumber++
 		}
 
 		return nil
 	})
+	vm.seq.Add(uint64(localUpdatesNumber))
 	vm.mu.Unlock()
 
 	if err != nil {

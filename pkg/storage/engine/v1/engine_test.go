@@ -113,8 +113,8 @@ func (s *EngineTestSuite) TestDelete() {
 	s.True(deleted)
 
 	entry, ok := s.engine.Get(s.ctx, "key1")
-	s.True(ok)
-	s.True(entry.Deleted())
+	s.False(ok)
+	s.Nil(entry)
 }
 
 func (s *EngineTestSuite) TestDeleteNonExistent() {

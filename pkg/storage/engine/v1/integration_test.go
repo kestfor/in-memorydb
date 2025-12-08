@@ -52,8 +52,8 @@ func TestFullLifecycle(t *testing.T) {
 
 	// 5. Verify tombstone
 	entry3, ok := e.Get(ctx, "test-key")
-	assert.True(t, ok)
-	assert.True(t, entry3.Deleted())
+	assert.False(t, ok)
+	assert.Nil(t, entry3)
 
 	// 6. Wait for GC
 	time.Sleep(200 * time.Millisecond)

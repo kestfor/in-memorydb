@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"in-memorydb/pkg/gossip"
+	"in-memorydb/pkg/gossip/gossip_buffer"
 	"in-memorydb/pkg/membership"
 	"in-memorydb/pkg/observability/tracing"
 	buffer "in-memorydb/pkg/storage/updates_buffer"
@@ -13,7 +14,7 @@ import (
 	"in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/structs"
 	"in-memorydb/pkg/transport"
-	grpc "in-memorydb/pkg/transport/grpc"
+	"in-memorydb/pkg/transport/grpc"
 	"in-memorydb/pkg/transport/grpc/transportpb"
 	"in-memorydb/pkg/types"
 	"log/slog"
@@ -25,6 +26,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	grpcserver "google.golang.org/grpc"
 )
+
+const maxSendNum = 10000
 
 type Config struct {
 	AdvertiseAddress      string `yaml:"bind_address" env:"GOSSIP_BIND_ADDRESS" required:"true"`
@@ -49,8 +52,10 @@ type DefaultGossip struct {
 	memberlist     membership.Membership
 	transport      transport.Transport
 	versionManager version_manager.VersionManager
-	buffer         buffer.UpdatesBuffer
-	wal            wal.WAL
+	buffer         buffer.UpdatesBuffer // local updates buffer
+
+	gbuffer *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
+	wal     wal.WAL
 
 	updatesChannel chan []*types.Update // channel for clients updates, periodically reads and send data from this channel to other peers
 	shutdown       context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
@@ -64,7 +69,8 @@ func NewDefaultGossip(config *Config, transport transport.Transport, list member
 		versionManager: manager,
 		wal:            wal,
 		buffer:         buffer,
-		updatesChannel: make(chan []*types.Update, 10), // TODO настроить размер
+		gbuffer:        gossip_buffer.NewGossipBuffer(5000), // TODO настроить размер
+		updatesChannel: make(chan []*types.Update, 10),      // TODO настроить размер
 	}
 }
 
@@ -150,6 +156,7 @@ func (g *DefaultGossip) Pull(ctx context.Context, peer types.Node, version map[s
 			return nil, tracing.RecordError(ctx, err)
 		}
 	}
+
 	span.SetAttributes(attribute.String("peer", peer.ID()))
 	updates, err := g.transport.Pull(ctx, peer.GossipAddr().String(), version)
 	if err != nil {
@@ -188,10 +195,20 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 			ctx, span := tracing.StartSpan(ctx, "gossip.readUpdates.goroutine", trace.WithAttributes(attribute.Int("updates_count", len(u))))
 			defer span.End()
 
-			if err := <-g.AsyncSend(ctx, u); err != nil {
-				slog.Warn("gossip.readUpdates: async send failed", "err", err)
+			clusterSize := len(g.memberlist.Members())
+
+			for index := range u {
+				u[index].TTL = getTTLNumForAsync(clusterSize, g.config.Fanout, g.config.AntiEntropyIntervalMs/1000)
+			}
+
+			ttlUpds := g.gbuffer.PeekN(maxSendNum - len(u))
+			u = append(u, ttlUpds...)
+
+			if err := g.Send(ctx, u); err != nil {
+				slog.Warn("gossip.readUpdates: send failed", "err", err)
 				_ = tracing.RecordError(ctx, err)
 			}
+
 		}(updates)
 	}
 }
@@ -281,7 +298,7 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.AdvertiseAddress, g.config.Port, err)
 	}
 
-	updatesServer := grpc.NewUpdatesServer(g.buffer, g.wal, g.versionManager)
+	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager)
 	serv := grpcserver.NewServer()
 	transportpb.RegisterUpdatesServer(serv, updatesServer)
 	go func() {

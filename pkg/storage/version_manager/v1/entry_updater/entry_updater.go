@@ -132,7 +132,11 @@ func (eu *EntryUpdater) applyDelta(entry *engine.CRDTEntry, update *types.Update
 
 	// Если SetTimeStamp update новее - создаём новый объект
 	if update.SetTimeStamp.After(entry.SetTimeStamp) {
-		return eu.applySet(entry, update)
+		res := eu.applySet(entry, update)
+
+		if !res.Applied {
+			return res
+		}
 	}
 
 	// Применяем delta к существующему объекту

@@ -39,6 +39,7 @@ type Update struct {
 	Range        structs.Range  `json:"range"`
 	Key          string         `json:"key"`
 	Payload      crdt.Delta     `json:"payload,omitempty"`
+	TTL          uint8          `json:"ttl"`
 }
 
 // types for marshaling data

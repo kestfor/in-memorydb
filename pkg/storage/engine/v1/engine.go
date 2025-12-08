@@ -147,6 +147,10 @@ func (e *Engine) Get(ctx context.Context, key string) (*engine.CRDTEntry, bool) 
 		return nil, false
 	}
 
+	if entry.Tombstone {
+		return nil, false
+	}
+
 	return entry, true
 }
 

@@ -504,7 +504,8 @@ func TestVersionManagerIntegration(t *testing.T) {
 
 	// Verify deleted
 	entry, ok = eng.Get(ctx, "counter:1")
-	assert.True(t, entry.Deleted()) // marked as delete
+	assert.False(t, ok)  // marked as delete
+	assert.Nil(t, entry) // marked as delete
 }
 
 // TODO добавить тест со сложным кофликт резолвингом
@@ -577,9 +578,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 	applied := vm.Update(ctx, upd1, upd2, upd3, upd4)
 	assert.Len(t, applied, 4)
 	entry, ok := eng.Get(ctx, "key")
-	assert.True(t, ok)
-	assert.NotNil(t, entry)
-	assert.True(t, entry.Deleted())
+	assert.False(t, ok)
+	assert.Nil(t, entry)
 
 	vm.history.Clear("remote-node-1")
 	vm.history.Clear("remote-node-2")
@@ -588,9 +588,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 	applied = vm.Update(ctx, upd3, upd2, upd3, upd4, upd1)
 	assert.Len(t, applied, 4)
 	entry, ok = eng.Get(ctx, "key")
-	assert.True(t, ok)
-	assert.NotNil(t, entry)
-	assert.True(t, entry.Deleted())
+	assert.False(t, ok)
+	assert.Nil(t, entry)
 
 	vm.history.Clear("remote-node-1")
 	vm.history.Clear("remote-node-2")
@@ -599,17 +598,14 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 	applied = vm.Update(ctx, upd4, upd3, upd2, upd1)
 	assert.Len(t, applied, 4)
 	entry, ok = eng.Get(ctx, "key")
-	assert.True(t, ok)
-	assert.NotNil(t, entry)
-	assert.True(t, entry.Deleted())
+	assert.False(t, ok)
+	assert.Nil(t, entry)
 
 	vm.history.Clear("remote-node-1")
 	vm.history.Clear("remote-node-2")
 
 	require.NoError(t, eng.Start(ctx))
 	time.Sleep(time.Second)
-	entry, ok = eng.Get(ctx, "key")
-	assert.False(t, ok)
 	eng.Stop()
 
 	// without delete

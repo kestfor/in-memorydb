@@ -9,6 +9,9 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
   node-2:
@@ -45,8 +48,12 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
+
   node-5:
     container_name: node-5
     build:
@@ -57,6 +64,9 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
   node-6:
@@ -69,6 +79,9 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
   node-7:
@@ -81,6 +94,9 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
   node-8:
@@ -93,6 +109,9 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
   node-9:
@@ -105,6 +124,9 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
   node-10:
@@ -117,128 +139,131 @@ services:
     environment:
       - LOG_LEVEL=DEBUG
     command: [ "./lume", "--config", "./configs/config1.yaml" ]
+    depends_on:
+      - node-2
+      - node-3
     networks:
       - cluster_network
-  node-11:
-    container_name: node-11
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50061:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-12:
-    container_name: node-12
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50062:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-13:
-    container_name: node-13
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50063:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-14:
-    container_name: node-14
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50064:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-15:
-    container_name: node-15
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50065:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-16:
-    container_name: node-16
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50066:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-17:
-    container_name: node-17
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50067:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-18:
-    container_name: node-18
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50068:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-19:
-    container_name: node-19
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50069:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
-  node-20:
-    container_name: node-20
-    build:
-      context: ../
-      dockerfile: local_tests/Dockerfile
-    ports:
-      - "50070:50051"
-    environment:
-      - LOG_LEVEL=DEBUG
-    command: [ "./lume", "--config", "./configs/config1.yaml" ]
-    networks:
-      - cluster_network
+#  node-11:
+#    container_name: node-11
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50061:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-12:
+#    container_name: node-12
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50062:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-13:
+#    container_name: node-13
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50063:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-14:
+#    container_name: node-14
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50064:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-15:
+#    container_name: node-15
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50065:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-16:
+#    container_name: node-16
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50066:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-17:
+#    container_name: node-17
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50067:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-18:
+#    container_name: node-18
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50068:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-19:
+#    container_name: node-19
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50069:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
+#  node-20:
+#    container_name: node-20
+#    build:
+#      context: ../
+#      dockerfile: local_tests/Dockerfile
+#    ports:
+#      - "50070:50051"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#    command: [ "./lume", "--config", "./configs/config1.yaml" ]
+#    networks:
+#      - cluster_network
 
 networks:
   cluster_network:

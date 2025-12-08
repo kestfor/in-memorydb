@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"in-memorydb/pkg/gossip/gossip_buffer"
 	buffer "in-memorydb/pkg/storage/updates_buffer"
 	"in-memorydb/pkg/storage/version_manager"
 	"in-memorydb/pkg/storage/wal"
@@ -12,15 +13,19 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// number of updates that a node can send via one get call
+const maxUpdatesNumber = 10000
+
 type updatesServer struct {
 	transportpb.UnimplementedUpdatesServer
-	vm     version_manager.VersionManager
-	buffer buffer.UpdatesBuffer
-	wal    wal.WAL
+	vm      version_manager.VersionManager
+	buffer  buffer.UpdatesBuffer
+	gbuffer *gossip_buffer.GossipBuffer
+	wal     wal.WAL
 }
 
-func NewUpdatesServer(buffer buffer.UpdatesBuffer, wal wal.WAL, vm version_manager.VersionManager) *updatesServer {
-	return &updatesServer{buffer: buffer, wal: wal, vm: vm}
+func NewUpdatesServer(buffer buffer.UpdatesBuffer, gbuffer *gossip_buffer.GossipBuffer, wal wal.WAL, vm version_manager.VersionManager) *updatesServer {
+	return &updatesServer{buffer: buffer, gbuffer: gbuffer, wal: wal, vm: vm}
 }
 
 // Get retrieves the updates for the requested version ranges, using both buffer and WAL as data sources.
@@ -29,7 +34,16 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 	var result [][]byte
 
 	for nodeID, missedRange := range missedRanges {
+		if len(result) >= maxUpdatesNumber {
+			break
+		}
+
 		for _, r := range missedRange.GetRanges() {
+
+			if len(result) >= maxUpdatesNumber {
+				break
+			}
+
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
@@ -40,7 +54,7 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 
 			// fallback to wal
 			if len(covering) == 0 {
-				for seq := r.Start; seq <= r.End; seq++ {
+				for seq := r.Start; seq <= r.End && len(result) < maxUpdatesNumber; seq++ {
 
 					upd, err := s.wal.Get(nodeID, seq)
 
@@ -70,7 +84,7 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 		}
 	}
 
-	slog.InfoContext(ctx, "grpc.Get: Successfully sent requested updates", "count", len(result))
+	slog.DebugContext(ctx, "grpc.Get: Successfully sent requested updates", "count", len(result))
 	return &transportpb.GetResponse{Updates: result}, nil
 }
 
@@ -82,8 +96,15 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 		return nil, err
 	}
 
+	// saving updates with not zero ttl for epidemic distribution
+	s.gbuffer.AddAndDec(domainUpdates...)
+
+	// applying updates
 	applied := s.vm.Update(ctx, domainUpdates...)
+
+	// saving applied updates for fast search
 	s.buffer.Put(applied...)
+
 	for _, u := range applied {
 
 		select {
@@ -99,14 +120,14 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 		}
 	}
 
-	slog.InfoContext(ctx, "grpc.Publish: Successfully publish updates", "count", len(applied))
+	slog.DebugContext(ctx, "grpc.Publish: Successfully publish updates", "count", len(applied))
 	return &emptypb.Empty{}, nil
 }
 
 // GetVersionVector handles the retrieval of the version vector from the version manager and returns it in the response.
 func (s *updatesServer) GetVersionVector(ctx context.Context, request *emptypb.Empty) (*transportpb.GetVersionVectorResponse, error) {
 	versVect := s.vm.VectorClockContiguous()
-	slog.InfoContext(ctx, "grpc.GetVersionVector: Successfully sent version vector", "versionVector", versVect)
+	slog.DebugContext(ctx, "grpc.GetVersionVector: Successfully sent version vector", "versionVector", versVect)
 	return &transportpb.GetVersionVectorResponse{VectorClock: versVect}, nil
 }
 

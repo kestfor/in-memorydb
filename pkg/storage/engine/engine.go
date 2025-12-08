@@ -37,6 +37,8 @@ type Engine interface {
 	Start(ctx context.Context) error
 	Stop()
 
+	// Get returns entry with specified key, if entry was marked as deleted, but physically present, method should return nil.
+	// For modifying key that still present use Update instead
 	Get(ctx context.Context, key string) (*CRDTEntry, bool)
 	Clock() *hlc.Time
 
