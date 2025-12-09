@@ -445,7 +445,3 @@ make test
 Этот проект распространяется под лицензией MIT.
 
 ---
-
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/kestfor">kestfor</a>
-</p>
