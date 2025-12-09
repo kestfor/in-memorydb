@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
+	"in-memorydb/pkg/observability/spans"
 	"in-memorydb/pkg/observability/tracing"
 	. "in-memorydb/pkg/storage/wal"
 	"in-memorydb/pkg/types"
 
 	"github.com/vadiminshakov/gowal"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -74,17 +76,17 @@ func createIndex(nodeID string, seqNum uint64) uint64 {
 }
 
 func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
-	ctx, span := tracing.StartSpan(ctx, "wal.Append", trace.WithAttributes(attribute.String("node_id", u.NodeID)))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanWALAppend, trace.WithAttributes(attribute.String("node_id", u.NodeID)))
 	defer span.End()
 
-	_, marshSpan := tracing.StartSpan(ctx, "wal.Append.marshal")
+	_, marshSpan := tracing.StartSpan(ctx, spans.SpanWALAppendMarshal)
 	bytes, err := json.Marshal(u)
 	if err != nil {
 		return tracing.RecordError(ctx, err)
 	}
 	marshSpan.End()
 
-	_, writeSpan := tracing.StartSpan(ctx, "wal.Append.write", trace.WithAttributes(attribute.Int("write_count", int(u.Range.End-u.Range.Start+1))))
+	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite, trace.WithAttributes(attribute.Int("write_count", int(u.Range.End-u.Range.Start+1))))
 	for i := u.Range.Start; i <= u.Range.End; i++ {
 		walIndex := createIndex(u.NodeID, i)
 		if err := ww.w.Write(walIndex, u.NodeID, bytes); err != nil {
@@ -93,6 +95,7 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 	}
 	writeSpan.End()
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -114,7 +117,7 @@ func (ww *walWrapper) Get(nodeID string, seq uint64) (*types.Update, error) {
 }
 
 func (ww *walWrapper) Replay(ctx context.Context, nodeID string, fromSeq uint64, fn func(update *types.Update) error) error {
-	_, span := tracing.StartSpan(ctx, "wal.Replay", trace.WithAttributes(attribute.String("node_id", nodeID)))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanWALReplay, trace.WithAttributes(attribute.String("node_id", nodeID)))
 	defer span.End()
 
 	for msg := range ww.w.Iterator() {
@@ -133,11 +136,13 @@ func (ww *walWrapper) Replay(ctx context.Context, nodeID string, fromSeq uint64,
 			}
 		}
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
 func (ww *walWrapper) ReplayAll(ctx context.Context, fn func(update *types.Update) error) error {
-	_, span := tracing.StartSpan(ctx, "wal.ReplayAll")
+	ctx, span := tracing.StartSpan(ctx, spans.SpanWALReplayAll)
 	defer span.End()
 
 	var u types.Update
@@ -150,6 +155,8 @@ func (ww *walWrapper) ReplayAll(ctx context.Context, fn func(update *types.Updat
 			return tracing.RecordError(ctx, fmt.Errorf("WAL.ReplayAll(node: '%s'): %w", msg.Key, err))
 		}
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 

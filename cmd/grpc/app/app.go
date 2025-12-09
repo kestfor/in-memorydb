@@ -64,7 +64,10 @@ func Run(ctx context.Context, configPath *string) {
 		slog.Error("app.Run: listen error", "err", err)
 		os.Exit(1)
 	}
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(tracing.UnaryServerInterceptor()))
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		tracing.UnaryPanicRecoveryInterceptor(),
+		tracing.UnaryServerInterceptor(),
+	))
 	lumepb.RegisterLumeServer(grpcServer, nodeServer)
 
 	go func() {

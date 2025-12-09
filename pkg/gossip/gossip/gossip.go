@@ -7,6 +7,7 @@ import (
 	"in-memorydb/pkg/gossip"
 	"in-memorydb/pkg/gossip/gossip_buffer"
 	"in-memorydb/pkg/membership"
+	"in-memorydb/pkg/observability/spans"
 	"in-memorydb/pkg/observability/tracing"
 	buffer "in-memorydb/pkg/storage/updates_buffer"
 	"in-memorydb/pkg/storage/version_manager"
@@ -23,6 +24,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	grpcserver "google.golang.org/grpc"
 )
@@ -97,7 +99,7 @@ func (g *DefaultGossip) Shutdown() error {
 }
 
 func (g *DefaultGossip) Send(ctx context.Context, data []*types.Update) error {
-	ctx, span := tracing.StartSpan(ctx, "gossip.Send", trace.WithAttributes(attribute.Int("fanout", g.config.Fanout)))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanGossipSend, trace.WithAttributes(attribute.Int("fanout", g.config.Fanout)))
 	defer span.End()
 
 	peers := filterOutSelf(g.memberlist.Members(), g.memberlist.LocalNode())
@@ -120,7 +122,6 @@ func (g *DefaultGossip) Send(ctx context.Context, data []*types.Update) error {
 			err := g.transport.Send(ctx, peer.GossipAddr().String(), data)
 			if err != nil {
 				slog.Warn("gossip.Send: error while sending data to peer", "peer", peer.GossipAddr().String(), "err", err)
-				_ = tracing.RecordError(ctx, err)
 				continue
 			}
 			successNum++
@@ -131,6 +132,7 @@ func (g *DefaultGossip) Send(ctx context.Context, data []*types.Update) error {
 	}
 
 	span.SetAttributes(attribute.Int("peers_contacted", successNum))
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -146,7 +148,7 @@ func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*types.Update) <-c
 
 // TODO добавить возможность указать конкретного peer
 func (g *DefaultGossip) Pull(ctx context.Context, peer types.Node, version map[string][]structs.Range) ([]*types.Update, error) {
-	ctx, span := tracing.StartSpan(ctx, "gossip.Pull", trace.WithAttributes(attribute.String("peer", peer.ID())))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanGossipPull)
 	defer span.End()
 
 	if peer == nil {
@@ -162,6 +164,8 @@ func (g *DefaultGossip) Pull(ctx context.Context, peer types.Node, version map[s
 	if err != nil {
 		return nil, tracing.RecordError(ctx, err)
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return updates, nil
 }
 
@@ -192,7 +196,7 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 		sem <- struct{}{}
 		go func(u []*types.Update) {
 			defer func() { <-sem }()
-			ctx, span := tracing.StartSpan(ctx, "gossip.readUpdates.goroutine", trace.WithAttributes(attribute.Int("updates_count", len(u))))
+			ctx, span := tracing.StartSpan(ctx, spans.SpanGossipReadUpdates, trace.WithAttributes(attribute.Int("updates_count", len(u))))
 			defer span.End()
 
 			clusterSize := len(g.memberlist.Members())
@@ -206,9 +210,10 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 
 			if err := g.Send(ctx, u); err != nil {
 				slog.Warn("gossip.readUpdates: send failed", "err", err)
-				_ = tracing.RecordError(ctx, err)
+				return
 			}
 
+			span.SetStatus(codes.Ok, "")
 		}(updates)
 	}
 }
@@ -239,7 +244,7 @@ func (g *DefaultGossip) runAntiEntropy(ctx context.Context) {
 
 // antiEntropyRound executes an anti-entropy process round, ensuring consistency by syncing updates with a random peer.
 func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
-	ctx, span := tracing.StartSpan(ctx, "gossip.antiEntropyRound", trace.WithAttributes(attribute.String("node_id", g.memberlist.LocalNode().ID())))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanGossipAntiEntropyRound, trace.WithAttributes(attribute.String("node_id", g.memberlist.LocalNode().ID())))
 	defer span.End()
 
 	withTimeOut, cancel := context.WithTimeout(ctx, time.Second*60) // TODO выбрать timeout через конфиг
@@ -255,7 +260,6 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	received, err := g.GetVersionVector(withTimeOut, peer)
 	if err != nil {
 		slog.Error("gossip.antiEntropyRound: anti-entropy failed", "err", err)
-		_ = tracing.RecordError(ctx, err)
 		return
 	}
 
@@ -270,7 +274,6 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	updates, err := g.Pull(withTimeOut, peer, diff)
 	if err != nil {
 		slog.Error("gossip.antiEntropyRound: Error pulling updates", "err", err)
-		_ = tracing.RecordError(ctx, err)
 		return
 	}
 
@@ -287,6 +290,8 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 			}
 		}()
 	}
+
+	span.SetStatus(codes.Ok, "")
 }
 
 // listenUpdates starts a gRPC server to handle gossip updates and listens on the configured address and port.
@@ -299,7 +304,10 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 	}
 
 	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager)
-	serv := grpcserver.NewServer()
+	serv := grpcserver.NewServer(grpcserver.ChainUnaryInterceptor(
+		tracing.UnaryPanicRecoveryInterceptor(),
+		tracing.UnaryServerInterceptor(),
+	))
 	transportpb.RegisterUpdatesServer(serv, updatesServer)
 	go func() {
 		if err := serv.Serve(lis); err != nil {

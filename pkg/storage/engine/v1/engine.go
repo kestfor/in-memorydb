@@ -5,6 +5,7 @@ import (
 	"context"
 	"in-memorydb/pkg/crdt"
 	"in-memorydb/pkg/crdt/hlc"
+	"in-memorydb/pkg/observability/spans"
 	"in-memorydb/pkg/observability/tracing"
 	"in-memorydb/pkg/storage/engine"
 	"in-memorydb/pkg/structs"
@@ -13,9 +14,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 const defaultInitialShards = 256
@@ -135,7 +133,7 @@ func (e *Engine) Stop() {
 }
 
 func (e *Engine) Get(ctx context.Context, key string) (*engine.CRDTEntry, bool) {
-	_, span := tracing.StartSpan(ctx, "engine.Get", trace.WithAttributes(attribute.String("key", key)))
+	_, span := tracing.StartSpan(ctx, spans.SpanEngineGet)
 	defer span.End()
 
 	shard := e.shardFor(key)
@@ -159,7 +157,7 @@ func (e *Engine) Put(ctx context.Context, key string, obj crdt.CRDT, callback en
 }
 
 func (e *Engine) PutWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string, obj crdt.CRDT, callback engine.Callback) *hlc.Timestamp {
-	_, span := tracing.StartSpan(ctx, "engine.PutWithTimeStamp", trace.WithAttributes(attribute.String("key", key)))
+	_, span := tracing.StartSpan(ctx, spans.SpanEnginePutWithTimestamp)
 	defer span.End()
 
 	shard := e.shardFor(key)

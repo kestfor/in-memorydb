@@ -34,6 +34,14 @@ var ErrInternal = errors.New("internal error")
 
 var fabric = crdt.NewFabric()
 
+// bufferPutWithTracing wraps buffer.Put operation with tracing externally
+// since buffer operations are lightweight
+func bufferPutWithTracing(ctx context.Context, buffer updates_buffer.UpdatesBuffer, update *types.Update) {
+	_, span := tracing.StartSpan(ctx, spans.SpanBufferPut)
+	defer span.End()
+	buffer.Put(update)
+}
+
 type Storage struct {
 	config *Config // config
 
@@ -169,7 +177,7 @@ func (s *Storage) bufferReadRound() error {
 
 // нужно извлекать значение из crdt типа под мьютексом, отдавать crdt дальше не стоит, хоть они и потоко-безопасны, но от этого наверное нужно избавиться
 func (s *Storage) Get(ctx context.Context, key string) (val any, t crdt.CRDTType, ok bool) {
-	ctx, span := tracing.StartSpan(ctx, spans.SpanGetKey, trace.WithAttributes(attribute.String("key", key)), trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanGetKey, trace.WithAttributes(attribute.String("key", key)))
 	defer span.End()
 
 	entry, ok := s.engine.Get(ctx, key)
@@ -194,7 +202,7 @@ func (s *Storage) Get(ctx context.Context, key string) (val any, t crdt.CRDTType
 // TODO выбрать в зависимости от политики когда возвращать результат, и что делать асинхронно
 // сейчас для тестов ответ приходит после всех операций
 func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
-	ctx, span := tracing.StartSpan(ctx, spans.SpanSetKey, trace.WithAttributes(attribute.String("key", key), attribute.String("type", t.String())), trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanSetKey, trace.WithAttributes(attribute.String("key", key), attribute.String("type", t.String())))
 	defer span.End()
 
 	nodeID := s.config.Node.ID
@@ -227,13 +235,12 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 		Payload:      nilDelta, // since there is no data
 	}
 
-	_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
-	s.buffer.Put(update)
-	putSpan.End()
+	// Buffer operation is lightweight, trace externally
+	bufferPutWithTracing(ctx, s.buffer, update)
 
 	if err = s.wal.Append(ctx, update); err != nil {
 		slog.Error("storage.Put: cannot append update to wal", "err", err)
-		return tracing.RecordError(ctx, ErrInternal)
+		return ErrInternal
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -243,7 +250,7 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 
 // TODO можно ускорить не дожидаясь ответа
 func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
-	ctx, span := tracing.StartSpan(ctx, spans.SpanDeleteKey, trace.WithAttributes(attribute.String("key", key)), trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := tracing.StartSpan(ctx, spans.SpanDeleteKey, trace.WithAttributes(attribute.String("key", key)))
 	defer span.End()
 	entry, ok := s.engine.Delete(ctx, key)
 
@@ -261,15 +268,16 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 			Payload:      &crdt.PNCounterDelta{}, // since its delete update, no data specified
 		}
 
-		s.buffer.Put(update)
+		bufferPutWithTracing(ctx, s.buffer, update)
 
 		if err := s.wal.Append(ctx, update); err != nil {
 			slog.Error("storage.Delete: cannot append update to wal", "err", err)
-			return false, tracing.RecordError(ctx, ErrInternal)
+			return false, ErrInternal
 		}
 
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return ok, nil
 }
 
@@ -306,17 +314,17 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 
 		if err := s.wal.Append(ctx, upd); err != nil {
 			slog.Error("storage.ApplyInc: cannot append update to wal", "err", err)
-			_ = tracing.RecordError(ctx, err)
+			return false, err
 		}
 
-		_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
-		s.buffer.Put(upd)
-		putSpan.End()
+		bufferPutWithTracing(ctx, s.buffer, upd)
 
 	default:
-		return false, tracing.RecordError(ctx, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object))
+		err := fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object)
+		return false, err
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return true, nil
 }
 
@@ -349,17 +357,18 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 		}
 
 		if err := s.wal.Append(ctx, upd); err != nil {
-			slog.Error("storage.ApplyDec: cannot append update to wal", "err", err)
-			_ = tracing.RecordError(ctx, err)
+			slog.Error("storage.ApplySetRegister: cannot append update to wal", "err", err) // TODO в этом случае нужно делать декремент seq_num, но такой ситуации не должно быть
+			return false, ErrInternal
 		}
 
-		_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
-		s.buffer.Put(upd)
-		putSpan.End()
+		bufferPutWithTracing(ctx, s.buffer, upd)
 
 	default:
-		return false, tracing.RecordError(ctx, fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object))
+		err := fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object)
+		return false, err
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return true, nil
 }
 
@@ -394,16 +403,17 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 		}
 
 		if err := s.wal.Append(ctx, upd); err != nil {
-			slog.Error("storage.ApplySetRegister: cannot append update to wal", "err", err) // TODO в этом случае нужно делать декремент seq_num, но такой ситуации не должно быть
-			return false, tracing.RecordError(ctx, ErrInternal)
+			slog.Error("storage.ApplySetRegister: cannot append update to wal", "err", err)
+			return false, ErrInternal
 		}
 
-		_, putSpan := tracing.StartSpan(ctx, "updates_buffer.put")
-		s.buffer.Put(upd)
-		putSpan.End()
+		bufferPutWithTracing(ctx, s.buffer, upd)
 
 	default:
-		return false, tracing.RecordError(ctx, fmt.Errorf("unexpected type for set register, expected: crdt.LWWHLCRegister, got: %T", entry.Object))
+		err := fmt.Errorf("unexpected type for set register, expected: crdt.LWWHLCRegister, got: %T", entry.Object)
+		return false, err
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return true, nil
 }
