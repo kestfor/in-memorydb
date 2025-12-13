@@ -2,12 +2,12 @@ package grpc
 
 import (
 	"context"
-	"github/kestfor/in-memorydb/pkg/gossip/gossip_buffer"
-	buffer "github/kestfor/in-memorydb/pkg/storage/updates_buffer"
-	"github/kestfor/in-memorydb/pkg/storage/version_manager"
-	"github/kestfor/in-memorydb/pkg/storage/wal"
-	"github/kestfor/in-memorydb/pkg/structs"
-	"github/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
+	"github.com/kestfor/in-memorydb/pkg/gossip/gossip_buffer"
+	buffer "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
+	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
+	"github.com/kestfor/in-memorydb/pkg/storage/wal"
+	"github.com/kestfor/in-memorydb/pkg/structs"
+	"github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
 	"log/slog"
 
 	"google.golang.org/protobuf/types/known/emptypb"

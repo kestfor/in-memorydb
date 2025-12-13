@@ -1,7 +1,7 @@
 package structs_test
 
 import (
-	"github/kestfor/in-memorydb/pkg/structs"
+	"github.com/kestfor/in-memorydb/pkg/structs"
 	"testing"
 )
 

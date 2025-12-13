@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"github/kestfor/in-memorydb/pkg/membership/testsuite"
-	"github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/membership/testsuite"
+	"github.com/kestfor/in-memorydb/pkg/types"
 	"testing"
 	"time"
 

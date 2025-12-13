@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github/kestfor/in-memorydb/api/lumepb"
+	"github.com/kestfor/in-memorydb/api/lumepb"
 	"log"
 	"strconv"
 	"sync"

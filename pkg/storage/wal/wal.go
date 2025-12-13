@@ -3,7 +3,7 @@ package wal
 import (
 	"context"
 	"errors"
-	"github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/types"
 )
 
 var ErrNotFound = errors.New("not found")

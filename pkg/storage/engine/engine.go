@@ -2,8 +2,8 @@ package engine
 
 import (
 	"context"
-	"github/kestfor/in-memorydb/pkg/crdt"
-	"github/kestfor/in-memorydb/pkg/crdt/hlc"
+	"github.com/kestfor/in-memorydb/pkg/crdt"
+	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
 	"sync"
 )
 

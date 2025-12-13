@@ -11,9 +11,9 @@ package mock_gossip
 
 import (
 	context "context"
-	gossip "github/kestfor/in-memorydb/pkg/gossip"
-	structs "github/kestfor/in-memorydb/pkg/structs"
-	types "github/kestfor/in-memorydb/pkg/types"
+	gossip "github.com/kestfor/in-memorydb/pkg/gossip"
+	structs "github.com/kestfor/in-memorydb/pkg/structs"
+	types "github.com/kestfor/in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

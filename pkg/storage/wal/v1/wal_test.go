@@ -2,10 +2,10 @@ package wal
 
 import (
 	"context"
-	"github/kestfor/in-memorydb/pkg/crdt"
-	. "github/kestfor/in-memorydb/pkg/storage/wal"
-	"github/kestfor/in-memorydb/pkg/structs"
-	types2 "github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/crdt"
+	. "github.com/kestfor/in-memorydb/pkg/storage/wal"
+	"github.com/kestfor/in-memorydb/pkg/structs"
+	types2 "github.com/kestfor/in-memorydb/pkg/types"
 	"os"
 	"strconv"
 	"testing"

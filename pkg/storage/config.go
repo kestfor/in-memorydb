@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"github/kestfor/in-memorydb/pkg/gossip/gossip"
-	"github/kestfor/in-memorydb/pkg/storage/wal/v1"
-	transport "github/kestfor/in-memorydb/pkg/transport/grpc"
+	"github.com/kestfor/in-memorydb/pkg/gossip/gossip"
+	"github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
+	transport "github.com/kestfor/in-memorydb/pkg/transport/grpc"
 )
 
 type Config struct {

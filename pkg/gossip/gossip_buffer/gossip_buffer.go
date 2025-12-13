@@ -1,8 +1,8 @@
 package gossip_buffer
 
 import (
-	"github/kestfor/in-memorydb/pkg/structs"
-	"github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/structs"
+	"github.com/kestfor/in-memorydb/pkg/types"
 	"sync"
 )
 

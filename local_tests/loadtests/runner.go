@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github/kestfor/in-memorydb/api/lumepb"
+	pb "github.com/kestfor/in-memorydb/api/lumepb"
 
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"

@@ -11,9 +11,9 @@ package mock_engine
 
 import (
 	context "context"
-	crdt "github/kestfor/in-memorydb/pkg/crdt"
-	hlc "github/kestfor/in-memorydb/pkg/crdt/hlc"
-	engine "github/kestfor/in-memorydb/pkg/storage/engine"
+	crdt "github.com/kestfor/in-memorydb/pkg/crdt"
+	hlc "github.com/kestfor/in-memorydb/pkg/crdt/hlc"
+	engine "github.com/kestfor/in-memorydb/pkg/storage/engine"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

@@ -3,8 +3,8 @@ package app
 import (
 	"encoding/json"
 	"errors"
-	"github/kestfor/in-memorydb/api/lumepb"
-	"github/kestfor/in-memorydb/pkg/crdt"
+	"github.com/kestfor/in-memorydb/api/lumepb"
+	"github.com/kestfor/in-memorydb/pkg/crdt"
 )
 
 var ErrUnsupportedType = errors.New("unsupported CRDT type")

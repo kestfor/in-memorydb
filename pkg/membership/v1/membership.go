@@ -2,8 +2,8 @@ package v1
 
 import (
 	"encoding/binary"
-	"github/kestfor/in-memorydb/pkg/membership"
-	"github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/membership"
+	"github.com/kestfor/in-memorydb/pkg/types"
 	"time"
 
 	"github.com/hashicorp/memberlist"

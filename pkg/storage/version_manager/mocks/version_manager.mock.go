@@ -11,9 +11,9 @@ package mock_version_manager
 
 import (
 	context "context"
-	wal "github/kestfor/in-memorydb/pkg/storage/wal"
-	structs "github/kestfor/in-memorydb/pkg/structs"
-	types "github/kestfor/in-memorydb/pkg/types"
+	wal "github.com/kestfor/in-memorydb/pkg/storage/wal"
+	structs "github.com/kestfor/in-memorydb/pkg/structs"
+	types "github.com/kestfor/in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
