@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"in-memorydb/cmd/grpc/app"
+	"github/kestfor/in-memorydb/cmd/grpc/app"
 )
 
 func main() {

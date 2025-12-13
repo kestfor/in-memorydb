@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	lt "in-memorydb/local_tests/loadtests"
+	lt "github/kestfor/in-memorydb/local_tests/loadtests"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"

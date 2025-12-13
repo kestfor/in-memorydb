@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"in-memorydb/pkg/structs"
-	"in-memorydb/pkg/transport/grpc/transportpb"
-	"in-memorydb/pkg/types"
+	"github/kestfor/in-memorydb/pkg/structs"
+	"github/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
+	"github/kestfor/in-memorydb/pkg/types"
 )
 
 var ErrCannotConvert = errors.New("cannot convert to transport data")

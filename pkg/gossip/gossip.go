@@ -2,8 +2,8 @@ package gossip
 
 import (
 	"context"
-	"in-memorydb/pkg/structs"
-	types "in-memorydb/pkg/types"
+	"github/kestfor/in-memorydb/pkg/structs"
+	types "github/kestfor/in-memorydb/pkg/types"
 )
 
 //go:generate mockgen -source=gossip.go -destination=mocks/gossip.mock.go Gossip

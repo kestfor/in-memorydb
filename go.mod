@@ -1,4 +1,4 @@
-module github.com/kestfor/in-memorydb
+module github/kestfor/in-memorydb
 
 go 1.24.0
 

@@ -2,9 +2,9 @@ package grpc
 
 import (
 	"context"
-	"in-memorydb/pkg/structs"
-	transportpb2 "in-memorydb/pkg/transport/grpc/transportpb"
-	"in-memorydb/pkg/types"
+	"github/kestfor/in-memorydb/pkg/structs"
+	transportpb2 "github/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
+	"github/kestfor/in-memorydb/pkg/types"
 	"log/slog"
 	"sync"
 

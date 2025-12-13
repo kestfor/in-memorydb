@@ -1,8 +1,8 @@
 package updates_buffer
 
 import (
-	"in-memorydb/pkg/structs"
-	"in-memorydb/pkg/types"
+	"github/kestfor/in-memorydb/pkg/structs"
+	"github/kestfor/in-memorydb/pkg/types"
 )
 
 //go:generate mockgen -source=updates_buffer.go -destination=mocks/buffer.mock.go UpdatesBuffer

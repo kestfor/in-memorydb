@@ -1,8 +1,8 @@
 package history_test
 
 import (
-	"in-memorydb/pkg/storage/version_manager/v1/history"
-	"in-memorydb/pkg/structs"
+	"github/kestfor/in-memorydb/pkg/storage/version_manager/v1/history"
+	"github/kestfor/in-memorydb/pkg/structs"
 	"reflect"
 	"testing"
 )

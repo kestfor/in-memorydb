@@ -10,7 +10,7 @@
 package mock_crdt
 
 import (
-	crdt "in-memorydb/pkg/crdt"
+	crdt "github/kestfor/in-memorydb/pkg/crdt"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

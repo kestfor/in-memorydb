@@ -2,9 +2,9 @@ package entry_updater
 
 import (
 	"errors"
-	"in-memorydb/pkg/crdt"
-	"in-memorydb/pkg/storage/engine"
-	"in-memorydb/pkg/types"
+	"github/kestfor/in-memorydb/pkg/crdt"
+	"github/kestfor/in-memorydb/pkg/storage/engine"
+	"github/kestfor/in-memorydb/pkg/types"
 	"log/slog"
 )
 

@@ -2,7 +2,7 @@ package tracing
 
 import (
 	"context"
-	"in-memorydb/pkg/observability"
+	"github/kestfor/in-memorydb/pkg/observability"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"

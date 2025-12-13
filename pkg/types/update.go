@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"in-memorydb/pkg/crdt"
-	"in-memorydb/pkg/crdt/hlc"
-	"in-memorydb/pkg/structs"
+	"github/kestfor/in-memorydb/pkg/crdt"
+	"github/kestfor/in-memorydb/pkg/crdt/hlc"
+	"github/kestfor/in-memorydb/pkg/structs"
 )
 
 //go:generate go-enum --marshal --nocase

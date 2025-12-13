@@ -11,8 +11,8 @@ package mock_transport
 
 import (
 	context "context"
-	structs "in-memorydb/pkg/structs"
-	types "in-memorydb/pkg/types"
+	structs "github/kestfor/in-memorydb/pkg/structs"
+	types "github/kestfor/in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

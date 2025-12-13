@@ -1,9 +1,9 @@
 package buffer
 
 import (
-	mock_crdt "in-memorydb/pkg/crdt/mocks"
-	"in-memorydb/pkg/structs"
-	"in-memorydb/pkg/types"
+	mock_crdt "github/kestfor/in-memorydb/pkg/crdt/mocks"
+	"github/kestfor/in-memorydb/pkg/structs"
+	"github/kestfor/in-memorydb/pkg/types"
 	"strconv"
 	"testing"
 

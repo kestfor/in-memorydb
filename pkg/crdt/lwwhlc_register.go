@@ -3,7 +3,7 @@ package crdt
 import (
 	"encoding/json"
 	"fmt"
-	"in-memorydb/pkg/crdt/hlc"
+	"github/kestfor/in-memorydb/pkg/crdt/hlc"
 	"sync"
 )
 

@@ -10,8 +10,8 @@
 package mock_updates_buffer
 
 import (
-	structs "in-memorydb/pkg/structs"
-	storage "in-memorydb/pkg/types"
+	structs "github/kestfor/in-memorydb/pkg/structs"
+	storage "github/kestfor/in-memorydb/pkg/types"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

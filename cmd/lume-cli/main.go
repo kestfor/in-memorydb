@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "in-memorydb/api/lumepb"
+	pb "github/kestfor/in-memorydb/api/lumepb"
 )
 
 var (

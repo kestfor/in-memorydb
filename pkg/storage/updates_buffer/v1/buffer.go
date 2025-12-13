@@ -2,8 +2,8 @@ package buffer
 
 import (
 	"container/list"
-	"in-memorydb/pkg/structs"
-	"in-memorydb/pkg/types"
+	"github/kestfor/in-memorydb/pkg/structs"
+	"github/kestfor/in-memorydb/pkg/types"
 	"log/slog"
 	"sort"
 	"sync"

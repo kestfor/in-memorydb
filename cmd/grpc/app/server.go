@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
-	"in-memorydb/api/lumepb"
-	"in-memorydb/pkg/crdt"
-	"in-memorydb/pkg/storage"
+	"github/kestfor/in-memorydb/api/lumepb"
+	"github/kestfor/in-memorydb/pkg/crdt"
+	"github/kestfor/in-memorydb/pkg/storage"
 	"log/slog"
 
 	"github.com/golang/protobuf/ptypes/empty"
