@@ -3,11 +3,11 @@ package entry_updater
 import (
 	"errors"
 	"fmt"
-	"github/kestfor/in-memorydb/pkg/crdt"
-	"github/kestfor/in-memorydb/pkg/crdt/hlc"
-	. "github/kestfor/in-memorydb/pkg/crdt/mocks"
-	"github/kestfor/in-memorydb/pkg/storage/engine"
-	types "github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/crdt"
+	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
+	. "github.com/kestfor/in-memorydb/pkg/crdt/mocks"
+	"github.com/kestfor/in-memorydb/pkg/storage/engine"
+	types "github.com/kestfor/in-memorydb/pkg/types"
 	"strconv"
 	"testing"
 

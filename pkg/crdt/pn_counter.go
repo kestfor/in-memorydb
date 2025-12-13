@@ -3,7 +3,7 @@ package crdt
 import (
 	"encoding/json"
 	"fmt"
-	"github/kestfor/in-memorydb/pkg/structs"
+	"github.com/kestfor/in-memorydb/pkg/structs"
 	"sync"
 )
 

@@ -2,9 +2,9 @@ package version_manager
 
 import (
 	"context"
-	"github/kestfor/in-memorydb/pkg/storage/wal"
-	"github/kestfor/in-memorydb/pkg/structs"
-	"github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/storage/wal"
+	"github.com/kestfor/in-memorydb/pkg/structs"
+	"github.com/kestfor/in-memorydb/pkg/types"
 )
 
 //go:generate mockgen -source=version_manager.go -destination=mocks/version_manager.mock.go VersionManager

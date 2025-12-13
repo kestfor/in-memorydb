@@ -3,8 +3,8 @@ package v1
 import (
 	"context"
 	"fmt"
-	"github/kestfor/in-memorydb/pkg/crdt/hlc"
-	"github/kestfor/in-memorydb/pkg/storage/engine"
+	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
+	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	"testing"
 )
 

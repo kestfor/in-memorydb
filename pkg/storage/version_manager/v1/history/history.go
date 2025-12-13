@@ -1,7 +1,7 @@
 package history
 
 import (
-	. "github/kestfor/in-memorydb/pkg/structs"
+	. "github.com/kestfor/in-memorydb/pkg/structs"
 	"sort"
 )
 

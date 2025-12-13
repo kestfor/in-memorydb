@@ -1,7 +1,7 @@
 package membership
 
 import (
-	"github/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/types"
 	"time"
 )
 

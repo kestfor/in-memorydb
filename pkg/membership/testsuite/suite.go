@@ -1,7 +1,7 @@
 package testsuite
 
 import (
-	"github/kestfor/in-memorydb/pkg/membership"
+	"github.com/kestfor/in-memorydb/pkg/membership"
 
 	"github.com/stretchr/testify/suite"
 )
