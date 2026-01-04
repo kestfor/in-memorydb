@@ -37,7 +37,7 @@ func (s *V1Suite) TearDownSuite() {
 func (s *V1Suite) TestJoinMembersLeave() {
 	newM, err := New(&Config{
 		NodeName:       "testnode2",
-		BindAddr:       "127.9.9.10",
+		BindAddr:       "127.0.0.1",
 		MembershipPort: testNodePort,
 	})
 

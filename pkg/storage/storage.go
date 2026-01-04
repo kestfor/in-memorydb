@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
+
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/gossip"
 	gossipimpl "github.com/kestfor/in-memorydb/pkg/gossip/gossip"
@@ -18,12 +21,10 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
-	walimpl "github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
+	walv2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v2"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"log/slog"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -68,7 +69,7 @@ func NewStorage(config *Config) (*Storage, error) {
 		return nil, err
 	}
 
-	writeLog, err := walimpl.New(config.Persistence.WalConfig)
+	writeLog, err := walv2.New(config.Persistence.WalConfig)
 	if err != nil {
 		return nil, err
 	}

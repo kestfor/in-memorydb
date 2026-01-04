@@ -14,13 +14,13 @@ format:
 
 
 
-# Windows-compatible protoc generator
-PROTOC = protoc
-
-# Абсолютно все .proto файлы
-PROTO_FILES := $(shell dir /S /B *.proto)
-CURDIR_WIN := $(shell cd)
-REL_PROTO_FILES := $(foreach f,$(PROTO_FILES),$(subst $(CURDIR_WIN)\,,$(f)))
+## Windows-compatible protoc generator
+#PROTOC = protoc
+#
+## Абсолютно все .proto файлы
+#PROTO_FILES := $(shell dir /S /B *.proto)
+#CURDIR_WIN := $(shell cd)
+#REL_PROTO_FILES := $(foreach f,$(PROTO_FILES),$(subst $(CURDIR_WIN)\,,$(f)))
 
 .PHONY: proto-gen-win
 proto-gen-win:

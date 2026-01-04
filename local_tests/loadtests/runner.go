@@ -95,25 +95,30 @@ func RunLoadTest(cfg LoadConfig) *Metrics {
 }
 
 func RunLoadTestWithProgress(cfg LoadConfig, showProgress bool) *Metrics {
-	conn, err := grpc.Dial(cfg.TargetAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
+	clients := make([]pb.LumeClient, cfg.Concurrency)
 
-	client := pb.NewLumeClient(conn)
+	for i := 0; i < cfg.Concurrency; i++ {
+		conn, err := grpc.NewClient(cfg.TargetAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			panic(err)
+		}
+		clients[i] = pb.NewLumeClient(conn)
+		defer conn.Close()
+	}
+
 	metrics := NewMetrics()
+	mainClient := clients[0]
 
 	preload := PreloadedKeys{}
 
 	// preload keys ONLY for Get / Apply tests
 	if cfg.Type == TestGet || cfg.Type == TestApply || cfg.Type == TestMixed {
-		preload.ApplyGetKeys = PreloadKeysWithProgress(client, 50000, pb.Type_TYPE_PN_COUNTER, showProgress)
+		preload.ApplyGetKeys = PreloadKeysWithProgress(mainClient, 50000, pb.Type_TYPE_PN_COUNTER, showProgress)
 	}
 
 	// preload delete-only keys
 	if cfg.Type == TestMixed {
-		preload.DeleteKeys = PreloadKeysWithProgress(client, 20000, pb.Type_TYPE_LWW_REGISTER, showProgress)
+		preload.DeleteKeys = PreloadKeysWithProgress(mainClient, 20000, pb.Type_TYPE_LWW_REGISTER, showProgress)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Duration)
@@ -165,7 +170,7 @@ func RunLoadTestWithProgress(cfg LoadConfig, showProgress bool) *Metrics {
 				default:
 				}
 
-				runSingleOperation(ctx, client, cfg, metrics, preload, rng)
+				runSingleOperation(ctx, clients[workerID], cfg, metrics, preload, rng)
 			}
 		}(i)
 	}
