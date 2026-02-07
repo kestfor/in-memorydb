@@ -1,21 +1,21 @@
 node:
   id: "node1"
   bind_address: "127.0.0.1"
-  port: 50051
-seeds:
-  - "127.0.0.2"
+  port: 50053
+#seeds:
+#  - "127.0.0.2"
 gossip:
   bind_address: "127.0.0.1"
-  port: 50052
+  port: 50054
   fanout: 3
   interval: 10000
   retries: 2
 membership:
-  port: 50053
+  port: 50055
 persistence:
   wal:
     path: ./wal_data_1
     segment_threshold: 10000
-trace:
-  enable: true
-  endpoint: 192.168.0.14:4318
+#trace:
+#  enable: false
+#  endpoint: 192.168.0.14:4318

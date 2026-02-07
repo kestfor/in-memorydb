@@ -1,7 +1,9 @@
 export CGO_ENABLED=1
 
 test:
-	go test ./...
+	@echo "Running tests..."
+	@CGO_ENABLED=1 go tool gotestsum -- --race --vet= --count=2 -p=4 -tags=test ./...
+
 
 lint:
 	golangci-lint run
@@ -30,3 +32,7 @@ proto-gen-win:
 		$(PROTOC) -I=. --go_out=. --go-grpc_out=. %%f \
 	)
 	@echo === Done ===
+
+protos:
+	@echo "🔨 Generating proto code..."
+	@go tool buf generate

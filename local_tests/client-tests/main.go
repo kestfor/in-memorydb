@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kestfor/in-memorydb/api/lumepb"
+	"github.com/kestfor/in-memorydb/api/lume"
 	"log"
 	"strconv"
 	"sync"
@@ -14,7 +14,7 @@ import (
 )
 
 type Client struct {
-	cl        lumepb.LumeClient
+	cl        lume.LumeClient
 	clientNum int
 }
 
@@ -24,18 +24,18 @@ func getConn(n int) *Client {
 		panic(err)
 
 	}
-	conn := lumepb.NewLumeClient(client)
+	conn := lume.NewLumeClient(client)
 	return &Client{cl: conn, clientNum: n}
 }
 
 func (c *Client) setKeys(ctx context.Context, n int) error {
 	for i := 1; i <= n; i++ {
 		k := getKey(c.clientNum, i)
-		_, err := c.cl.Set(ctx, &lumepb.SetRequest{Key: k, CrdtType: lumepb.Type_TYPE_LWW_REGISTER})
+		_, err := c.cl.Set(ctx, &lume.SetRequest{Key: k, CrdtType: lume.Type_TYPE_LWW_REGISTER})
 		if err != nil {
 			return err
 		}
-		_, err = c.cl.Apply(ctx, &lumepb.ApplyRequest{Key: k, Operation: &lumepb.ApplyRequest_RegisterOperation{RegisterOperation: &lumepb.ApplyRequest_Register{Value: []byte(strconv.Itoa(i))}}})
+		_, err = c.cl.Apply(ctx, &lume.ApplyRequest{Key: k, Operation: &lume.ApplyRequest_RegisterOperation{RegisterOperation: &lume.ApplyRequest_Register{Value: []byte(strconv.Itoa(i))}}})
 		if err != nil {
 			return err
 		}
@@ -46,7 +46,7 @@ func (c *Client) setKeys(ctx context.Context, n int) error {
 func (c *Client) deleteKeys(ctx context.Context, n int) error {
 	for i := 1; i <= n; i++ {
 		k := getKey(c.clientNum, i)
-		_, err := c.cl.Delete(ctx, &lumepb.DeleteRequest{Key: k})
+		_, err := c.cl.Delete(ctx, &lume.DeleteRequest{Key: k})
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func (c *Client) getKeys(ctx context.Context, n int) ([]string, error) {
 	result := make([]string, n)
 	for i := 1; i <= n; i++ {
 		k := getKey(c.clientNum, i)
-		resp, err := c.cl.Get(ctx, &lumepb.GetRequest{Key: k})
+		resp, err := c.cl.Get(ctx, &lume.GetRequest{Key: k})
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +78,7 @@ func (c *Client) checkAllKeys(ctx context.Context, from, to, keysNum int) (bool,
 			wg.Go(func() error {
 				for kN := 1; kN <= keysNum; kN++ {
 					k := getKey(i, kN)
-					res, err := c.cl.Get(ctx, &lumepb.GetRequest{Key: k})
+					res, err := c.cl.Get(ctx, &lume.GetRequest{Key: k})
 					if err != nil {
 						return err
 					}

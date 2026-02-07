@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/kestfor/in-memorydb/api/lume"
 	configpkg "github.com/kestfor/in-memorydb/pkg/configx/v2"
-	"github.com/kestfor/in-memorydb/pkg/observability"
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	config "github.com/kestfor/in-memorydb/pkg/storage"
 	"github.com/kestfor/in-memorydb/pkg/utils/logging"
-
 	"google.golang.org/grpc"
 )
 
@@ -25,10 +22,6 @@ func Run(ctx context.Context, configPath *string) {
 		slog.Error("app.Run: specify a config file path")
 		os.Exit(1)
 	}
-
-	//go func() {
-	//	http.ListenAndServe("localhost:6060", nil)
-	//}()
 
 	var cfg config.Config
 	if err := configpkg.Load(*configPath, &cfg); err != nil {
@@ -40,38 +33,31 @@ func Run(ctx context.Context, configPath *string) {
 
 	slog.Info("app.Run: config file loaded successfully", "cfg", cfg)
 
-	nodeServer, err := NewNodeServer(&cfg)
-	if err != nil {
-		slog.Error("app.Run: create node server error", "err", err)
-		os.Exit(1)
-	}
+	mockServer := NewMockServer()
 
-	err = nodeServer.StartStorage(ctx)
-	if err != nil {
-		slog.Error("app.Run: start storage error", "err", err)
-		os.Exit(1)
-	}
-
-	if cfg.TraceConfig.Enable {
-		err = observability.InitTracerWithEndpoint(ctx, cfg.TraceConfig.Endpoint)
-		if err != nil {
-			slog.Error("app.Run: init tracer error", "err", err)
-		}
-		slog.Info("app.Run: init tracer successfully")
-	}
+	grpcServer := grpc.NewServer(
+		// Увеличиваем параллелизм для обработки большого количества клиентов
+		grpc.MaxConcurrentStreams(10000), // было 2048
+		// Увеличиваем window sizes для flow control
+		grpc.InitialWindowSize(1<<20),     // 1MB per stream
+		grpc.InitialConnWindowSize(1<<21), // 2MB for connection
+		// Увеличиваем буферы для I/O
+		grpc.WriteBufferSize(512*1024), // 512KB write buffer
+		grpc.ReadBufferSize(512*1024),  // 512KB read buffer
+		// Настройка worker pool для обработки запросов
+		grpc.NumStreamWorkers(100), // увеличиваем количество stream workers
+		grpc.ChainUnaryInterceptor(
+			tracing.UnaryPanicRecoveryInterceptor(),
+			tracing.UnaryServerInterceptor(),
+		))
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Node.BindAddress, cfg.Node.Port))
 	if err != nil {
 		slog.Error("app.Run: listen error", "err", err)
 		os.Exit(1)
 	}
-	grpcServer := grpc.NewServer(
-		grpc.MaxConcurrentStreams(2048),
-		grpc.ChainUnaryInterceptor(
-			tracing.UnaryPanicRecoveryInterceptor(),
-			tracing.UnaryServerInterceptor(),
-		))
-	lume.RegisterLumeServer(grpcServer, nodeServer)
+
+	lume.RegisterLumeServer(grpcServer, mockServer)
 
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
@@ -89,7 +75,6 @@ func Run(ctx context.Context, configPath *string) {
 		slog.Info("app.Run: shutting down node server")
 
 		grpcServer.GracefulStop()
-		_ = nodeServer.GracefulStopStorage()
 	}
 
 }

@@ -21,7 +21,7 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
-	walv2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v2"
+	wal2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 	"github.com/kestfor/in-memorydb/pkg/types"
@@ -69,7 +69,7 @@ func NewStorage(config *Config) (*Storage, error) {
 		return nil, err
 	}
 
-	writeLog, err := walv2.New(config.Persistence.WalConfig)
+	writeLog, err := wal2.New(config.Persistence.WalConfig)
 	if err != nil {
 		return nil, err
 	}

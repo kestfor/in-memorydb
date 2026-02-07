@@ -3,10 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/kestfor/in-memorydb/api/lumepb"
+	"log/slog"
+
+	"github.com/kestfor/in-memorydb/api/lume"
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/storage"
-	"log/slog"
 
 	"github.com/golang/protobuf/ptypes/empty"
 )
@@ -14,7 +15,7 @@ import (
 var factory = crdt.NewFabric()
 
 type NodeServer struct {
-	lumepb.UnimplementedLumeServer
+	lume.UnimplementedLumeServer
 
 	storage *storage.Storage
 }
@@ -35,7 +36,7 @@ func (n *NodeServer) GracefulStopStorage() error {
 	return n.storage.GracefulStop()
 }
 
-func (n *NodeServer) Set(ctx context.Context, request *lumepb.SetRequest) (*empty.Empty, error) {
+func (n *NodeServer) Set(ctx context.Context, request *lume.SetRequest) (*empty.Empty, error) {
 	domainType, err := toDomainCRDTType(request.GetCrdtType())
 	if err != nil {
 		return nil, err
@@ -51,7 +52,7 @@ func (n *NodeServer) Set(ctx context.Context, request *lumepb.SetRequest) (*empt
 	return &empty.Empty{}, nil
 }
 
-func (n *NodeServer) Get(ctx context.Context, request *lumepb.GetRequest) (*lumepb.GetResponse, error) {
+func (n *NodeServer) Get(ctx context.Context, request *lume.GetRequest) (*lume.GetResponse, error) {
 	val, typ, ok := n.storage.Get(ctx, request.GetKey())
 
 	res, err := toGetResponse(val, typ, ok)
@@ -65,7 +66,7 @@ func (n *NodeServer) Get(ctx context.Context, request *lumepb.GetRequest) (*lume
 	return res, err
 }
 
-func (n *NodeServer) Delete(ctx context.Context, request *lumepb.DeleteRequest) (*lumepb.DeleteResponse, error) {
+func (n *NodeServer) Delete(ctx context.Context, request *lume.DeleteRequest) (*lume.DeleteResponse, error) {
 	ok, err := n.storage.Delete(ctx, request.GetKey())
 	if err != nil {
 		slog.ErrorContext(ctx, "node.Delete: Error while deleting key", "err", err)
@@ -75,24 +76,24 @@ func (n *NodeServer) Delete(ctx context.Context, request *lumepb.DeleteRequest) 
 	if ok {
 		slog.InfoContext(ctx, "node.Delete: Successfully delete key", "key", request.GetKey())
 	}
-	return &lumepb.DeleteResponse{Ok: ok}, nil
+	return &lume.DeleteResponse{Ok: ok}, nil
 }
 
-func (n *NodeServer) Apply(ctx context.Context, request *lumepb.ApplyRequest) (*empty.Empty, error) {
+func (n *NodeServer) Apply(ctx context.Context, request *lume.ApplyRequest) (*empty.Empty, error) {
 	switch op := request.GetOperation().(type) {
-	case *lumepb.ApplyRequest_CounterOperationInc:
+	case *lume.ApplyRequest_CounterOperationInc:
 		_, err := n.storage.ApplyInc(ctx, request.Key, op.CounterOperationInc.Val)
 		if err != nil {
 			slog.ErrorContext(ctx, "node.Do: Error while incrementing counter", "err", err, "key", request.Key)
 		}
 		return &empty.Empty{}, err
-	case *lumepb.ApplyRequest_CounterOperationDec:
+	case *lume.ApplyRequest_CounterOperationDec:
 		_, err := n.storage.ApplyDec(ctx, request.Key, op.CounterOperationDec.Val)
 		if err != nil {
 			slog.ErrorContext(ctx, "node.Do: Error while decrementing counter", "err", err, "key", request.Key)
 		}
 		return &empty.Empty{}, err
-	case *lumepb.ApplyRequest_RegisterOperation:
+	case *lume.ApplyRequest_RegisterOperation:
 		_, err := n.storage.ApplySetRegister(ctx, request.Key, op.RegisterOperation.Value)
 		if err != nil {
 			slog.ErrorContext(ctx, "node.Do: Error while registering operation", "err", err, "key", request.Key)
