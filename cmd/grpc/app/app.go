@@ -40,11 +40,13 @@ func Run(ctx context.Context, configPath *string) {
 
 	slog.Info("app.Run: config file loaded successfully", "cfg", cfg)
 
-	nodeServer, err := NewNodeServer(&cfg)
+	subs, err := BuildSubsystems(&cfg)
 	if err != nil {
-		slog.Error("app.Run: create node server error", "err", err)
+		slog.Error("app.Run: build subsystems error", "err", err)
 		os.Exit(1)
 	}
+
+	nodeServer := NewNodeServer(&cfg, subs)
 
 	err = nodeServer.StartStorage(ctx)
 	if err != nil {

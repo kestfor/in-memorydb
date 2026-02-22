@@ -2,19 +2,22 @@ package wal
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"hash/crc32"
+
+	jsoniter "github.com/json-iterator/go"
 	"github.com/kestfor/in-memorydb/pkg/observability/spans"
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	. "github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"hash/crc32"
 
 	"github.com/vadiminshakov/gowal"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 const (
 	defaultWalPath          = "./wal"

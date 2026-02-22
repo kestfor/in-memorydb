@@ -1,9 +1,11 @@
 package types
 
 import (
-	"encoding/json"
+	stdlibjson "encoding/json"
 	"errors"
 	"fmt"
+
+	jsoniter "github.com/json-iterator/go"
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
 	"github.com/kestfor/in-memorydb/pkg/structs"
@@ -26,10 +28,12 @@ type UpdateType string
 var fabric = crdt.NewFabric()
 
 type Payload interface {
-	json.Marshaler
-	json.Unmarshaler
+	stdlibjson.Marshaler
+	stdlibjson.Unmarshaler
 	Merge(other crdt.Delta) error
 }
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Update struct {
 	NodeID       string         `json:"node_id"`

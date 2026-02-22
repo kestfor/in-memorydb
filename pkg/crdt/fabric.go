@@ -45,6 +45,12 @@ var nilDeltaConstr = map[CRDTType]func() Delta{
 	},
 }
 
+var defaultFabric = NewFabric()
+
+func DefaultFabric() CRDTFabric {
+	return defaultFabric
+}
+
 type fabric struct {
 }
 

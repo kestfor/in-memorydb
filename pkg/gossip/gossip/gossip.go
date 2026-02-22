@@ -11,7 +11,6 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	buffer "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
-	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport"
@@ -63,7 +62,7 @@ type DefaultGossip struct {
 	shutdown       context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
 }
 
-func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager *v1.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
+func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
 	return &DefaultGossip{
 		config:         config,
 		transport:      transport,

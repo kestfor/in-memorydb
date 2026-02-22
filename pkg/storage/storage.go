@@ -9,21 +9,14 @@ import (
 
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/gossip"
-	gossipimpl "github.com/kestfor/in-memorydb/pkg/gossip/gossip"
 	"github.com/kestfor/in-memorydb/pkg/membership"
-	membershipv1 "github.com/kestfor/in-memorydb/pkg/membership/v1"
 	"github.com/kestfor/in-memorydb/pkg/observability/spans"
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
-	enginev1 "github.com/kestfor/in-memorydb/pkg/storage/engine/v1"
 	"github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
-	bufferimpl "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer/v2"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
-	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
-	wal2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
 	"github.com/kestfor/in-memorydb/pkg/structs"
-	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 	"github.com/kestfor/in-memorydb/pkg/types"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -32,8 +25,6 @@ import (
 )
 
 var ErrInternal = errors.New("internal error")
-
-var fabric = crdt.NewFabric()
 
 // bufferPutWithTracing wraps buffer.Put operation with tracing externally
 // since buffer operations are lightweight
@@ -57,35 +48,16 @@ type Storage struct {
 	shutdown    context.CancelFunc
 }
 
-func NewStorage(config *Config) (*Storage, error) {
-
-	eng := enginev1.NewEngine(enginev1.WithNodeID(config.Node.ID)) // TODO initial shards value from config
-	vm := v1.NewVersionManager(config.Node.ID, eng)
-	transport := grpc.NewGRPCTransport(&config.Transport)
-
-	members, err := membershipv1.New(globalCfg2Mem(config))
-
-	if err != nil {
-		return nil, err
-	}
-
-	writeLog, err := wal2.New(config.Persistence.WalConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	buffer := bufferimpl.NewBuffer(1000)                                                          // TODO прокидывание из конфига
-	goss := gossipimpl.NewDefaultGossip(&config.Gossip, transport, members, vm, writeLog, buffer) // TODO choose transport
-
+func NewStorage(config *Config, subs *Subsystems) *Storage {
 	return &Storage{
 		config:     config,
-		engine:     eng,
-		gossip:     goss,
-		vm:         vm,
-		memberlist: members,
-		wal:        writeLog,
-		buffer:     buffer,
-	}, nil
+		engine:     subs.Engine,
+		gossip:     subs.Gossip,
+		vm:         subs.VersionManager,
+		memberlist: subs.Membership,
+		wal:        subs.WAL,
+		buffer:     subs.UpdatesBuffer,
+	}
 }
 
 func (s *Storage) StartUp(ctx context.Context) error {
@@ -207,12 +179,12 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 	defer span.End()
 
 	nodeID := s.config.Node.ID
-	val, err := fabric.New(t, nodeID)
+	val, err := crdt.DefaultFabric().New(t, nodeID)
 	if err != nil {
 		return tracing.RecordError(ctx, err)
 	}
 
-	nilDelta, err := fabric.NilDelta(t)
+	nilDelta, err := crdt.DefaultFabric().NilDelta(t)
 	if err != nil {
 		return tracing.RecordError(ctx, err)
 	}

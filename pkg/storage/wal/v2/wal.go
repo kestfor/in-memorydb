@@ -2,10 +2,10 @@ package wal
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash/crc32"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/kestfor/in-memorydb/pkg/observability/spans"
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	. "github.com/kestfor/in-memorydb/pkg/storage/wal"
@@ -24,6 +24,8 @@ const (
 	defaultBatchSize        = 500
 	defaultWriteChanSize    = 50000
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Config struct {
 

@@ -6,13 +6,10 @@ import (
 	"log/slog"
 
 	"github.com/kestfor/in-memorydb/api/lume"
-	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/storage"
 
 	"github.com/golang/protobuf/ptypes/empty"
 )
-
-var factory = crdt.NewFabric()
 
 type NodeServer struct {
 	lume.UnimplementedLumeServer
@@ -20,12 +17,9 @@ type NodeServer struct {
 	storage *storage.Storage
 }
 
-func NewNodeServer(config *storage.Config) (*NodeServer, error) {
-	st, err := storage.NewStorage(config)
-	if err != nil {
-		return nil, err
-	}
-	return &NodeServer{storage: st}, nil
+func NewNodeServer(config *storage.Config, subs *storage.Subsystems) *NodeServer {
+	st := storage.NewStorage(config, subs)
+	return &NodeServer{storage: st}
 }
 
 func (n *NodeServer) StartStorage(ctx context.Context) error {

@@ -13,6 +13,7 @@ membership:
 seeds:
   - "195.0.0.2:9090" # list of known seeds to join the cluster
 persistence:
+  enabled: true
   wal:
     path: "wal_dir"
     segment_threshold: 1000 # num of entry in one segment file
