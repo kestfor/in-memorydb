@@ -32,20 +32,10 @@ func Run(ctx context.Context, configPath *string) {
 	logging.InitDefault(cfg.Node.ID)
 
 	slog.Info("app.Run: config file loaded successfully", "cfg", cfg)
-
 	mockServer := NewMockServer()
 
 	grpcServer := grpc.NewServer(
-		// Увеличиваем параллелизм для обработки большого количества клиентов
-		grpc.MaxConcurrentStreams(10000), // было 2048
-		// Увеличиваем window sizes для flow control
-		grpc.InitialWindowSize(1<<20),     // 1MB per stream
-		grpc.InitialConnWindowSize(1<<21), // 2MB for connection
-		// Увеличиваем буферы для I/O
-		grpc.WriteBufferSize(512*1024), // 512KB write buffer
-		grpc.ReadBufferSize(512*1024),  // 512KB read buffer
-		// Настройка worker pool для обработки запросов
-		grpc.NumStreamWorkers(100), // увеличиваем количество stream workers
+		grpc.MaxConcurrentStreams(2048),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryPanicRecoveryInterceptor(),
 			tracing.UnaryServerInterceptor(),
@@ -76,5 +66,4 @@ func Run(ctx context.Context, configPath *string) {
 
 		grpcServer.GracefulStop()
 	}
-
 }

@@ -15,18 +15,24 @@ func NewMockServer() *MockServer {
 	return &MockServer{}
 }
 
+var (
+	emptyResp = &empty.Empty{}
+	getResp   = &lume.GetResponse{}
+	delResp   = &lume.DeleteResponse{}
+)
+
 func (n *MockServer) Set(_ context.Context, _ *lume.SetRequest) (*empty.Empty, error) {
-	return &empty.Empty{}, nil
+	return emptyResp, nil
 }
 
 func (n *MockServer) Get(_ context.Context, _ *lume.GetRequest) (*lume.GetResponse, error) {
-	return &lume.GetResponse{}, nil
+	return getResp, nil
 }
 
 func (n *MockServer) Delete(_ context.Context, _ *lume.DeleteRequest) (*lume.DeleteResponse, error) {
-	return &lume.DeleteResponse{}, nil
+	return delResp, nil
 }
 
 func (n *MockServer) Apply(_ context.Context, _ *lume.ApplyRequest) (*empty.Empty, error) {
-	return &empty.Empty{}, nil
+	return emptyResp, nil
 }
