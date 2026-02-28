@@ -1,11 +1,7 @@
 package utils
 
-import (
-	"hash/fnv"
-)
+import "github.com/cespare/xxhash/v2"
 
 func HashKey(key string) uint64 {
-	h := fnv.New64a()
-	h.Write([]byte(key))
-	return h.Sum64()
+	return xxhash.Sum64String(key)
 }
