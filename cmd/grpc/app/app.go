@@ -86,12 +86,11 @@ func Run(ctx context.Context, configPath *string) {
 
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
 
-	select {
-	case <-exit:
-		slog.Info("app.Run: shutting down node server")
+	<-exit
 
-		grpcServer.GracefulStop()
-		_ = nodeServer.GracefulStopStorage()
-	}
+	slog.Info("app.Run: shutting down node server")
+
+	grpcServer.GracefulStop()
+	_ = nodeServer.GracefulStopStorage()
 
 }

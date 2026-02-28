@@ -6,7 +6,7 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/storage"
 	enginev1 "github.com/kestfor/in-memorydb/pkg/storage/engine/v1"
 	bufferimpl "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer/v2"
-	vmv1 "github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1"
+	vmv2 "github.com/kestfor/in-memorydb/pkg/storage/version_manager/v2"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal/noop"
 	walv1 "github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
@@ -15,7 +15,7 @@ import (
 
 func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 	eng := enginev1.NewEngine(enginev1.WithNodeID(cfg.Node.ID))
-	vm := vmv1.NewVersionManager(cfg.Node.ID, eng)
+	vm := vmv2.NewVersionManager(cfg.Node.ID, eng)
 	transport := grpc.NewGRPCTransport(&cfg.Transport)
 
 	members, err := membershipv1.New(storage.GlobalCfg2Mem(cfg))

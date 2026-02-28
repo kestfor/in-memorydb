@@ -42,7 +42,7 @@ type SecurityConfig struct {
 }
 
 type PersistenceConfig struct {
-	Enabled            bool       `yaml:"enabled" env:"PERSISTENCE_ENABLED" default:"true"`
+	Enabled            bool       `yaml:"enabled" default:"true"`
 	WalConfig          wal.Config `yaml:"wal"`
 	SnapDir            string     `yaml:"snap_dir"`
 	SnapshotIntervalMs int        `yaml:"snapshot_interval"`

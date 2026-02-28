@@ -19,49 +19,81 @@ func Load(filePath string, cfg interface{}) error {
 		return fmt.Errorf("config must be a pointer to struct")
 	}
 
-	// Читаем YAML файл
+	// 1. Сначала устанавливаем все defaults
+	if err := applyDefaults(v.Elem()); err != nil {
+		return err
+	}
+
+	// 2. Читаем и парсим YAML (перезаписывает defaults)
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	// Парсим YAML
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return fmt.Errorf("failed to parse yaml: %w", err)
 	}
 
-	// Обрабатываем переменные окружения и defaults
-	if err := processStruct(v.Elem(), ""); err != nil {
+	// 3. Применяем env переменные (перезаписывают YAML) и проверяем required
+	if err := applyEnvAndValidate(v.Elem(), ""); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// processStruct рекурсивно обрабатывает структуру и её вложенные поля
-func processStruct(v reflect.Value, prefix string) error {
+// applyDefaults рекурсивно устанавливает default значения из тегов
+func applyDefaults(v reflect.Value) error {
 	t := v.Type()
 
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		fieldType := t.Field(i)
 
-		// Пропускаем неэкспортируемые поля
 		if !field.CanSet() {
 			continue
 		}
 
-		// Получаем теги
+		// Обрабатываем вложенные структуры
+		if field.Kind() == reflect.Struct {
+			if err := applyDefaults(field); err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Устанавливаем default если поле zero value
+		defaultTag := fieldType.Tag.Get("default")
+		if defaultTag != "" && isZeroValue(field) {
+			if err := setFieldValue(field, defaultTag); err != nil {
+				return fmt.Errorf("failed to set default value for field %s: %w", fieldType.Name, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// applyEnvAndValidate применяет env переменные и проверяет required поля
+func applyEnvAndValidate(v reflect.Value, prefix string) error {
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := t.Field(i)
+
+		if !field.CanSet() {
+			continue
+		}
+
 		yamlTag := fieldType.Tag.Get("yaml")
 		envTag := fieldType.Tag.Get("env")
-		defaultTag := fieldType.Tag.Get("default")
 		requiredTag := fieldType.Tag.Get("required")
 
 		// Обрабатываем вложенные структуры
 		if field.Kind() == reflect.Struct {
 			newPrefix := prefix
 			if yamlTag != "" && yamlTag != "-" {
-				// Извлекаем имя без дополнительных опций
 				yamlName := strings.Split(yamlTag, ",")[0]
 				if newPrefix != "" {
 					newPrefix = newPrefix + "_" + strings.ToUpper(yamlName)
@@ -69,30 +101,18 @@ func processStruct(v reflect.Value, prefix string) error {
 					newPrefix = strings.ToUpper(yamlName)
 				}
 			}
-			if err := processStruct(field, newPrefix); err != nil {
+			if err := applyEnvAndValidate(field, newPrefix); err != nil {
 				return err
 			}
 			continue
 		}
 
-		// Проверяем env переменную (приоритет 1)
-		envValue := ""
+		// Применяем env переменную (наивысший приоритет)
 		if envTag != "" {
-			envValue = os.Getenv(envTag)
-		}
-
-		// Проверяем, заполнено ли поле из YAML (приоритет 2)
-		yamlFilled := !isZeroValue(field)
-
-		// Если есть env переменная - используем её
-		if envValue != "" {
-			if err := setFieldValue(field, envValue); err != nil {
-				return fmt.Errorf("failed to set env value for field %s: %w", fieldType.Name, err)
-			}
-		} else if !yamlFilled && defaultTag != "" {
-			// Если YAML не заполнил поле и есть default - используем его
-			if err := setFieldValue(field, defaultTag); err != nil {
-				return fmt.Errorf("failed to set default value for field %s: %w", fieldType.Name, err)
+			if envValue := os.Getenv(envTag); envValue != "" {
+				if err := setFieldValue(field, envValue); err != nil {
+					return fmt.Errorf("failed to set env value for field %s: %w", fieldType.Name, err)
+				}
 			}
 		}
 

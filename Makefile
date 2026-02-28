@@ -6,7 +6,7 @@ test:
 
 
 lint:
-	golangci-lint run
+	go tool golangci-lint run ./...
 
 bench:
 	go test -bench=. -benchmem ./...
