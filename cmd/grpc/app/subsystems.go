@@ -5,7 +5,7 @@ import (
 	membershipv1 "github.com/kestfor/in-memorydb/pkg/membership/v1"
 	"github.com/kestfor/in-memorydb/pkg/storage"
 	enginev1 "github.com/kestfor/in-memorydb/pkg/storage/engine/v1"
-	bufferimpl "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer/v2"
+	bufferv3 "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer/v3"
 	vmv2 "github.com/kestfor/in-memorydb/pkg/storage/version_manager/v2"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal/noop"
@@ -33,7 +33,7 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 		writeLog = noop.NewNoopWAL()
 	}
 
-	buffer := bufferimpl.NewBuffer(1000) // TODO: move to config
+	buffer := bufferv3.NewUpdatesBuffer(1000) // TODO: move to config
 	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, transport, members, vm, writeLog, buffer)
 
 	return &storage.Subsystems{

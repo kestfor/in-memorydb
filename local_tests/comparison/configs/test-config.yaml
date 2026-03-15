@@ -1,0 +1,22 @@
+---
+metrics:
+  port: 8082
+
+databases:
+  #  name: memcache
+  #  host: localhost:11211
+
+  - name: redis
+    host: localhost:6379
+
+  - name: lume
+    host: localhost:50053
+
+test:
+  name: test
+  minClients: 50
+  clientsStep: 5
+  maxClients: 100
+  stageIntervalS: 60
+  requestDelayMs: 1
+  maxKeysNum: 100000

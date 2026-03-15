@@ -72,7 +72,7 @@ var (
 		   unary;
 		   streaming.`)
 	reqType  = flag.String("request_type", "mixed", "Request type: get, set, or mixed")
-	poolSize = flag.Int("pool_size", 100000, "Size of the key pool")
+	poolSize = flag.Int("pool_size", 10000, "Size of the key pool")
 	testName = flag.String("test_name", "", "Name of the test used for creating profiles.")
 	wg       sync.WaitGroup
 	hopts    = stats.HistogramOptions{

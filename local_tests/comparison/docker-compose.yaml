@@ -1,0 +1,78 @@
+services:
+  lume:
+    container_name: lume
+    cpus: "3.0"
+    deploy:
+      resources:
+        limits:
+          cpus: "3.00"
+    build:
+      context: ../../
+      dockerfile: ./local_tests/Dockerfile
+    ports:
+      - "50053:50053"
+    environment:
+      - LOG_LEVEL=ERROR
+    #    volumes:
+    #      - wal1:/wal_data
+    command: [ "./lume", "--config", "../local_configs/config1.yaml" ]
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    volumes:
+      - ./configs/db/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: "3.00"
+    cpus: 3.0
+    restart: unless-stopped
+
+#  memcached:
+#    image: memcached:1.6
+#    container_name: memcached
+#    command: [ "memcached", "-u", "memcache", "-c", "1024", "-m", "128" ]
+#    volumes:
+#      - ./configs/db/memcached.conf:/etc/memcached.conf:ro
+#    ports:
+#      - "11211:11211"
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: "2.00"
+#    cpus: 2.0
+#    restart: unless-stopped
+
+#  cadvisor:
+#    image: gcr.io/cadvisor/cadvisor:latest
+#    container_name: cadvisor
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+#      - /sys:/sys:ro
+#      - /var/lib/docker/:/var/lib/docker:ro
+#    ports:
+#      - "8080:8080"
+#    restart: unless-stopped
+
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./configs/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped

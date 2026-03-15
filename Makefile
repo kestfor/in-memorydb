@@ -36,3 +36,11 @@ proto-gen-win:
 protos:
 	@echo "🔨 Generating proto code..."
 	@go tool buf generate
+
+docker-up-comparison:
+	@echo "🚀 Starting comparison services..."
+	@cd local_tests/comparison && docker compose up -d --build
+
+docker-down-comparison:
+	@echo "🚀 Stopping comparison services..."
+	@cd local_tests/comparison && docker compose down
