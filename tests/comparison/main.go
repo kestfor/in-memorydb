@@ -24,7 +24,7 @@ func main() {
 	slog.SetDefault(slog.New(h))
 
 	cfg := new(Config)
-	cfg.loadConfig("./local_tests/comparison/configs/test-config.yaml")
+	cfg.loadConfig("./tests/comparison/configs/test-config.yaml")
 	reg := prometheus.NewRegistry()
 	m := monitoring.NewMetrics(reg)
 	monitoring.StartPrometheusServer(cfg.MetricsConfig, reg)
