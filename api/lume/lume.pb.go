@@ -2,18 +2,17 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: api/lume.proto
+// source: api/lume/lume.proto
 
-package lume
+package lumepb
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -56,11 +55,11 @@ func (x Type) String() string {
 }
 
 func (Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_lume_proto_enumTypes[0].Descriptor()
+	return file_api_lume_lume_proto_enumTypes[0].Descriptor()
 }
 
 func (Type) Type() protoreflect.EnumType {
-	return &file_api_lume_proto_enumTypes[0]
+	return &file_api_lume_lume_proto_enumTypes[0]
 }
 
 func (x Type) Number() protoreflect.EnumNumber {
@@ -69,7 +68,7 @@ func (x Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Type.Descriptor instead.
 func (Type) EnumDescriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{0}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{0}
 }
 
 type SetRequest struct {
@@ -82,7 +81,7 @@ type SetRequest struct {
 
 func (x *SetRequest) Reset() {
 	*x = SetRequest{}
-	mi := &file_api_lume_proto_msgTypes[0]
+	mi := &file_api_lume_lume_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -94,7 +93,7 @@ func (x *SetRequest) String() string {
 func (*SetRequest) ProtoMessage() {}
 
 func (x *SetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[0]
+	mi := &file_api_lume_lume_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -107,7 +106,7 @@ func (x *SetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetRequest.ProtoReflect.Descriptor instead.
 func (*SetRequest) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{0}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SetRequest) GetKey() string {
@@ -133,7 +132,7 @@ type DeleteRequest struct {
 
 func (x *DeleteRequest) Reset() {
 	*x = DeleteRequest{}
-	mi := &file_api_lume_proto_msgTypes[1]
+	mi := &file_api_lume_lume_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -145,7 +144,7 @@ func (x *DeleteRequest) String() string {
 func (*DeleteRequest) ProtoMessage() {}
 
 func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[1]
+	mi := &file_api_lume_lume_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -158,7 +157,7 @@ func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{1}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DeleteRequest) GetKey() string {
@@ -177,7 +176,7 @@ type DeleteResponse struct {
 
 func (x *DeleteResponse) Reset() {
 	*x = DeleteResponse{}
-	mi := &file_api_lume_proto_msgTypes[2]
+	mi := &file_api_lume_lume_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -189,7 +188,7 @@ func (x *DeleteResponse) String() string {
 func (*DeleteResponse) ProtoMessage() {}
 
 func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[2]
+	mi := &file_api_lume_lume_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -202,7 +201,7 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{2}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *DeleteResponse) GetOk() bool {
@@ -221,7 +220,7 @@ type GetRequest struct {
 
 func (x *GetRequest) Reset() {
 	*x = GetRequest{}
-	mi := &file_api_lume_proto_msgTypes[3]
+	mi := &file_api_lume_lume_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -233,7 +232,7 @@ func (x *GetRequest) String() string {
 func (*GetRequest) ProtoMessage() {}
 
 func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[3]
+	mi := &file_api_lume_lume_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -246,7 +245,7 @@ func (x *GetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{3}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetRequest) GetKey() string {
@@ -271,7 +270,7 @@ type GetResponse struct {
 
 func (x *GetResponse) Reset() {
 	*x = GetResponse{}
-	mi := &file_api_lume_proto_msgTypes[4]
+	mi := &file_api_lume_lume_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -283,7 +282,7 @@ func (x *GetResponse) String() string {
 func (*GetResponse) ProtoMessage() {}
 
 func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[4]
+	mi := &file_api_lume_lume_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -296,7 +295,7 @@ func (x *GetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
 func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{4}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetResponse) GetCrdtType() Type {
@@ -369,7 +368,7 @@ type ApplyRequest struct {
 
 func (x *ApplyRequest) Reset() {
 	*x = ApplyRequest{}
-	mi := &file_api_lume_proto_msgTypes[5]
+	mi := &file_api_lume_lume_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -381,7 +380,7 @@ func (x *ApplyRequest) String() string {
 func (*ApplyRequest) ProtoMessage() {}
 
 func (x *ApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[5]
+	mi := &file_api_lume_lume_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -394,7 +393,7 @@ func (x *ApplyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyRequest.ProtoReflect.Descriptor instead.
 func (*ApplyRequest) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{5}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ApplyRequest) GetKey() string {
@@ -469,7 +468,7 @@ type GetResponse_Counter struct {
 
 func (x *GetResponse_Counter) Reset() {
 	*x = GetResponse_Counter{}
-	mi := &file_api_lume_proto_msgTypes[6]
+	mi := &file_api_lume_lume_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -481,7 +480,7 @@ func (x *GetResponse_Counter) String() string {
 func (*GetResponse_Counter) ProtoMessage() {}
 
 func (x *GetResponse_Counter) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[6]
+	mi := &file_api_lume_lume_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -494,7 +493,7 @@ func (x *GetResponse_Counter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse_Counter.ProtoReflect.Descriptor instead.
 func (*GetResponse_Counter) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{4, 0}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{4, 0}
 }
 
 func (x *GetResponse_Counter) GetVal() int64 {
@@ -513,7 +512,7 @@ type GetResponse_Register struct {
 
 func (x *GetResponse_Register) Reset() {
 	*x = GetResponse_Register{}
-	mi := &file_api_lume_proto_msgTypes[7]
+	mi := &file_api_lume_lume_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -525,7 +524,7 @@ func (x *GetResponse_Register) String() string {
 func (*GetResponse_Register) ProtoMessage() {}
 
 func (x *GetResponse_Register) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[7]
+	mi := &file_api_lume_lume_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -538,7 +537,7 @@ func (x *GetResponse_Register) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse_Register.ProtoReflect.Descriptor instead.
 func (*GetResponse_Register) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{4, 1}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{4, 1}
 }
 
 func (x *GetResponse_Register) GetVal() []byte {
@@ -557,7 +556,7 @@ type ApplyRequest_Register struct {
 
 func (x *ApplyRequest_Register) Reset() {
 	*x = ApplyRequest_Register{}
-	mi := &file_api_lume_proto_msgTypes[8]
+	mi := &file_api_lume_lume_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -569,7 +568,7 @@ func (x *ApplyRequest_Register) String() string {
 func (*ApplyRequest_Register) ProtoMessage() {}
 
 func (x *ApplyRequest_Register) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[8]
+	mi := &file_api_lume_lume_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -582,7 +581,7 @@ func (x *ApplyRequest_Register) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyRequest_Register.ProtoReflect.Descriptor instead.
 func (*ApplyRequest_Register) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{5, 0}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{5, 0}
 }
 
 func (x *ApplyRequest_Register) GetValue() []byte {
@@ -601,7 +600,7 @@ type ApplyRequest_CounterInc struct {
 
 func (x *ApplyRequest_CounterInc) Reset() {
 	*x = ApplyRequest_CounterInc{}
-	mi := &file_api_lume_proto_msgTypes[9]
+	mi := &file_api_lume_lume_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -613,7 +612,7 @@ func (x *ApplyRequest_CounterInc) String() string {
 func (*ApplyRequest_CounterInc) ProtoMessage() {}
 
 func (x *ApplyRequest_CounterInc) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[9]
+	mi := &file_api_lume_lume_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -626,7 +625,7 @@ func (x *ApplyRequest_CounterInc) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyRequest_CounterInc.ProtoReflect.Descriptor instead.
 func (*ApplyRequest_CounterInc) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{5, 1}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{5, 1}
 }
 
 func (x *ApplyRequest_CounterInc) GetVal() int64 {
@@ -645,7 +644,7 @@ type ApplyRequest_CounterDec struct {
 
 func (x *ApplyRequest_CounterDec) Reset() {
 	*x = ApplyRequest_CounterDec{}
-	mi := &file_api_lume_proto_msgTypes[10]
+	mi := &file_api_lume_lume_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +656,7 @@ func (x *ApplyRequest_CounterDec) String() string {
 func (*ApplyRequest_CounterDec) ProtoMessage() {}
 
 func (x *ApplyRequest_CounterDec) ProtoReflect() protoreflect.Message {
-	mi := &file_api_lume_proto_msgTypes[10]
+	mi := &file_api_lume_lume_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +669,7 @@ func (x *ApplyRequest_CounterDec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyRequest_CounterDec.ProtoReflect.Descriptor instead.
 func (*ApplyRequest_CounterDec) Descriptor() ([]byte, []int) {
-	return file_api_lume_proto_rawDescGZIP(), []int{5, 2}
+	return file_api_lume_lume_proto_rawDescGZIP(), []int{5, 2}
 }
 
 func (x *ApplyRequest_CounterDec) GetVal() int64 {
@@ -680,11 +679,11 @@ func (x *ApplyRequest_CounterDec) GetVal() int64 {
 	return 0
 }
 
-var File_api_lume_proto protoreflect.FileDescriptor
+var File_api_lume_lume_proto protoreflect.FileDescriptor
 
-const file_api_lume_proto_rawDesc = "" +
+const file_api_lume_lume_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapi/lume.proto\x12\x03api\x1a\x1bgoogle/protobuf/empty.proto\"F\n" +
+	"\x13api/lume/lume.proto\x12\x03api\x1a\x1bgoogle/protobuf/empty.proto\"F\n" +
 	"\n" +
 	"SetRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12&\n" +
@@ -728,30 +727,25 @@ const file_api_lume_proto_rawDesc = "" +
 	"\x03Set\x12\x0f.api.SetRequest\x1a\x16.google.protobuf.Empty\x12(\n" +
 	"\x03Get\x12\x0f.api.GetRequest\x1a\x10.api.GetResponse\x121\n" +
 	"\x06Delete\x12\x12.api.DeleteRequest\x1a\x13.api.DeleteResponse\x122\n" +
-	"\x05Apply\x12\x11.api.ApplyRequest\x1a\x16.google.protobuf.Empty2\xda\x01\n" +
-	"\rLumeStreaming\x12*\n" +
-	"\x03Get\x12\x0f.api.GetRequest\x1a\x10.api.GetResponse0\x01\x126\n" +
-	"\x05Apply\x12\x11.api.ApplyRequest\x1a\x16.google.protobuf.Empty(\x010\x01\x123\n" +
-	"\x06Delete\x12\x12.api.DeleteRequest\x1a\x13.api.DeleteResponse0\x01\x120\n" +
-	"\x03Set\x12\x0f.api.SetRequest\x1a\x16.google.protobuf.Empty0\x01BL\n" +
+	"\x05Apply\x12\x11.api.ApplyRequest\x1a\x16.google.protobuf.EmptyBL\n" +
 	"\acom.apiB\tLumeProtoP\x01Z\n" +
 	"api/lumepb\xa2\x02\x03AXX\xaa\x02\x03Api\xca\x02\x03Api\xe2\x02\x0fApi\\GPBMetadata\xea\x02\x03Apib\x06proto3"
 
 var (
-	file_api_lume_proto_rawDescOnce sync.Once
-	file_api_lume_proto_rawDescData []byte
+	file_api_lume_lume_proto_rawDescOnce sync.Once
+	file_api_lume_lume_proto_rawDescData []byte
 )
 
-func file_api_lume_proto_rawDescGZIP() []byte {
-	file_api_lume_proto_rawDescOnce.Do(func() {
-		file_api_lume_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_lume_proto_rawDesc), len(file_api_lume_proto_rawDesc)))
+func file_api_lume_lume_proto_rawDescGZIP() []byte {
+	file_api_lume_lume_proto_rawDescOnce.Do(func() {
+		file_api_lume_lume_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_lume_lume_proto_rawDesc), len(file_api_lume_lume_proto_rawDesc)))
 	})
-	return file_api_lume_proto_rawDescData
+	return file_api_lume_lume_proto_rawDescData
 }
 
-var file_api_lume_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_lume_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
-var file_api_lume_proto_goTypes = []any{
+var file_api_lume_lume_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_lume_lume_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_api_lume_lume_proto_goTypes = []any{
 	(Type)(0),                       // 0: api.Type
 	(*SetRequest)(nil),              // 1: api.SetRequest
 	(*DeleteRequest)(nil),           // 2: api.DeleteRequest
@@ -766,7 +760,7 @@ var file_api_lume_proto_goTypes = []any{
 	(*ApplyRequest_CounterDec)(nil), // 11: api.ApplyRequest.CounterDec
 	(*emptypb.Empty)(nil),           // 12: google.protobuf.Empty
 }
-var file_api_lume_proto_depIdxs = []int32{
+var file_api_lume_lume_proto_depIdxs = []int32{
 	0,  // 0: api.SetRequest.crdt_type:type_name -> api.Type
 	0,  // 1: api.GetResponse.crdt_type:type_name -> api.Type
 	7,  // 2: api.GetResponse.counter_data:type_name -> api.GetResponse.Counter
@@ -778,35 +772,27 @@ var file_api_lume_proto_depIdxs = []int32{
 	4,  // 8: api.Lume.Get:input_type -> api.GetRequest
 	2,  // 9: api.Lume.Delete:input_type -> api.DeleteRequest
 	6,  // 10: api.Lume.Apply:input_type -> api.ApplyRequest
-	4,  // 11: api.LumeStreaming.Get:input_type -> api.GetRequest
-	6,  // 12: api.LumeStreaming.Apply:input_type -> api.ApplyRequest
-	2,  // 13: api.LumeStreaming.Delete:input_type -> api.DeleteRequest
-	1,  // 14: api.LumeStreaming.Set:input_type -> api.SetRequest
-	12, // 15: api.Lume.Set:output_type -> google.protobuf.Empty
-	5,  // 16: api.Lume.Get:output_type -> api.GetResponse
-	3,  // 17: api.Lume.Delete:output_type -> api.DeleteResponse
-	12, // 18: api.Lume.Apply:output_type -> google.protobuf.Empty
-	5,  // 19: api.LumeStreaming.Get:output_type -> api.GetResponse
-	12, // 20: api.LumeStreaming.Apply:output_type -> google.protobuf.Empty
-	3,  // 21: api.LumeStreaming.Delete:output_type -> api.DeleteResponse
-	12, // 22: api.LumeStreaming.Set:output_type -> google.protobuf.Empty
-	15, // [15:23] is the sub-list for method output_type
-	7,  // [7:15] is the sub-list for method input_type
+	12, // 11: api.Lume.Set:output_type -> google.protobuf.Empty
+	5,  // 12: api.Lume.Get:output_type -> api.GetResponse
+	3,  // 13: api.Lume.Delete:output_type -> api.DeleteResponse
+	12, // 14: api.Lume.Apply:output_type -> google.protobuf.Empty
+	11, // [11:15] is the sub-list for method output_type
+	7,  // [7:11] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
 }
 
-func init() { file_api_lume_proto_init() }
-func file_api_lume_proto_init() {
-	if File_api_lume_proto != nil {
+func init() { file_api_lume_lume_proto_init() }
+func file_api_lume_lume_proto_init() {
+	if File_api_lume_lume_proto != nil {
 		return
 	}
-	file_api_lume_proto_msgTypes[4].OneofWrappers = []any{
+	file_api_lume_lume_proto_msgTypes[4].OneofWrappers = []any{
 		(*GetResponse_CounterData)(nil),
 		(*GetResponse_RegisterData)(nil),
 	}
-	file_api_lume_proto_msgTypes[5].OneofWrappers = []any{
+	file_api_lume_lume_proto_msgTypes[5].OneofWrappers = []any{
 		(*ApplyRequest_RegisterOperation)(nil),
 		(*ApplyRequest_CounterOperationInc)(nil),
 		(*ApplyRequest_CounterOperationDec)(nil),
@@ -815,18 +801,18 @@ func file_api_lume_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_lume_proto_rawDesc), len(file_api_lume_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_lume_lume_proto_rawDesc), len(file_api_lume_lume_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   11,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   1,
 		},
-		GoTypes:           file_api_lume_proto_goTypes,
-		DependencyIndexes: file_api_lume_proto_depIdxs,
-		EnumInfos:         file_api_lume_proto_enumTypes,
-		MessageInfos:      file_api_lume_proto_msgTypes,
+		GoTypes:           file_api_lume_lume_proto_goTypes,
+		DependencyIndexes: file_api_lume_lume_proto_depIdxs,
+		EnumInfos:         file_api_lume_lume_proto_enumTypes,
+		MessageInfos:      file_api_lume_lume_proto_msgTypes,
 	}.Build()
-	File_api_lume_proto = out.File
-	file_api_lume_proto_goTypes = nil
-	file_api_lume_proto_depIdxs = nil
+	File_api_lume_lume_proto = out.File
+	file_api_lume_lume_proto_goTypes = nil
+	file_api_lume_lume_proto_depIdxs = nil
 }

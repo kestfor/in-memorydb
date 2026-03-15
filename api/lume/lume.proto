@@ -77,10 +77,3 @@ service Lume {
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Apply(ApplyRequest) returns (google.protobuf.Empty);
 }
-
-service LumeStreaming {
-  rpc Get(stream GetRequest) returns (stream GetResponse);
-  rpc Delete(stream DeleteRequest) returns (stream DeleteResponse);
-  rpc Set(stream SetRequest) returns (google.protobuf.Empty);
-  rpc Apply(stream ApplyRequest) returns (google.protobuf.Empty);
-}
