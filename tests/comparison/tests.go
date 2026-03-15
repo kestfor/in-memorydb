@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	client "github.com/kestfor/in-memorydb/local_tests/comparison/clients"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/models"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/monitoring"
+	client "github.com/kestfor/in-memorydb/tests/comparison/clients"
+	"github.com/kestfor/in-memorydb/tests/comparison/models"
+	"github.com/kestfor/in-memorydb/tests/comparison/monitoring"
 )
 
 func runClientGet(ctx context.Context, dbClient client.Client, keyPool *KeyPool) {

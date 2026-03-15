@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/google/uuid"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/utils"
+	"github.com/kestfor/in-memorydb/tests/comparison/utils"
 )
 
 type User struct {

@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/kestfor/in-memorydb/local_tests/comparison/monitoring"
 	config "github.com/kestfor/in-memorydb/pkg/configx/v2"
+	"github.com/kestfor/in-memorydb/tests/comparison/monitoring"
 )
 
 type Config struct {

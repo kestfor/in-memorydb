@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kestfor/in-memorydb/local_tests/comparison/models"
+	"github.com/kestfor/in-memorydb/tests/comparison/models"
 	"golang.org/x/exp/rand"
 )
 

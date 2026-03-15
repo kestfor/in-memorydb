@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/kestfor/in-memorydb/api/lume"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/models"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/monitoring"
+	"github.com/kestfor/in-memorydb/tests/comparison/models"
+	"github.com/kestfor/in-memorydb/tests/comparison/monitoring"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

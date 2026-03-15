@@ -7,7 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/charmbracelet/log"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/monitoring"
+	"github.com/kestfor/in-memorydb/tests/comparison/monitoring"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

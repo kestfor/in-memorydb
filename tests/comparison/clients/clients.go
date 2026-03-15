@@ -5,8 +5,8 @@ import (
 	"log/slog"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/models"
-	"github.com/kestfor/in-memorydb/local_tests/comparison/monitoring"
+	"github.com/kestfor/in-memorydb/tests/comparison/models"
+	"github.com/kestfor/in-memorydb/tests/comparison/monitoring"
 )
 
 const (
