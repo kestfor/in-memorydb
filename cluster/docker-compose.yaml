@@ -1,0 +1,39 @@
+services:
+  first-node:
+    container_name: first-node
+    cpus: "3.0"
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+    ports:
+      - "50053:50053"
+    environment:
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./data/first-node-wal:/wal_data
+      - ../node-configs/first-peer.yaml:/lume-config/config.yaml
+    command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+    networks:
+      - cluster_network
+
+  second-node:
+    container_name: second-node
+    cpus: "3.0"
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+    ports:
+      - "50056:50053"
+    environment:
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./data/second-node-wal:/wal_data
+      - ../node-configs/second-peer.yaml:/lume-config/config.yaml
+    command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+    networks:
+      - cluster_network
+
+
+networks:
+  cluster_network:
+    driver: bridge

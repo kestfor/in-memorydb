@@ -1,0 +1,20 @@
+node:
+  id: "first"
+  bind_address: "0.0.0.0"
+  port: 50053
+gossip:
+  bind_address: "0.0.0.0"
+  port: 50054
+  fanout: 3
+  interval: 10000
+  retries: 2
+membership:
+  port: 50055
+persistence:
+  enabled: false
+  wal:
+    path: ./wal_data_1
+    segment_threshold: 10000
+trace:
+  enabled: false
+  endpoint: 192.168.0.14:4318

@@ -54,7 +54,7 @@ func Run(ctx context.Context, configPath *string) {
 		os.Exit(1)
 	}
 
-	if cfg.TraceConfig.Enable {
+	if cfg.TraceConfig.Enabled {
 		err = observability.InitTracerWithEndpoint(ctx, cfg.TraceConfig.Endpoint)
 		if err != nil {
 			slog.Error("app.Run: init tracer error", "err", err)

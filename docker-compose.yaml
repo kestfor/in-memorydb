@@ -1,0 +1,14 @@
+services:
+  node:
+    container_name: node
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    ports:
+      - "50053:50053"
+    environment:
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./docker-volumes/wal_data:/wal_data
+      - ./node-configs/first-peer.yaml:/lume-config/config.yaml
+    command: [ "./lume", "--config", "/lume-config/config.yaml" ]

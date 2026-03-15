@@ -20,7 +20,7 @@ type Config struct {
 
 type TraceConfig struct {
 	Endpoint string `yaml:"endpoint" env:"TRACE_ENDPOINT" required:"true" default:"localhost:4318"`
-	Enable   bool   `yaml:"enable" env:"TRACE_ENABLE" default:"false"`
+	Enabled  bool   `yaml:"enabled" env:"TRACE_ENABLED" default:"false"`
 }
 
 type NodeConfig struct {

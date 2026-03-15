@@ -106,7 +106,7 @@ var (
 	cpuProfile          = flag.String("cpuProfile", "", "Enables CPU profiling output to the filename provided")
 	benchmarkResultFile = flag.String("resultFile", "", "Save the benchmark result into a binary file")
 	useBufconn          = flag.Bool("bufconn", false, "Use in-memory connection instead of system network I/O")
-	enableKeepalive     = flag.Bool("enable_keepalive", false, "Enable client keepalive. \n"+
+	enableKeepalive     = flag.Bool("enable_keepalive", false, "Enabled client keepalive. \n"+
 		"Keepalive.Time is set to 10s, Keepalive.Timeout is set to 1s, Keepalive.PermitWithoutStream is set to true.")
 	clientReadBufferSize  = flags.IntSlice("clientReadBufferSize", []int{-1}, "Configures the client read buffer size in bytes. If negative, use the default - may be a comma-separated list")
 	clientWriteBufferSize = flags.IntSlice("clientWriteBufferSize", []int{-1}, "Configures the client write buffer size in bytes. If negative, use the default - may be a comma-separated list")

@@ -4,7 +4,6 @@ test:
 	@echo "Running tests..."
 	@CGO_ENABLED=1 go tool gotestsum -- --race --vet= --count=2 -p=4 -tags=test ./...
 
-
 lint:
 	go tool golangci-lint run ./...
 
@@ -14,33 +13,30 @@ bench:
 format:
 	go fmt ./...
 
-
-
-## Windows-compatible protoc generator
-#PROTOC = protoc
-#
-## Абсолютно все .proto файлы
-#PROTO_FILES := $(shell dir /S /B *.proto)
-#CURDIR_WIN := $(shell cd)
-#REL_PROTO_FILES := $(foreach f,$(PROTO_FILES),$(subst $(CURDIR_WIN)\,,$(f)))
-
-.PHONY: proto-gen-win
-proto-gen-win:
-	@echo === Generating Go files from all .proto files according to go_package ===
-	@for %%f in ($(REL_PROTO_FILES)) do ( \
-		echo Processing %%f & \
-		$(PROTOC) -I=. --go_out=. --go-grpc_out=. %%f \
-	)
-	@echo === Done ===
-
 protos:
 	@echo "🔨 Generating proto code..."
 	@go tool buf generate
 
 docker-up-comparison:
 	@echo "🚀 Starting comparison services..."
-	@cd local_tests/comparison && docker compose up -d --build
+	@cd tests/comparison && docker compose up -d --build
 
 docker-down-comparison:
 	@echo "🚀 Stopping comparison services..."
-	@cd local_tests/comparison && docker compose down
+	@cd tests/comparison && docker compose down
+
+docker-up-cluster:
+	@echo "🚀 Starting cluster..."
+	@cd cluster && docker compose up -d --build
+
+docker-down-cluster:
+	@echo "🚀 Stopping cluster..."
+	@cd cluster && docker compose down
+
+docker-up:
+	@echo "🚀 Starting node..."
+	@docker compose up -d --build
+
+docker-down:
+	@echo "🚀 Stopping node..."
+	@docker compose down
