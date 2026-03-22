@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/kestfor/in-memorydb/pkg/crdt"
+	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
 	"github.com/kestfor/in-memorydb/pkg/types"
@@ -85,5 +88,60 @@ func toDomainUpdates(updates [][]byte) ([]*types.Update, error) {
 		result = append(result, u)
 	}
 	return result, nil
+}
 
+func fromKeyState(ks *types.KeyState) *transportpb.KeyStateProto {
+	if ks == nil {
+		return nil
+	}
+	pb := &transportpb.KeyStateProto{
+		Key:       ks.Key,
+		CrdtType:  string(ks.CRDTType),
+		State:     ks.State,
+		Tombstone: ks.Tombstone,
+		Vc:        ks.VC,
+	}
+	if ks.SetTimeStamp != nil {
+		pb.SetTimeStampWall = ks.SetTimeStamp.WallTime
+		pb.SetTimeStampLamport = ks.SetTimeStamp.Lamport
+		pb.SetTimeStampId = ks.SetTimeStamp.ID
+	}
+	return pb
+}
+
+func toKeyState(pb *transportpb.KeyStateProto) *types.KeyState {
+	if pb == nil {
+		return nil
+	}
+	ks := &types.KeyState{
+		Key:       pb.Key,
+		CRDTType:  crdt.CRDTType(pb.CrdtType),
+		State:     pb.State,
+		Tombstone: pb.Tombstone,
+		VC:        pb.Vc,
+	}
+	if pb.SetTimeStampWall != 0 || pb.SetTimeStampLamport != 0 || pb.SetTimeStampId != "" {
+		ks.SetTimeStamp = &hlc.Timestamp{
+			WallTime: pb.SetTimeStampWall,
+			Lamport:  pb.SetTimeStampLamport,
+			ID:       pb.SetTimeStampId,
+		}
+	}
+	return ks
+}
+
+func fromKeyStates(states []*types.KeyState) []*transportpb.KeyStateProto {
+	result := make([]*transportpb.KeyStateProto, 0, len(states))
+	for _, ks := range states {
+		result = append(result, fromKeyState(ks))
+	}
+	return result
+}
+
+func toKeyStates(pbs []*transportpb.KeyStateProto) []*types.KeyState {
+	result := make([]*types.KeyState, 0, len(pbs))
+	for _, pb := range pbs {
+		result = append(result, toKeyState(pb))
+	}
+	return result
 }

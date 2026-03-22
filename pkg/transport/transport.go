@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	types "github.com/kestfor/in-memorydb/pkg/types"
 )
@@ -17,4 +18,10 @@ type Transport interface {
 
 	// GetVersion retrieves version vector from specified addr
 	GetVersion(ctx context.Context, addr string) (types.VectorClock, error)
+
+	// GetKeyDigests retrieves per-key version clock hashes for a specific bucket from specified addr
+	GetKeyDigests(ctx context.Context, addr string, bucket uint32) (map[string]uint64, error)
+
+	// PullKeyStates retrieves full CRDT state for specified keys from addr
+	PullKeyStates(ctx context.Context, addr string, keys []string) ([]*types.KeyState, error)
 }

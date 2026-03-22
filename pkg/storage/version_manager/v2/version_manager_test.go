@@ -24,9 +24,9 @@ func TestVersionManager_Advance(t *testing.T) {
 	vm := NewVersionManager("test-node", eng)
 
 	// Advance должен возвращать последовательные номера
-	assert.Equal(t, uint64(1), vm.Advance())
-	assert.Equal(t, uint64(2), vm.Advance())
-	assert.Equal(t, uint64(3), vm.Advance())
+	assert.Equal(t, uint64(1), vm.Advance("key"))
+	assert.Equal(t, uint64(2), vm.Advance("key"))
+	assert.Equal(t, uint64(3), vm.Advance("key"))
 
 	// GetCurrentSequence должен возвращать текущее значение
 	assert.Equal(t, uint64(3), vm.GetCurrentSequence())
@@ -50,7 +50,7 @@ func TestVersionManager_AdvanceConcurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < opsPerGoroutine; j++ {
-				vm.Advance()
+				vm.Advance("key")
 			}
 		}()
 	}
@@ -277,9 +277,9 @@ func TestVersionManager_VectorClockContiguous(t *testing.T) {
 	ctx := context.Background()
 
 	// Локальные операции
-	vm.Advance()
-	vm.Advance()
-	vm.Advance()
+	vm.Advance("key")
+	vm.Advance("key")
+	vm.Advance("key")
 
 	// Remote updates
 	counter := crdt.NewPNCounter("remote-node")
@@ -313,8 +313,8 @@ func TestVersionManager_VectorClockMax(t *testing.T) {
 	vm := NewVersionManager("test-node", eng)
 	ctx := context.Background()
 
-	vm.Advance()
-	vm.Advance()
+	vm.Advance("key")
+	vm.Advance("key")
 
 	// Remote updates с дыркой
 	counter := crdt.NewPNCounter("remote-node")
@@ -462,7 +462,7 @@ func BenchmarkVersionManager_Advance(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		vm.Advance()
+		vm.Advance("key")
 	}
 }
 
@@ -477,7 +477,7 @@ func BenchmarkVersionManager_AdvanceParallel(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			vm.Advance()
+			vm.Advance("key")
 		}
 	})
 }

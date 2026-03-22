@@ -116,3 +116,30 @@ func (t *GRPCTransport) GetVersion(ctx context.Context, addr string) (map[string
 	}
 	return resp.VectorClock, nil
 }
+
+func (t *GRPCTransport) GetKeyDigests(ctx context.Context, addr string, bucket uint32) (map[string]uint64, error) {
+	client, err := t.pool.GetClient(addr, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.GetKeyDigests(ctx, &transportpb2.GetKeyDigestsRequest{Bucket: bucket})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetDigests(), nil
+}
+
+func (t *GRPCTransport) PullKeyStates(ctx context.Context, addr string, keys []string) ([]*types.KeyState, error) {
+	client, err := t.pool.GetClient(addr, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.PullKeyStates(ctx, &transportpb2.PullKeyStatesRequest{Keys: keys})
+	if err != nil {
+		return nil, err
+	}
+
+	return toKeyStates(resp.GetKeyStates()), nil
+}

@@ -158,13 +158,24 @@ func (r *LWWHLCRegister) MarshalJSON() ([]byte, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	// If value is valid JSON, use it directly as RawMessage.
+	// Otherwise, encode the raw bytes as a JSON string so Marshal won't fail.
+	var val json.RawMessage
+	if len(r.value) > 0 && json.Valid(r.value) {
+		val = r.value
+	} else if len(r.value) > 0 {
+		// Wrap non-JSON bytes as a JSON string
+		quoted, _ := json.Marshal(string(r.value))
+		val = quoted
+	}
+
 	data := struct {
 		ID        string          `json:"id"`
 		Value     json.RawMessage `json:"value"`
 		Timestamp *hlc.Timestamp  `json:"timestamp"`
 	}{
 		ID:        r.id,
-		Value:     r.value,
+		Value:     val,
 		Timestamp: r.ts,
 	}
 

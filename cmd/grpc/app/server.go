@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/kestfor/in-memorydb/api/lume"
+	lume "github.com/kestfor/in-memorydb/api/lume"
 	"github.com/kestfor/in-memorydb/pkg/storage"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -13,7 +13,6 @@ import (
 
 type NodeServer struct {
 	lume.UnimplementedLumeServer
-
 	storage *storage.Storage
 }
 

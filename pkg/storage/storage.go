@@ -196,7 +196,7 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 
 	// increase sequence num
 
-	seqNum := s.vm.Advance()
+	seqNum := s.vm.Advance(key)
 
 	update := &types.Update{
 		NodeID:       nodeID,
@@ -229,7 +229,7 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 
 	if ok {
 
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 
 		update := &types.Update{
 			NodeID:       s.config.Node.ID,
@@ -271,7 +271,7 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
 
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 
 		delta := t.Increment(val)
 
@@ -316,7 +316,7 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 		delta := t.Decrement(val)
 
 		upd := &types.Update{
@@ -361,7 +361,7 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.LWWHLCRegister:
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 
 		delta := t.Write(val)
 

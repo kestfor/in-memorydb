@@ -30,6 +30,8 @@ services:
       - ./data/second-node-wal:/wal_data
       - ../node-configs/second-peer.yaml:/lume-config/config.yaml
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+    depends_on:
+      - first-node
     networks:
       - cluster_network
 

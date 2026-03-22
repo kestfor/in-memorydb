@@ -4,23 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"math/rand/v2"
+	"net"
+	"time"
+
 	"github.com/kestfor/in-memorydb/pkg/gossip"
 	"github.com/kestfor/in-memorydb/pkg/gossip/gossip_buffer"
 	"github.com/kestfor/in-memorydb/pkg/membership"
 	"github.com/kestfor/in-memorydb/pkg/observability/spans"
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
+	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	buffer "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
+	versionmanagerv2 "github.com/kestfor/in-memorydb/pkg/storage/version_manager/v2"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"log/slog"
-	"math/rand/v2"
-	"net"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -54,15 +57,20 @@ type DefaultGossip struct {
 	transport      transport.Transport
 	versionManager version_manager.VersionManager
 	buffer         buffer.UpdatesBuffer // local updates buffer
+	engine         engine.Engine        // for key-based anti-entropy server
 
 	gbuffer *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
 	wal     wal.WAL
 
-	updatesChannel chan []*types.Update // channel for clients updates, periodically reads and send data from this channel to other peers
-	shutdown       context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
+	updatesChannel    chan []*types.Update // channel for clients updates, periodically reads and send data from this channel to other peers
+	shutdown          context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
+	antiEntropyBucket uint32               // current bucket for partitioned anti-entropy rotation
+	numBuckets        uint32               // total number of hash buckets for anti-entropy
 }
 
-func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
+const defaultNumBuckets = versionmanagerv2.DefaultNumBuckets
+
+func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, engine engine.Engine) *DefaultGossip {
 	return &DefaultGossip{
 		config:         config,
 		transport:      transport,
@@ -70,8 +78,10 @@ func NewDefaultGossip(config *Config, transport transport.Transport, list member
 		versionManager: manager,
 		wal:            wal,
 		buffer:         buffer,
+		engine:         engine,
 		gbuffer:        gossip_buffer.NewGossipBuffer(5000), // TODO настроить размер
 		updatesChannel: make(chan []*types.Update, 10),      // TODO настроить размер
+		numBuckets:     defaultNumBuckets,
 	}
 }
 
@@ -241,13 +251,17 @@ func (g *DefaultGossip) runAntiEntropy(ctx context.Context) {
 	}
 }
 
-// antiEntropyRound executes an anti-entropy process round, ensuring consistency by syncing updates with a random peer.
+// antiEntropyRound executes key-based anti-entropy: compare per-key digests for current bucket, pull stale keys, merge CRDT state.
+// Rotates through buckets each round for partitioned coverage.
 func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
-	ctx, span := tracing.StartSpan(ctx, spans.SpanGossipAntiEntropyRound, trace.WithAttributes(attribute.String("node_id", g.memberlist.LocalNode().ID())))
-	defer span.End()
+	bucket := g.antiEntropyBucket
+	g.antiEntropyBucket = (g.antiEntropyBucket + 1) % g.numBuckets
 
-	withTimeOut, cancel := context.WithTimeout(ctx, time.Second*60) // TODO выбрать timeout через конфиг
-	defer cancel()
+	ctx, span := tracing.StartSpan(ctx, spans.SpanGossipAntiEntropyRound, trace.WithAttributes(
+		attribute.String("node_id", g.memberlist.LocalNode().ID()),
+		attribute.Int("bucket", int(bucket)),
+	))
+	defer span.End()
 
 	peer, err := g.getRandomPeer()
 	if err != nil {
@@ -256,38 +270,51 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	}
 	span.SetAttributes(attribute.String("peer", peer.ID()))
 
-	received, err := g.GetVersionVector(withTimeOut, peer)
-	if err != nil {
-		slog.Error("gossip.antiEntropyRound: anti-entropy failed", "err", err)
-		return
-	}
-
-	diff := g.versionManager.VersionDiff(received.VectorClock)
-	if len(diff) == 0 {
-		slog.DebugContext(ctx, "gossip.antiEntropyRound: No difference with peer found", "peer_id", peer.ID())
-		return
-	}
-
-	withTimeOut, cancel = context.WithTimeout(withTimeOut, time.Second*60)
+	withTimeOut, cancel := context.WithTimeout(ctx, time.Second*60)
 	defer cancel()
-	updates, err := g.Pull(withTimeOut, peer, diff)
+
+	// Step 1: Get remote key digests for this bucket
+	remoteDigests, err := g.transport.GetKeyDigests(withTimeOut, peer.GossipAddr().String(), bucket)
 	if err != nil {
-		slog.Error("gossip.antiEntropyRound: Error pulling updates", "err", err)
+		slog.Error("gossip.antiEntropyRound: failed to get key digests", "err", err, "peer", peer.ID(), "bucket", bucket)
 		return
 	}
 
-	slog.InfoContext(ctx, "gossip.antiEntropyRound: Successfully pulled requested updates", "received_num", len(updates), "from_peer", peer.ID())
+	// Step 2: Compare with local digests for this bucket
+	localDigests := g.versionManager.KeyDigests(bucket)
+	var staleKeys []string
 
-	if len(updates) > 0 {
-		go func() {
-			g.versionManager.Update(ctx, updates...)
-			for _, upd := range updates {
-				err := g.wal.Append(ctx, upd)
-				if err != nil {
-					slog.Error("gossip.antiEntropyRound: Error appending update to WAL", "err", err)
-				}
-			}
-		}()
+	for key, remoteHash := range remoteDigests {
+		localHash, exists := localDigests[key]
+		if !exists || localHash != remoteHash {
+			staleKeys = append(staleKeys, key)
+		}
+	}
+
+	if len(staleKeys) == 0 {
+		slog.DebugContext(ctx, "gossip.antiEntropyRound: No stale keys found", "peer_id", peer.ID(), "bucket", bucket)
+		return
+	}
+
+	// Step 3: Pull key states for stale keys
+	withTimeOut, cancel = context.WithTimeout(ctx, time.Second*60)
+	defer cancel()
+
+	keyStates, err := g.transport.PullKeyStates(withTimeOut, peer.GossipAddr().String(), staleKeys)
+	if err != nil {
+		slog.Error("gossip.antiEntropyRound: failed to pull key states", "err", err, "peer", peer.ID())
+		return
+	}
+
+	slog.InfoContext(ctx, "gossip.antiEntropyRound: Pulled key states",
+		"stale_keys", len(staleKeys), "received_states", len(keyStates), "from_peer", peer.ID(), "bucket", bucket)
+
+	// Step 4: Merge each key state
+	for _, ks := range keyStates {
+		if err := g.versionManager.MergeKeyState(ctx, ks); err != nil {
+			slog.Error("gossip.antiEntropyRound: failed to merge key state",
+				"error", err, "key", ks.Key, "peer", peer.ID())
+		}
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -302,7 +329,7 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.AdvertiseAddress, g.config.Port, err)
 	}
 
-	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager)
+	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager, g.engine)
 	serv := grpcserver.NewServer(grpcserver.ChainUnaryInterceptor(
 		tracing.UnaryPanicRecoveryInterceptor(),
 		tracing.UnaryServerInterceptor(),

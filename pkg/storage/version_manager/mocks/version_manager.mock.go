@@ -44,17 +44,59 @@ func (m *MockVersionManager) EXPECT() *MockVersionManagerMockRecorder {
 }
 
 // Advance mocks base method.
-func (m *MockVersionManager) Advance() uint64 {
+func (m *MockVersionManager) Advance(key string) uint64 {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Advance")
+	ret := m.ctrl.Call(m, "Advance", key)
 	ret0, _ := ret[0].(uint64)
 	return ret0
 }
 
 // Advance indicates an expected call of Advance.
-func (mr *MockVersionManagerMockRecorder) Advance() *gomock.Call {
+func (mr *MockVersionManagerMockRecorder) Advance(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Advance", reflect.TypeOf((*MockVersionManager)(nil).Advance))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Advance", reflect.TypeOf((*MockVersionManager)(nil).Advance), key)
+}
+
+// KeyDigests mocks base method.
+func (m *MockVersionManager) KeyDigests(bucket uint32) map[string]uint64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KeyDigests", bucket)
+	ret0, _ := ret[0].(map[string]uint64)
+	return ret0
+}
+
+// KeyDigests indicates an expected call of KeyDigests.
+func (mr *MockVersionManagerMockRecorder) KeyDigests(bucket any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyDigests", reflect.TypeOf((*MockVersionManager)(nil).KeyDigests), bucket)
+}
+
+// KeyVersionClock mocks base method.
+func (m *MockVersionManager) KeyVersionClock(key string) map[string]uint64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KeyVersionClock", key)
+	ret0, _ := ret[0].(map[string]uint64)
+	return ret0
+}
+
+// KeyVersionClock indicates an expected call of KeyVersionClock.
+func (mr *MockVersionManagerMockRecorder) KeyVersionClock(key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyVersionClock", reflect.TypeOf((*MockVersionManager)(nil).KeyVersionClock), key)
+}
+
+// MergeKeyState mocks base method.
+func (m *MockVersionManager) MergeKeyState(ctx context.Context, state *types.KeyState) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MergeKeyState", ctx, state)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MergeKeyState indicates an expected call of MergeKeyState.
+func (mr *MockVersionManagerMockRecorder) MergeKeyState(ctx, state any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeKeyState", reflect.TypeOf((*MockVersionManager)(nil).MergeKeyState), ctx, state)
 }
 
 // RestoreFromWal mocks base method.
