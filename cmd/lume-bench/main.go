@@ -269,44 +269,8 @@ func makeCaller(cc *grpc.ClientConn, pool *keyPool) func() {
 				}
 			}
 		}
-	}
-
-	// Streaming mode - use LumeStreaming service
-	// Note: Lume streaming API is server-streaming (one request -> stream of responses)
-	// So we need to create new streams for each "request" to match the benchmark pattern
-	streamingClient := lumepb.NewLumeStreamingClient(cc)
-
-	return func() {
-		key := pool.randomKey()
-		op := selectOperation()
-
-		switch op {
-		case "get":
-			// Create Get stream and read one response
-			getStream, err := streamingClient.Get(context.Background(), &lumepb.GetRequest{
-				Key: key,
-			})
-			if err != nil {
-				return
-			}
-			_, err = getStream.Recv()
-			if err != nil {
-				return
-			}
-		case "set":
-			// Create Set stream and read one response
-			setStream, err := streamingClient.Set(context.Background(), &lumepb.SetRequest{
-				Key:      key,
-				CrdtType: lumepb.Type_TYPE_LWW_REGISTER,
-			})
-			if err != nil {
-				return
-			}
-			_, err = setStream.Recv()
-			if err != nil {
-				return
-			}
-		}
+	} else {
+		panic("streaming RPC type not implemented")
 	}
 }
 

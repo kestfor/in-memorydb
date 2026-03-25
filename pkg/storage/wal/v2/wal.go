@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/crc32"
+	"sync"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/kestfor/in-memorydb/pkg/observability/spans"
@@ -45,6 +46,11 @@ type Config struct {
 
 type walWrapper struct {
 	w *gowal.Wal
+
+	mu        sync.Mutex
+	batch     []gowal.Record
+	batchSize int
+	batchCap  int
 }
 
 func (c *Config) populateMissed() {
@@ -80,7 +86,10 @@ func New(config Config) (WAL, error) {
 		return nil, err
 	}
 	return &walWrapper{
-		w: w,
+		w:         w,
+		batchSize: 0,
+		batchCap:  config.BatchSize,
+		batch:     make([]gowal.Record, 0, config.BatchSize),
 	}, nil
 }
 
@@ -102,12 +111,28 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 	marshSpan.End()
 
 	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite, trace.WithAttributes(attribute.Int("write_count", int(u.Range.End-u.Range.Start+1))))
+	ww.mu.Lock()
 	for i := u.Range.Start; i <= u.Range.End; i++ {
 		walIndex := createIndex(u.NodeID, i)
-		if err := ww.w.Write(walIndex, u.NodeID, bytes); err != nil {
-			return tracing.RecordError(ctx, err)
+		record := gowal.Record{
+			Key:   u.NodeID,
+			Index: walIndex,
+			Value: bytes,
 		}
+
+		ww.batch = append(ww.batch, record)
+		ww.batchSize++
+
+		if ww.batchSize == ww.batchCap {
+			if err := ww.w.WriteBatch(ww.batch); err != nil {
+				ww.mu.Unlock()
+				return tracing.RecordError(ctx, err)
+			}
+			ww.batchSize = 0
+		}
+
 	}
+	ww.mu.Unlock()
 	writeSpan.End()
 
 	span.SetStatus(codes.Ok, "")
@@ -116,6 +141,20 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 
 func (ww *walWrapper) Get(nodeID string, seq uint64) (*types.Update, error) {
 	walIndex := createIndex(nodeID, seq)
+
+	ww.mu.Lock()
+	for ind := 0; ind <= ww.batchSize; ind++ {
+		if ww.batch[ind].Index == walIndex {
+			defer ww.mu.Unlock()
+			var u types.Update
+			err := json.Unmarshal(ww.batch[ind].Value, &u)
+			if err != nil {
+				return nil, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
+			}
+			return &u, nil
+		}
+	}
+	ww.mu.Unlock()
 
 	_, val, err := ww.w.Get(walIndex)
 	if err != nil {

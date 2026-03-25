@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/memberlist v0.5.1
 	github.com/json-iterator/go v1.1.12
-	github.com/kestfor/gowal v0.0.2
+	github.com/kestfor/gowal v1.0.2
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/spf13/cobra v1.10.2

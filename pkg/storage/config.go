@@ -2,7 +2,7 @@ package storage
 
 import (
 	"github.com/kestfor/in-memorydb/pkg/gossip/gossip"
-	"github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
+	walv2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v2"
 	transport "github.com/kestfor/in-memorydb/pkg/transport/grpc"
 )
 
@@ -42,10 +42,10 @@ type SecurityConfig struct {
 }
 
 type PersistenceConfig struct {
-	Enabled            bool       `yaml:"enabled" default:"true"`
-	WalConfig          wal.Config `yaml:"wal"`
-	SnapDir            string     `yaml:"snap_dir"`
-	SnapshotIntervalMs int        `yaml:"snapshot_interval"`
+	Enabled            bool         `yaml:"enabled" default:"true"`
+	WalConfig          walv2.Config `yaml:"wal"`
+	SnapDir            string       `yaml:"snap_dir"`
+	SnapshotIntervalMs int          `yaml:"snapshot_interval"`
 }
 
 type ReplicationConfig struct {

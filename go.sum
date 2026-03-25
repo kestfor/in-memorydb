@@ -521,6 +521,8 @@ github.com/karamaru-alpha/copyloopvar v1.2.2 h1:yfNQvP9YaGQR7VaWLYcfZUlRP2eo2vhE
 github.com/karamaru-alpha/copyloopvar v1.2.2/go.mod h1:oY4rGZqZ879JkJMtX3RRkcXRkmUvH0x35ykgaKgsgJY=
 github.com/kestfor/gowal v0.0.2 h1:59HVrgGvSLMOviaZgODLCL9iF9LAMPQedQGYyK5cfkw=
 github.com/kestfor/gowal v0.0.2/go.mod h1:9kw32B1YTTGfExwHOMWDiZovSj7S2ta4AU213vO+73E=
+github.com/kestfor/gowal v1.0.2 h1:BgLndwo6KodiHs/lPYbxjRQ1ri67JGZxhOijHJfNZac=
+github.com/kestfor/gowal v1.0.2/go.mod h1:9kw32B1YTTGfExwHOMWDiZovSj7S2ta4AU213vO+73E=
 github.com/kisielk/errcheck v1.9.0 h1:9xt1zI9EBfcYBvdU1nVrzMzzUPUtPKs9bVSIM3TAb3M=
 github.com/kisielk/errcheck v1.9.0/go.mod h1:kQxWMMVZgIkDq7U8xtG/n2juOjbLgZtedi0D+/VL/i8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=

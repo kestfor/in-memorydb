@@ -9,7 +9,7 @@ import (
 	vmv2 "github.com/kestfor/in-memorydb/pkg/storage/version_manager/v2"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal/noop"
-	walv1 "github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
+	walv2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v2"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 )
 
@@ -25,7 +25,7 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 
 	var writeLog wal.WAL
 	if cfg.Persistence.Enabled {
-		writeLog, err = walv1.New(cfg.Persistence.WalConfig)
+		writeLog, err = walv2.New(cfg.Persistence.WalConfig)
 		if err != nil {
 			return nil, err
 		}
