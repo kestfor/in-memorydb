@@ -11,7 +11,7 @@ gossip:
 membership:
   port: 50055
 persistence:
-  enabled: false
+  enabled: true
   wal:
     path: ./wal_data_1
     segment_threshold: 10000
