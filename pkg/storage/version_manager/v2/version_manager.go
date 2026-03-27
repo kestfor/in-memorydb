@@ -77,6 +77,7 @@ func keyBucket(key string, numBuckets uint32) uint32 {
 func (vm *VersionManager) Advance(key string) uint64 {
 	newSeq := vm.seq.Add(1)
 	vm.updateKeyVC(key, vm.nodeID, newSeq)
+	//fmt.Printf("[Advance: key=%s, seq=%d]\n", key, newSeq)
 	return newSeq
 }
 

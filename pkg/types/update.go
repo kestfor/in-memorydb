@@ -95,6 +95,8 @@ func (u *Update) Merge(new *Update) error {
 		return fmt.Errorf("cannot merge updates with different node ID: %v and %v: %w", u.NodeID, new.NodeID, ErrCannotMerge)
 	}
 
+	// TODO посмотреть почему может быть тут ошибка, возникает при
+	// lume-bench -r 500 -c 1 -d 30 -test_name test -port 50053 -request_type=set
 	mergedRange, err := u.Range.Merge(new.Range)
 	if err != nil {
 		return fmt.Errorf("%w: %w", err, ErrCannotMerge)
@@ -104,7 +106,7 @@ func (u *Update) Merge(new *Update) error {
 		u.Type = new.Type
 		u.Payload = new.Payload
 	} else {
-		err = u.Payload.Merge(new.Payload)
+		err := u.Payload.Merge(new.Payload)
 		if err != nil {
 			return fmt.Errorf("error merging payloads: %w: %w", err, ErrCannotMerge)
 		}

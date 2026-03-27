@@ -129,6 +129,7 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 				return tracing.RecordError(ctx, err)
 			}
 			ww.batchSize = 0
+			ww.batch = ww.batch[:0]
 		}
 
 	}
@@ -215,5 +216,10 @@ func (ww *walWrapper) ReplayAll(ctx context.Context, fn func(update *types.Updat
 }
 
 func (ww *walWrapper) Close() error {
+	if ww.batchSize > 0 {
+		if err := ww.w.WriteBatch(ww.batch); err != nil {
+			return err
+		}
+	}
 	return ww.w.Close()
 }

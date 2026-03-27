@@ -1,7 +1,7 @@
 package buffer
 
 import (
-	"log/slog"
+	"sync/atomic"
 
 	"github.com/hashicorp/golang-lru/v2"
 	"github.com/kestfor/in-memorydb/pkg/structs"
@@ -12,9 +12,9 @@ import (
 type ringBuffer struct {
 	cache *lru.Cache[string, *types.Update]
 
-	//buf  []atomic.Pointer[types.Update]
-	//cap  uint64
-	//head atomic.Uint64
+	buf  []atomic.Pointer[types.Update]
+	cap  uint64
+	head atomic.Uint64
 }
 
 func NewUpdatesBuffer(size int) *ringBuffer {
@@ -24,32 +24,48 @@ func NewUpdatesBuffer(size int) *ringBuffer {
 	}
 
 	r := &ringBuffer{
-		//buf: make([]atomic.Pointer[types.Update], size),
-		//cap: uint64(size),
+		buf:   make([]atomic.Pointer[types.Update], size),
+		cap:   uint64(size),
 		cache: cache,
 	}
 	return r
 }
 
+// если использовать чисто циклический буфер то в пике с 340к рпс вырастает до 387к
+// размер буффера - 1000, при увеличении размера рпс будет падать в случае с ring, в отличие от lru
+// при размере буффера в 10000 рпс lru - 381к, ring - 197k, lru явно выигрывает
 func (r *ringBuffer) Put(updates ...*types.Update) {
 	for _, newUpd := range updates {
-		upd, ok := r.cache.Get(newUpd.Key)
-		if ok {
-			err := upd.Merge(newUpd)
-			if err != nil {
-				slog.Error("failed to merge updates", "err", err)
-				continue
-			}
-		} else {
-			upd = newUpd
-		}
+		// TODO шиза с мержем и ссылками на апдейты
+		//upd, ok := r.cache.Get(newUpd.Key)
+		//if ok {
+		//	err := upd.Merge(newUpd)
+		//	if err != nil {
+		//		r.cache.Add(upd.Key, newUpd)
+		//		slog.Error("failed to merge updates", "err", err)
+		//		continue
+		//	}
+		//} else {
+		//	upd = newUpd
+		//}
 
-		r.cache.Add(upd.Key, upd)
+		r.cache.Add(newUpd.Key, newUpd)
 	}
 	//for _, u := range updates {
-	//	pos := r.head.Add(1)
-	//	idx := pos % r.cap
-	//	r.buf[idx].Store(u)
+	//	found := false
+	//	for ind := range r.buf {
+	//		val := r.buf[ind].Load()
+	//		if val != nil && val.Key == u.Key {
+	//			_ = val.Merge(u)
+	//			r.buf[ind].Store(val)
+	//			found = true
+	//		}
+	//	}
+	//	if !found {
+	//		pos := r.head.Add(1)
+	//		idx := pos % r.cap
+	//		r.buf[idx].Store(u)
+	//	}
 	//}
 }
 

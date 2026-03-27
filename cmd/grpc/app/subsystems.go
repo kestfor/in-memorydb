@@ -33,7 +33,7 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 		writeLog = noop.NewNoopWAL()
 	}
 
-	buffer := bufferv3.NewUpdatesBuffer(1000) // TODO: move to config
+	buffer := bufferv3.NewUpdatesBuffer(10000) // TODO: move to config
 	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, transport, members, vm, writeLog, buffer, eng)
 
 	return &storage.Subsystems{
