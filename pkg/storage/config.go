@@ -35,17 +35,14 @@ type MembershipConfig struct {
 
 type SecurityConfig struct {
 	Enabled bool   `yaml:"enabled" env:"SECURITY_ENABLED" default:"false"`
-	CaCert  string `yaml:"ca_cert" env:"SECURITY_CA_CERT_FILE" default:"/etc/secrets/ca.crt"`
-	CaKey   string `yaml:"ca_key" env:"SECURITY_CA_KEY" default:"/etc/secrets/ca.key"`
-	Cert    string `yaml:"cert" env:"SECURITY_CERT" default:"/etc/secrets/tls.crt"`
-	Key     string `yaml:"key" env:"SECURITY_KEY" default:"/etc/secrets/tls.key"`
+	CaCert  string `yaml:"ca_cert" env:"SECURITY_CA_CERT" default:"/etc/lume/security/ca.crt"`
+	Cert    string `yaml:"cert" env:"SECURITY_CERT" default:"/etc/lume/security/tls.crt"`
+	Key     string `yaml:"key" env:"SECURITY_KEY" default:"/etc/lume/security/tls.key"`
 }
 
 type PersistenceConfig struct {
-	Enabled            bool       `yaml:"enabled" default:"true"`
-	WalConfig          wal.Config `yaml:"wal"`
-	SnapDir            string     `yaml:"snap_dir"`
-	SnapshotIntervalMs int        `yaml:"snapshot_interval"`
+	Enabled   bool       `yaml:"enabled" default:"true"`
+	WalConfig wal.Config `yaml:"wal"`
 }
 
 type ReplicationConfig struct {

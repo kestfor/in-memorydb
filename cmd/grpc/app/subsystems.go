@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"log/slog"
 
 	gossipimpl "github.com/kestfor/in-memorydb/pkg/gossip/gossip"
 	membershipv1 "github.com/kestfor/in-memorydb/pkg/membership/v1"
@@ -43,8 +44,13 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 		writeLog = noop.NewNoopWAL()
 	}
 
+	serverOpts, err := buildServerOpts(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	buffer := bufferv3.NewUpdatesBuffer(1000) // TODO: move to config
-	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, transport, members, vm, writeLog, buffer)
+	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, transport, members, vm, writeLog, buffer, serverOpts...)
 
 	return &storage.Subsystems{
 		Engine:         eng,
@@ -57,8 +63,23 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 	}, nil
 }
 
+func buildServerOpts(cfg *storage.Config) ([]googlegrpc.ServerOption, error) {
+	if !cfg.Security.Enabled {
+		slog.Info("p2p node-security disabled: Insecure gRPC server will be used")
+		return nil, nil
+	}
+
+	creds, err := tlsx.LoadServerCredentials(cfg.Security.CaCert, cfg.Security.Cert, cfg.Security.Key)
+	if err != nil {
+		return nil, fmt.Errorf("build subsystems: load server TLS credentials: %w", err)
+	}
+	slog.Info("p2p node-security enabled: Mutual TLS will be used for gRPC server")
+	return []googlegrpc.ServerOption{googlegrpc.Creds(creds)}, nil
+}
+
 func buildDialOpts(cfg *storage.Config) ([]googlegrpc.DialOption, error) {
 	if !cfg.Security.Enabled {
+		slog.Info("p2p node-security disabled: Insecure gRPC transport will be used")
 		return []googlegrpc.DialOption{googlegrpc.WithTransportCredentials(insecure.NewCredentials())}, nil
 	}
 
@@ -66,5 +87,6 @@ func buildDialOpts(cfg *storage.Config) ([]googlegrpc.DialOption, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build subsystems: load client TLS credentials: %w", err)
 	}
+	slog.Info("p2p node-security enabled: Mutual TLS will be used for gRPC transport")
 	return []googlegrpc.DialOption{googlegrpc.WithTransportCredentials(creds)}, nil
 }

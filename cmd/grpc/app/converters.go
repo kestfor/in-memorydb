@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"errors"
-	"github.com/kestfor/in-memorydb/api/lume"
+	lume "github.com/kestfor/in-memorydb/api/lume"
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 )
 

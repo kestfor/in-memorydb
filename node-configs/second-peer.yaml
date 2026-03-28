@@ -3,7 +3,7 @@ node:
   bind_address: "0.0.0.0"
   port: 50053
 seeds:
-  - "first-node"
+  - "first"
 gossip:
   bind_address: "0.0.0.0"
   port: 50054
@@ -17,5 +17,10 @@ persistence:
   wal:
     path: ./wal_data_2
     segment_threshold: 10000
+security:
+  enabled: true
+  ca_cert: ./node-configs/certs/ca.crt
+  cert: ./node-configs/certs/second/second.crt
+  key: ./node-configs/certs/second/second.key
 trace:
   enable: false

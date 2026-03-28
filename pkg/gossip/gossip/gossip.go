@@ -55,14 +55,15 @@ type DefaultGossip struct {
 	versionManager version_manager.VersionManager
 	buffer         buffer.UpdatesBuffer // local updates buffer
 
-	gbuffer *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
-	wal     wal.WAL
+	gbuffer    *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
+	wal        wal.WAL
+	serverOpts []grpcserver.ServerOption
 
 	updatesChannel chan []*types.Update // channel for clients updates, periodically reads and send data from this channel to other peers
 	shutdown       context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
 }
 
-func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer) *DefaultGossip {
+func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, serverOpts ...grpcserver.ServerOption) *DefaultGossip {
 	return &DefaultGossip{
 		config:         config,
 		transport:      transport,
@@ -70,6 +71,7 @@ func NewDefaultGossip(config *Config, transport transport.Transport, list member
 		versionManager: manager,
 		wal:            wal,
 		buffer:         buffer,
+		serverOpts:     serverOpts,
 		gbuffer:        gossip_buffer.NewGossipBuffer(5000), // TODO настроить размер
 		updatesChannel: make(chan []*types.Update, 10),      // TODO настроить размер
 	}
@@ -303,10 +305,11 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 	}
 
 	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager)
-	serv := grpcserver.NewServer(grpcserver.ChainUnaryInterceptor(
+	opts := append(g.serverOpts, grpcserver.ChainUnaryInterceptor(
 		tracing.UnaryPanicRecoveryInterceptor(),
 		tracing.UnaryServerInterceptor(),
 	))
+	serv := grpcserver.NewServer(opts...)
 	transportpb.RegisterUpdatesServer(serv, updatesServer)
 	go func() {
 		if err := serv.Serve(lis); err != nil {
