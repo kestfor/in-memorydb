@@ -9,6 +9,24 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+type Mode string
+
+const (
+	// Disabled mode is insecure connection between nodes in cluster and between cluster and clients
+	Disabled = "disabled"
+	// Internal mode enables secure connection between nodes in cluster, certificates must be provided
+	Internal = "internal"
+	// Full mode is like Internal but adds secure connection between cluster and clients
+	Full = "full"
+)
+
+type SecurityConfig struct {
+	Mode   Mode   `yaml:"mode" env:"SECURITY_MODE" default:"internal"`
+	CaCert string `yaml:"ca_cert" env:"SECURITY_CA_CERT" default:"/etc/lume/security/ca.crt"`
+	Cert   string `yaml:"cert" env:"SECURITY_CERT" default:"/etc/lume/security/tls.crt"`
+	Key    string `yaml:"key" env:"SECURITY_KEY" default:"/etc/lume/security/tls.key"`
+}
+
 // verifyCAOnly returns a VerifyPeerCertificate function that checks the peer's
 // certificate chain against the provided CA pool but skips hostname validation.
 // Used for internal cluster communication where nodes connect by IP.

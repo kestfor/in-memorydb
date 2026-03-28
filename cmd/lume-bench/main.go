@@ -60,13 +60,12 @@ import (
 )
 
 var (
-	port      = flag.String("port", "50051", "Localhost port to connect to.")
+	port      = flag.String("port", "50053", "Localhost port to connect to.")
 	numRPC    = flag.Int("r", 1, "The number of concurrent RPCs on each connection.")
 	numConn   = flag.Int("c", 1, "The number of parallel connections.")
 	warmupDur = flag.Int("w", 10, "Warm-up duration in seconds")
 	duration  = flag.Int("d", 60, "Benchmark duration in seconds")
 	rqSize    = flag.Int("req", 1, "Request message size in bytes.")
-	rspSize   = flag.Int("resp", 1, "Response message size in bytes.")
 	rpcType   = flag.String("rpc_type", "unary",
 		`Configure different client rpc type. Valid options are:
 		   unary;
@@ -271,43 +270,7 @@ func makeCaller(cc *grpc.ClientConn, pool *keyPool) func() {
 		}
 	}
 
-	// Streaming mode - use LumeStreaming service
-	// Note: Lume streaming API is server-streaming (one request -> stream of responses)
-	// So we need to create new streams for each "request" to match the benchmark pattern
-	streamingClient := lumepb.NewLumeStreamingClient(cc)
-
-	return func() {
-		key := pool.randomKey()
-		op := selectOperation()
-
-		switch op {
-		case "get":
-			// Create Get stream and read one response
-			getStream, err := streamingClient.Get(context.Background(), &lumepb.GetRequest{
-				Key: key,
-			})
-			if err != nil {
-				return
-			}
-			_, err = getStream.Recv()
-			if err != nil {
-				return
-			}
-		case "set":
-			// Create Set stream and read one response
-			setStream, err := streamingClient.Set(context.Background(), &lumepb.SetRequest{
-				Key:      key,
-				CrdtType: lumepb.Type_TYPE_LWW_REGISTER,
-			})
-			if err != nil {
-				return
-			}
-			_, err = setStream.Recv()
-			if err != nil {
-				return
-			}
-		}
-	}
+	panic("unknown rpc type")
 }
 
 func parseHist(hist *stats.Histogram) {

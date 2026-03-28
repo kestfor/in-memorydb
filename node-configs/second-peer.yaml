@@ -18,7 +18,7 @@ persistence:
     path: ./wal_data_2
     segment_threshold: 10000
 security:
-  enabled: true
+  mode: internal
   ca_cert: ./node-configs/certs/ca.crt
   cert: ./node-configs/certs/second/second.crt
   key: ./node-configs/certs/second/second.key

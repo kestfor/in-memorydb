@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/kestfor/in-memorydb/api/lume"
+	lume "github.com/kestfor/in-memorydb/api/lume"
 )
 
 type MockServer struct {

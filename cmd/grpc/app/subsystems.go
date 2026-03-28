@@ -64,8 +64,8 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 }
 
 func buildServerOpts(cfg *storage.Config) ([]googlegrpc.ServerOption, error) {
-	if !cfg.Security.Enabled {
-		slog.Info("p2p node-security disabled: Insecure gRPC server will be used")
+	if cfg.Security.Mode == tlsx.Disabled {
+		slog.Info("node-security disabled: Insecure gRPC server will be used")
 		return nil, nil
 	}
 
@@ -73,13 +73,13 @@ func buildServerOpts(cfg *storage.Config) ([]googlegrpc.ServerOption, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build subsystems: load server TLS credentials: %w", err)
 	}
-	slog.Info("p2p node-security enabled: Mutual TLS will be used for gRPC server")
+	slog.Info("node-security enabled: Mutual TLS will be used for gRPC server")
 	return []googlegrpc.ServerOption{googlegrpc.Creds(creds)}, nil
 }
 
 func buildDialOpts(cfg *storage.Config) ([]googlegrpc.DialOption, error) {
-	if !cfg.Security.Enabled {
-		slog.Info("p2p node-security disabled: Insecure gRPC transport will be used")
+	if cfg.Security.Mode == tlsx.Disabled {
+		slog.Info("node-security disabled: Insecure gRPC transport will be used")
 		return []googlegrpc.DialOption{googlegrpc.WithTransportCredentials(insecure.NewCredentials())}, nil
 	}
 
@@ -87,6 +87,6 @@ func buildDialOpts(cfg *storage.Config) ([]googlegrpc.DialOption, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build subsystems: load client TLS credentials: %w", err)
 	}
-	slog.Info("p2p node-security enabled: Mutual TLS will be used for gRPC transport")
+	slog.Info("node-security enabled: Mutual TLS will be used for gRPC transport")
 	return []googlegrpc.DialOption{googlegrpc.WithTransportCredentials(creds)}, nil
 }

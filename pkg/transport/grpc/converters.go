@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
 	"github.com/kestfor/in-memorydb/pkg/types"
@@ -60,20 +61,20 @@ func fromDomainVersions(versions map[string][]structs.Range) map[string]*transpo
 	return result
 }
 
-func toDomainVersions(versions map[string]*transportpb.RangeList) map[string][]structs.Range {
-	result := make(map[string][]structs.Range, len(versions))
-	for k, v := range versions {
-		l := make([]structs.Range, 0, len(v.GetRanges()))
-		for _, r := range v.GetRanges() {
-			l = append(l, structs.Range{
-				Start: r.Start,
-				End:   r.End,
-			})
-		}
-		result[k] = l
-	}
-	return result
-}
+//func toDomainVersions(versions map[string]*transportpb.RangeList) map[string][]structs.Range {
+//	result := make(map[string][]structs.Range, len(versions))
+//	for k, v := range versions {
+//		l := make([]structs.Range, 0, len(v.GetRanges()))
+//		for _, r := range v.GetRanges() {
+//			l = append(l, structs.Range{
+//				Start: r.Start,
+//				End:   r.End,
+//			})
+//		}
+//		result[k] = l
+//	}
+//	return result
+//}
 
 func toDomainUpdates(updates [][]byte) ([]*types.Update, error) {
 	result := make([]*types.Update, 0, len(updates))
