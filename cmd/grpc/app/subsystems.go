@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	gossipimpl "github.com/kestfor/in-memorydb/pkg/gossip/gossip"
 	membershipv1 "github.com/kestfor/in-memorydb/pkg/membership/v1"
 	"github.com/kestfor/in-memorydb/pkg/storage"
@@ -10,13 +12,21 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal/noop"
 	walv1 "github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
+	"github.com/kestfor/in-memorydb/pkg/tlsx"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
+	googlegrpc "google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 	eng := enginev1.NewEngine(enginev1.WithNodeID(cfg.Node.ID))
 	vm := vmv2.NewVersionManager(cfg.Node.ID, eng)
-	transport := grpc.NewGRPCTransport(&cfg.Transport)
+
+	dialOpts, err := buildDialOpts(cfg)
+	if err != nil {
+		return nil, err
+	}
+	transport := grpc.NewGRPCTransport(&cfg.Transport, dialOpts...)
 
 	members, err := membershipv1.New(storage.GlobalCfg2Mem(cfg))
 	if err != nil {
@@ -45,4 +55,16 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 		UpdatesBuffer:  buffer,
 		Gossip:         goss,
 	}, nil
+}
+
+func buildDialOpts(cfg *storage.Config) ([]googlegrpc.DialOption, error) {
+	if !cfg.Security.Enabled {
+		return []googlegrpc.DialOption{googlegrpc.WithTransportCredentials(insecure.NewCredentials())}, nil
+	}
+
+	creds, err := tlsx.LoadClientCredentials(cfg.Security.CaCert, cfg.Security.Cert, cfg.Security.Key)
+	if err != nil {
+		return nil, fmt.Errorf("build subsystems: load client TLS credentials: %w", err)
+	}
+	return []googlegrpc.DialOption{googlegrpc.WithTransportCredentials(creds)}, nil
 }

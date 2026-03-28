@@ -15,6 +15,7 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/observability"
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	config "github.com/kestfor/in-memorydb/pkg/storage"
+	"github.com/kestfor/in-memorydb/pkg/tlsx"
 	"github.com/kestfor/in-memorydb/pkg/utils/logging"
 
 	"google.golang.org/grpc"
@@ -67,12 +68,27 @@ func Run(ctx context.Context, configPath *string) {
 		slog.Error("app.Run: listen error", "err", err)
 		os.Exit(1)
 	}
-	grpcServer := grpc.NewServer(
+	serverOpts := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(2048),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryPanicRecoveryInterceptor(),
 			tracing.UnaryServerInterceptor(),
-		))
+		),
+	}
+
+	if cfg.Security.Enabled {
+		creds, err := tlsx.LoadServerCredentials(cfg.Security.CaCert, cfg.Security.Cert, cfg.Security.Key)
+		if err != nil {
+			slog.Error("app.Run: load server TLS credentials error", "err", err)
+			os.Exit(1)
+		}
+		serverOpts = append(serverOpts, grpc.Creds(creds))
+		slog.Info("app.Run: TLS enabled (mutual TLS)")
+	} else {
+		slog.Info("app.Run: TLS disabled (insecure mode)")
+	}
+
+	grpcServer := grpc.NewServer(serverOpts...)
 	lume.RegisterLumeServer(grpcServer, nodeServer)
 
 	go func() {
