@@ -1,22 +1,24 @@
 node:
   id: "first"
   bind_address: "0.0.0.0"
-  port: 50053
+  port: 8080
 gossip:
   bind_address: "0.0.0.0"
-  port: 50054
+  port: 8081
   fanout: 3
   interval: 10000
   retries: 2
 membership:
-  port: 50055
+  # advertise_addr задается явно если запускать на разных устройствах, в docker-compose автоматически зарезолвится нужный интерфейс
+  advertise_addr: "192.168.0.1"
+  port: 8082
 persistence:
   enabled: true
   wal:
     path: ./wal_data_1
     segment_threshold: 10000
 security:
-  mode: internal
+  mode: disabled
   ca_cert: ./node-configs/certs/ca.crt
   cert: ./node-configs/certs/first/first.crt
   key: ./node-configs/certs/first/first.key

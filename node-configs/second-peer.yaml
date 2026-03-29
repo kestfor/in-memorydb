@@ -1,17 +1,17 @@
 node:
   id: "second"
   bind_address: "0.0.0.0"
-  port: 50053
+  port: 8080
 seeds:
   - "first"
 gossip:
   bind_address: "0.0.0.0"
-  port: 50054
+  port: 8081
   fanout: 3
   interval: 10000
   retries: 2
 membership:
-  port: 50055
+  port: 8082
 persistence:
   enabled: false
   wal:
