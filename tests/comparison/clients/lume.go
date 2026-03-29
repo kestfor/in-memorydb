@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/kestfor/in-memorydb/api/lume"
+	lume "github.com/kestfor/in-memorydb/api/lume"
 	"github.com/kestfor/in-memorydb/tests/comparison/models"
 	"github.com/kestfor/in-memorydb/tests/comparison/monitoring"
 	"github.com/prometheus/client_golang/prometheus"
@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const lumePoolSize = 1
+//const lumePoolSize = 1
 
 var lumeLabelsSet = prometheus.Labels{"op": "set", "db": "lume"}
 var lumeLabelsGet = prometheus.Labels{"op": "get", "db": "lume"}

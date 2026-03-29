@@ -1,7 +1,13 @@
+x-grpc-healthcheck: &grpc-healthcheck
+  test: ["CMD", "grpc_health_probe", "-addr=:50053"]
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
 services:
-  first-node:
-    container_name: first-node
-    cpus: "3.0"
+  first:
+    container_name: first
+    cpus: "1.0"
     build:
       context: ../
       dockerfile: ./Dockerfile
@@ -9,16 +15,24 @@ services:
       - "50053:50053"
     environment:
       - LOG_LEVEL=DEBUG
+      - SECURITY_ENABLED=true
+      - SECURITY_CA_CERT=/etc/lume/security/ca.crt
+      - SECURITY_CERT=/etc/lume/security/tls.crt
+      - SECURITY_KEY=/etc/lume/security/tls.key
     volumes:
+      - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
+      - ../node-configs/certs/first/first.crt:/etc/lume/security/tls.crt
+      - ../node-configs/certs/first/first.key:/etc/lume/security/tls.key
       - ./data/first-node-wal:/wal_data
       - ../node-configs/first-peer.yaml:/lume-config/config.yaml
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+    healthcheck: *grpc-healthcheck
     networks:
       - cluster_network
 
-  second-node:
-    container_name: second-node
-    cpus: "3.0"
+  second:
+    container_name: second
+    cpus: "1.0"
     build:
       context: ../
       dockerfile: ./Dockerfile
@@ -26,10 +40,21 @@ services:
       - "50056:50053"
     environment:
       - LOG_LEVEL=DEBUG
+      - SECURITY_ENABLED=true
+      - SECURITY_CA_CERT=/etc/lume/security/ca.crt
+      - SECURITY_CERT=/etc/lume/security/tls.crt
+      - SECURITY_KEY=/etc/lume/security/tls.key
     volumes:
+      - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
+      - ../node-configs/certs/second/second.crt:/etc/lume/security/tls.crt
+      - ../node-configs/certs/second/second.key:/etc/lume/security/tls.key
       - ./data/second-node-wal:/wal_data
       - ../node-configs/second-peer.yaml:/lume-config/config.yaml
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+    depends_on:
+      first:
+        condition: service_healthy
+    healthcheck: *grpc-healthcheck
     networks:
       - cluster_network
 

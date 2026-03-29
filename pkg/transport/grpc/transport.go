@@ -10,24 +10,25 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type TransportConfig struct{}
 
 type ClientPool struct {
-	mu      sync.Mutex
-	clients map[string]*grpc.ClientConn
+	mu       sync.Mutex
+	clients  map[string]*grpc.ClientConn
+	dialOpts []grpc.DialOption
 }
 
 type GRPCTransport struct {
 	pool *ClientPool
 }
 
-func NewClientPool() *ClientPool {
+func NewClientPool(dialOpts ...grpc.DialOption) *ClientPool {
 	return &ClientPool{
-		clients: make(map[string]*grpc.ClientConn),
+		clients:  make(map[string]*grpc.ClientConn),
+		dialOpts: dialOpts,
 	}
 }
 
@@ -47,7 +48,10 @@ func (p *ClientPool) GetClient(peer string, addr string) (transportpb2.UpdatesCl
 	}
 
 	maxSize := 1024 * 1024 * 1024 // TODO
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize)))
+	opts := make([]grpc.DialOption, len(p.dialOpts))
+	copy(opts, p.dialOpts)
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize)))
+	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +74,9 @@ func (p *ClientPool) CloseAll() {
 	p.clients = make(map[string]*grpc.ClientConn)
 }
 
-func NewGRPCTransport(config *TransportConfig) *GRPCTransport {
+func NewGRPCTransport(config *TransportConfig, dialOpts ...grpc.DialOption) *GRPCTransport {
 	return &GRPCTransport{
-		pool: NewClientPool(),
+		pool: NewClientPool(dialOpts...),
 	}
 }
 
