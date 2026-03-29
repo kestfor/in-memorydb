@@ -2,9 +2,10 @@ package v1
 
 import (
 	"encoding/binary"
+	"time"
+
 	"github.com/kestfor/in-memorydb/pkg/membership"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"time"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -42,10 +43,13 @@ func metaFromBytes(b []byte) meta {
 
 type Config struct {
 	NodeName       string
+	AdvertiseAddr  string
 	BindAddr       string
 	GossipPort     uint16
 	MembershipPort uint16
-	ExternalPort   uint16
+
+	// ExternalPort is a port for clients
+	ExternalPort uint16
 }
 
 type memImpl struct {
@@ -55,8 +59,12 @@ type memImpl struct {
 func New(cfg *Config) (membership.Membership, error) {
 	memConfig := memberlist.DefaultWANConfig()
 	memConfig.Name = cfg.NodeName
+
 	memConfig.BindAddr = cfg.BindAddr
 	memConfig.BindPort = int(cfg.MembershipPort)
+
+	memConfig.AdvertiseAddr = cfg.AdvertiseAddr
+	memConfig.AdvertisePort = memConfig.BindPort
 
 	memConfig.Delegate = &delegate{
 		meta: meta{GossipPort: cfg.GossipPort, ExternalPort: cfg.ExternalPort},

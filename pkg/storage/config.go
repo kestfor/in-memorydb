@@ -27,11 +27,12 @@ type TraceConfig struct {
 type NodeConfig struct {
 	ID          string `yaml:"id" env:"NODE_ID" required:"true"`
 	BindAddress string `yaml:"bind_address" env:"NODE_BIND_ADDRESS" required:"true" default:"0.0.0.0"`
-	Port        uint16 `yaml:"port" env:"NODE_PORT" required:"true" default:"50051"`
+	Port        uint16 `yaml:"port" env:"NODE_PORT" required:"true" default:"8080"`
 }
 
 type MembershipConfig struct {
-	Port uint16 `yaml:"port" env:"MEMBERSHIP_PORT" required:"true" default:"50053"`
+	AdvertiseAddr string `yaml:"advertise_addr" env:"MEMBERSHIP_ADVERTISE_ADDR"`
+	Port          uint16 `yaml:"port" env:"MEMBERSHIP_PORT" required:"true" default:"8082"`
 }
 
 type PersistenceConfig struct {

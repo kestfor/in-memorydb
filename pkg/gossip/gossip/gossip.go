@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"math/rand/v2"
+	"net"
+	"time"
+
 	"github.com/kestfor/in-memorydb/pkg/gossip"
 	"github.com/kestfor/in-memorydb/pkg/gossip/gossip_buffer"
 	"github.com/kestfor/in-memorydb/pkg/membership"
@@ -17,10 +22,6 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"log/slog"
-	"math/rand/v2"
-	"net"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -32,7 +33,7 @@ const maxSendNum = 10000
 
 type Config struct {
 	AdvertiseAddress      string `yaml:"bind_address" env:"GOSSIP_BIND_ADDRESS" required:"true"`
-	Port                  uint16 `yaml:"port" env:"GOSSIP_PORT" default:"50052" required:"true"`
+	Port                  uint16 `yaml:"port" env:"GOSSIP_PORT" default:"8081" required:"true"`
 	Protocol              string `yaml:"protocol" env:"GOSSIP_PROTOCOL" default:"SWIM"`
 	AntiEntropyIntervalMs int    `yaml:"interval" env:"GOSSIP_ANT_ENTROPY_INTERVAL" default:"5000"`
 	Fanout                int    `yaml:"fanout" env:"GOSSIP_FANOUT" default:"3"`
