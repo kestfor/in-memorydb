@@ -48,7 +48,9 @@ func (p *ClientPool) GetClient(peer string, addr string) (transportpb2.UpdatesCl
 	}
 
 	maxSize := 1024 * 1024 * 1024 // TODO
-	opts := append(p.dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize)))
+	opts := make([]grpc.DialOption, len(p.dialOpts))
+	copy(opts, p.dialOpts)
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize)))
 	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, err
