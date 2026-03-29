@@ -23,4 +23,4 @@ security:
   cert: ./node-configs/certs/second/second.crt
   key: ./node-configs/certs/second/second.key
 trace:
-  enable: false
+  enabled: false
