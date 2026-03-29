@@ -76,7 +76,7 @@ func TestVersionManager_Update(t *testing.T) {
 
 	update1 := &types.Update{
 		NodeID:       "remote-node",
-		Range:        structs.Range{Start: 1, End: 1},
+		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
@@ -108,7 +108,7 @@ func TestVersionManager_UpdateDuplicate(t *testing.T) {
 
 	update := &types.Update{
 		NodeID:       "remote-node",
-		Range:        structs.Range{Start: 1, End: 1},
+		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
@@ -140,7 +140,7 @@ func TestVersionManager_UpdateDelta(t *testing.T) {
 
 	update1 := &types.Update{
 		NodeID:       "remote-node",
-		Range:        structs.Range{Start: 1, End: 1},
+		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
@@ -157,7 +157,7 @@ func TestVersionManager_UpdateDelta(t *testing.T) {
 
 	update2 := &types.Update{
 		NodeID:       "remote-node",
-		Range:        structs.Range{Start: 2, End: 2},
+		Seq:          2,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeDelta,
 		TimeStamp:    &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
@@ -197,7 +197,7 @@ func TestVersionManager_UpdateDelete(t *testing.T) {
 
 	update1 := &types.Update{
 		NodeID:       "remote-node",
-		Range:        structs.Range{Start: 1, End: 1},
+		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
@@ -210,7 +210,7 @@ func TestVersionManager_UpdateDelete(t *testing.T) {
 	// Удаляем
 	update2 := &types.Update{
 		NodeID:       "remote-node",
-		Range:        structs.Range{Start: 2, End: 2},
+		Seq:          2,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeDelete,
 		TimeStamp:    &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
@@ -246,7 +246,7 @@ func TestVersionManager_UpdateParallel(t *testing.T) {
 
 		updates[i] = &types.Update{
 			NodeID:       "remote-node",
-			Range:        structs.Range{Start: uint64(i + 1), End: uint64(i + 1)},
+			Seq:          uint64(i) + 1,
 			Key:          "counter:" + string(rune('A'+i%26)) + string(rune('0'+i/26)),
 			Type:         types.UpdateTypeSet,
 			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
@@ -288,7 +288,7 @@ func TestVersionManager_VectorClockContiguous(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		update := &types.Update{
 			NodeID:       "remote-node",
-			Range:        structs.Range{Start: uint64(i), End: uint64(i)},
+			Seq:          uint64(i),
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
@@ -298,10 +298,14 @@ func TestVersionManager_VectorClockContiguous(t *testing.T) {
 		vm.Update(ctx, update)
 	}
 
-	vc := vm.VectorClockContiguous()
+	vc := vm.KeyVersionClock("key")
+	assert.Equal(t, map[string]uint64{
+		"test-node":   3,
+		"remote-node": 5,
+	}, vc)
 
-	assert.Equal(t, uint64(3), vc["test-node"])
-	assert.Equal(t, uint64(5), vc["remote-node"])
+	//assert.Equal(t, uint64(3), vc["test-node"])
+	//assert.Equal(t, uint64(5), vc["remote-node"])
 }
 
 func TestVersionManager_VectorClockMax(t *testing.T) {
@@ -322,7 +326,7 @@ func TestVersionManager_VectorClockMax(t *testing.T) {
 	for _, seq := range []uint64{1, 2, 5, 6, 10} {
 		update := &types.Update{
 			NodeID:       "remote-node",
-			Range:        structs.Range{Start: seq, End: seq},
+			Seq:          seq,
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    &hlc.Timestamp{WallTime: 100 + seq, Lamport: 0, ID: "remote-node"},
@@ -356,7 +360,7 @@ func TestVersionManager_VersionDiff(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		update := &types.Update{
 			NodeID:       "remote-node",
-			Range:        structs.Range{Start: uint64(i), End: uint64(i)},
+			Seq:          uint64(i),
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
@@ -401,7 +405,7 @@ func TestVersionManager_ComplexConflictResolution(t *testing.T) {
 
 	upd1 := &types.Update{
 		NodeID:       "remote-node-1",
-		Range:        structs.Range{Start: 1, End: 1},
+		Seq:          1,
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    &hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
@@ -411,7 +415,7 @@ func TestVersionManager_ComplexConflictResolution(t *testing.T) {
 
 	upd2 := &types.Update{
 		NodeID:       "remote-node-2",
-		Range:        structs.Range{Start: 1, End: 1},
+		Seq:          1,
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    &hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
@@ -422,7 +426,7 @@ func TestVersionManager_ComplexConflictResolution(t *testing.T) {
 	counterDelta := crdt.NewPNCounter("remote-node-1").Increment(10)
 	upd3 := &types.Update{
 		NodeID:       "remote-node-1",
-		Range:        structs.Range{Start: 2, End: 2},
+		Seq:          2,
 		Key:          "key",
 		Type:         types.UpdateTypeDelta,
 		TimeStamp:    &hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-1"},
@@ -432,7 +436,7 @@ func TestVersionManager_ComplexConflictResolution(t *testing.T) {
 
 	upd4 := &types.Update{
 		NodeID:       "remote-node-2",
-		Range:        structs.Range{Start: 2, End: 2},
+		Seq:          2,
 		Key:          "key",
 		Type:         types.UpdateTypeDelete,
 		TimeStamp:    &hlc.Timestamp{WallTime: 104, Lamport: 0, ID: "remote-node-2"},
@@ -496,7 +500,7 @@ func BenchmarkVersionManager_Update(b *testing.B) {
 		counter := crdt.NewPNCounter("remote-node")
 		update := &types.Update{
 			NodeID:       "remote-node",
-			Range:        structs.Range{Start: uint64(i + 1), End: uint64(i + 1)},
+			Seq:          uint64(i) + 1,
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
@@ -527,7 +531,7 @@ func BenchmarkVersionManager_UpdateBatch(b *testing.B) {
 			counter := crdt.NewPNCounter("remote-node")
 			updates[j] = &types.Update{
 				NodeID:       "remote-node",
-				Range:        structs.Range{Start: seq, End: seq},
+				Seq:          uint64(seq),
 				Key:          "key:" + string(rune('A'+j%26)),
 				Type:         types.UpdateTypeDelta,
 				TimeStamp:    &hlc.Timestamp{WallTime: seq, Lamport: 0, ID: "remote-node"},
@@ -555,7 +559,7 @@ func BenchmarkVersionManager_VectorClockContiguous(b *testing.B) {
 			counter := crdt.NewPNCounter(nodeID)
 			update := &types.Update{
 				NodeID:       nodeID,
-				Range:        structs.Range{Start: uint64(i), End: uint64(i)},
+				Seq:          uint64(i),
 				Key:          "key",
 				Type:         types.UpdateTypeDelta,
 				TimeStamp:    &hlc.Timestamp{WallTime: uint64(i), Lamport: 0, ID: nodeID},

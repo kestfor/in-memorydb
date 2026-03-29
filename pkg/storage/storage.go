@@ -16,7 +16,6 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
-	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/types"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -203,7 +202,7 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    ts,
 		SetTimeStamp: ts, // since its set update
-		Range:        structs.Range{Start: seqNum, End: seqNum},
+		Seq:          seqNum,
 		Key:          key,
 		Payload:      nilDelta, // since there is no data
 	}
@@ -236,7 +235,7 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 			Type:         types.UpdateTypeDelete,
 			TimeStamp:    entry.SetTimeStamp,
 			SetTimeStamp: entry.SetTimeStamp, // delete action equal to set action for conflict resolving
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 			Payload:      &crdt.PNCounterDelta{}, // since its delete update, no data specified
 		}
@@ -281,7 +280,7 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 		}
 
@@ -325,7 +324,7 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 		}
 
@@ -371,7 +370,7 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 		}
 

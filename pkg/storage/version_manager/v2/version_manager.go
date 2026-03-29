@@ -77,7 +77,6 @@ func keyBucket(key string, numBuckets uint32) uint32 {
 func (vm *VersionManager) Advance(key string) uint64 {
 	newSeq := vm.seq.Add(1)
 	vm.updateKeyVC(key, vm.nodeID, newSeq)
-	//fmt.Printf("[Advance: key=%s, seq=%d]\n", key, newSeq)
 	return newSeq
 }
 
@@ -158,9 +157,9 @@ func (vm *VersionManager) updateParallel(ctx context.Context, updates []*types.U
 // handleUpdate обрабатывает один update
 // Возвращает true если update был применён
 func (vm *VersionManager) handleUpdate(ctx context.Context, update *types.Update) bool {
-	// TryAddRange атомарно проверяет и добавляет range в history
-	// Если range уже был применён - возвращает false
-	if !vm.history.TryAddRange(update.NodeID, update.Range) {
+	//TryAddRange атомарно проверяет и добавляет range в history
+	//Если range уже был применён - возвращает false
+	if !vm.history.TryAddRange(update.NodeID, structs.Range{update.Seq, update.Seq}) {
 		return false
 	}
 
@@ -197,7 +196,7 @@ func (vm *VersionManager) handleUpdate(ctx context.Context, update *types.Update
 	}
 
 	// Update per-key VC after successful apply
-	vm.updateKeyVC(update.Key, update.NodeID, update.Range.End)
+	vm.updateKeyVC(update.Key, update.NodeID, update.Seq)
 
 	return true
 }
@@ -265,7 +264,7 @@ func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error
 			localUpdatesNumber++
 		} else {
 			// Для remote - добавляем в history
-			vm.history.AddRange(u.NodeID, u.Range)
+			vm.history.Add(u.NodeID, u.Seq)
 		}
 
 		// Применяем update к engine

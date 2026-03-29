@@ -8,7 +8,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
-	"github.com/kestfor/in-memorydb/pkg/structs"
 )
 
 //go:generate go-enum --marshal --nocase
@@ -40,7 +39,7 @@ type Update struct {
 	Type         UpdateType     `json:"type"`
 	TimeStamp    *hlc.Timestamp `json:"time_stamp"`     // timestamp of current update
 	SetTimeStamp *hlc.Timestamp `json:"set_time_stamp"` // oldest update's timestamp, associated with same key and type
-	Range        structs.Range  `json:"range"`
+	Seq          uint64         `json:"seq"`
 	Key          string         `json:"key"`
 	Payload      crdt.Delta     `json:"payload,omitempty"`
 	TTL          uint8          `json:"ttl"`
@@ -97,10 +96,10 @@ func (u *Update) Merge(new *Update) error {
 
 	// TODO посмотреть почему может быть тут ошибка, возникает при
 	// lume-bench -r 500 -c 1 -d 30 -test_name test -port 50053 -request_type=set
-	mergedRange, err := u.Range.Merge(new.Range)
-	if err != nil {
-		return fmt.Errorf("%w: %w", err, ErrCannotMerge)
-	}
+	//mergedRange, err := u.Range.Merge(new.Range)
+	//if err != nil {
+	//	return fmt.Errorf("%w: %w", err, ErrCannotMerge)
+	//}
 
 	if u.Type == UpdateTypeSet || u.Type == UpdateTypeDelete {
 		u.Type = new.Type
@@ -112,7 +111,7 @@ func (u *Update) Merge(new *Update) error {
 		}
 	}
 
-	u.Range = mergedRange
+	u.Seq = new.Seq
 	u.TimeStamp = new.TimeStamp
 
 	return nil

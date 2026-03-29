@@ -89,12 +89,10 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 	}
 	marshSpan.End()
 
-	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite, trace.WithAttributes(attribute.Int("write_count", int(u.Range.End-u.Range.Start+1))))
-	for i := u.Range.Start; i <= u.Range.End; i++ {
-		walIndex := createIndex(u.NodeID, i)
-		if err := ww.w.Write(walIndex, u.NodeID, bytes); err != nil {
-			return tracing.RecordError(ctx, err)
-		}
+	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite)
+	walIndex := createIndex(u.NodeID, u.Seq)
+	if err := ww.w.Write(walIndex, u.NodeID, bytes); err != nil {
+		return tracing.RecordError(ctx, err)
 	}
 	writeSpan.End()
 

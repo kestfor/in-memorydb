@@ -110,29 +110,28 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 	}
 	marshSpan.End()
 
-	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite, trace.WithAttributes(attribute.Int("write_count", int(u.Range.End-u.Range.Start+1))))
+	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite)
+
 	ww.mu.Lock()
-	for i := u.Range.Start; i <= u.Range.End; i++ {
-		walIndex := createIndex(u.NodeID, i)
-		record := gowal.Record{
-			Key:   u.NodeID,
-			Index: walIndex,
-			Value: bytes,
-		}
-
-		ww.batch = append(ww.batch, record)
-		ww.batchSize++
-
-		if ww.batchSize == ww.batchCap {
-			if err := ww.w.WriteBatch(ww.batch); err != nil {
-				ww.mu.Unlock()
-				return tracing.RecordError(ctx, err)
-			}
-			ww.batchSize = 0
-			ww.batch = ww.batch[:0]
-		}
-
+	walIndex := createIndex(u.NodeID, u.Seq)
+	record := gowal.Record{
+		Key:   u.NodeID,
+		Index: walIndex,
+		Value: bytes,
 	}
+
+	ww.batch = append(ww.batch, record)
+	ww.batchSize++
+
+	if ww.batchSize == ww.batchCap {
+		if err := ww.w.WriteBatch(ww.batch); err != nil {
+			ww.mu.Unlock()
+			return tracing.RecordError(ctx, err)
+		}
+		ww.batchSize = 0
+		ww.batch = ww.batch[:0]
+	}
+
 	ww.mu.Unlock()
 	writeSpan.End()
 

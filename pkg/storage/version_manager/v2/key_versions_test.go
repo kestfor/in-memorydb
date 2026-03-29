@@ -8,7 +8,6 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
 	enginev1 "github.com/kestfor/in-memorydb/pkg/storage/engine/v1"
-	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,7 +40,7 @@ func TestHandleUpdateUpdatesKeyVC(t *testing.T) {
 
 	update := &types.Update{
 		NodeID:       "remote",
-		Range:        structs.Range{Start: 1, End: 1},
+		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
