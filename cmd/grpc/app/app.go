@@ -85,9 +85,9 @@ func Run(ctx context.Context, configPath *string) {
 			os.Exit(1)
 		}
 		serverOpts = append(serverOpts, grpc.Creds(creds))
-		slog.Info("node-security: TLS enabled (mutual TLS)")
+		slog.Info("node-security: client API TLS enabled (mutual TLS)")
 	} else {
-		slog.Info("node-security: TLS disabled (insecure mode)")
+		slog.Info("node-security: client API TLS disabled (insecure mode)")
 	}
 
 	grpcServer := grpc.NewServer(serverOpts...)
