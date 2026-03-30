@@ -12,8 +12,8 @@ import (
 	vmv2 "github.com/kestfor/in-memorydb/pkg/storage/version_manager/v2"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal/noop"
-	"github.com/kestfor/in-memorydb/pkg/tlsx"
 	walv2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v2"
+	"github.com/kestfor/in-memorydb/pkg/tlsx"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 	googlegrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -50,7 +50,7 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 	}
 
 	buffer := bufferv3.NewUpdatesBuffer(1000) // TODO: move to config
-	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, transport, members, vm, writeLog, buffer, serverOpts...)
+	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, transport, members, vm, writeLog, buffer, eng, serverOpts...)
 
 	return &storage.Subsystems{
 		Engine:         eng,

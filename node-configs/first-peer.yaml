@@ -14,7 +14,7 @@ membership:
   # advertise_addr: "192.168.0.1"
   port: 8082
 persistence:
-  enabled: true
+  enabled: false
   wal:
     path: ./wal_data_1
     segment_threshold: 10000

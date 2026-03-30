@@ -1,9 +1,9 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 RUN apk add --no-cache curl
 
-ARG GRPC_HEALTH_PROBE_VERSION=v0.4.11
-ARG GRPC_HEALTH_PROBE_SHA256=3f3b33770959c080fcdcf5c160ae4f96b9358f35f9cfec3f33ef43569476caba
+ARG GRPC_HEALTH_PROBE_VERSION=v0.4.47
+ARG GRPC_HEALTH_PROBE_SHA256=3d622aa31d1e6628f9a5b67c3cc367233d3eebe13c87e663079c2102da2b9030
 RUN curl -L \
   "https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64" \
   -o /bin/grpc_health_probe && \

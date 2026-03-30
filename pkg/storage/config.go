@@ -2,8 +2,8 @@ package storage
 
 import (
 	"github.com/kestfor/in-memorydb/pkg/gossip/gossip"
-	"github.com/kestfor/in-memorydb/pkg/tlsx"
 	walv2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v2"
+	"github.com/kestfor/in-memorydb/pkg/tlsx"
 	transport "github.com/kestfor/in-memorydb/pkg/transport/grpc"
 )
 
@@ -36,7 +36,7 @@ type MembershipConfig struct {
 }
 
 type PersistenceConfig struct {
-	Enabled   bool       `yaml:"enabled" default:"true"`
+	Enabled   bool         `yaml:"enabled" default:"true"`
 	WalConfig walv2.Config `yaml:"wal"`
 }
 

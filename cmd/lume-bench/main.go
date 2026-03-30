@@ -47,6 +47,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,8 +60,24 @@ import (
 	"google.golang.org/grpc/grpclog"
 )
 
+// Define a custom type that is a slice of strings
+type arrayFlags []string
+
+// String is the method to satisfy the flag.Value interface.
+// It returns a string representation of the flag value.
+func (i *arrayFlags) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+// Set is the method to satisfy the flag.Value interface.
+// It appends the new value to the slice.
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, strings.Split(value, ",")...)
+	return nil
+}
+
 var (
-	port      = flag.String("port", "50053", "Localhost port to connect to.")
+	ports     arrayFlags
 	numRPC    = flag.Int("r", 1, "The number of concurrent RPCs on each connection.")
 	numConn   = flag.Int("c", 1, "The number of parallel connections.")
 	warmupDur = flag.Int("w", 10, "Warm-up duration in seconds")
@@ -78,11 +95,14 @@ var (
 		NumBuckets:   2495,
 		GrowthFactor: .01,
 	}
-	mu    sync.Mutex
-	hists []*stats.Histogram
-
+	mu     sync.Mutex
+	hists  []*stats.Histogram
 	logger = grpclog.Component("benchmark")
 )
+
+func init() {
+	flag.Var(&ports, "ports", "Localhost ports to connect to.")
+}
 
 // keyPool generates keys for the fixed pool
 type keyPool struct {
@@ -118,7 +138,7 @@ func main() {
 
 	connectCtx, connectCancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
 	defer connectCancel()
-	ccs := buildConnections(connectCtx)
+	ccs := buildConnections(connectCtx, ports)
 
 	// Initialize key pool
 	pool := newKeyPool(*poolSize)
@@ -188,15 +208,18 @@ func main() {
 	fmt.Println("Client Mem Profile:", mf.Name())
 }
 
-func buildConnections(ctx context.Context) []*grpc.ClientConn {
-	ccs := make([]*grpc.ClientConn, *numConn)
-	for i := range ccs {
-		ccs[i] = benchmark.NewClientConnWithContext(ctx, "localhost:"+*port,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithBlock(),
-			grpc.WithWriteBufferSize(128*1024),
-			grpc.WithReadBufferSize(128*1024),
-		)
+func buildConnections(ctx context.Context, ports []string) []*grpc.ClientConn {
+	ccs := make([]*grpc.ClientConn, 0, *numConn*len(ports))
+	for i := range ports {
+		for j := 0; j < *numConn; j++ {
+			conn := benchmark.NewClientConnWithContext(ctx, "localhost:"+ports[i],
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+				grpc.WithBlock(),
+				grpc.WithWriteBufferSize(128*1024),
+				grpc.WithReadBufferSize(128*1024),
+			)
+			ccs = append(ccs, conn)
+		}
 	}
 	return ccs
 }
