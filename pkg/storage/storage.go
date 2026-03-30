@@ -73,9 +73,8 @@ func (s *Storage) StartUp(ctx context.Context) error {
 
 	if len(s.config.Seeds) > 0 {
 		err := s.memberlist.Join(s.config.Seeds)
-		if err != nil || len(s.memberlist.Members()) == 1 {
-			n := s.memberlist.LocalNode()
-			slog.Debug("storage.NewStorage: cannot join cluster, choosing standalone mode", "known seeds", s.config.Seeds, "node", n)
+		if err != nil {
+			slog.Debug("storage.NewStorage: cannot join cluster, choosing standalone mode", "known seeds", s.config.Seeds, "error", err)
 		}
 	}
 

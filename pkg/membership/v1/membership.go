@@ -2,10 +2,12 @@ package v1
 
 import (
 	"encoding/binary"
+	"log/slog"
 	"time"
 
 	"github.com/kestfor/in-memorydb/pkg/membership"
 	"github.com/kestfor/in-memorydb/pkg/types"
+	"github.com/kestfor/in-memorydb/pkg/utils/logging"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -58,6 +60,8 @@ type memImpl struct {
 
 func New(cfg *Config) (membership.Membership, error) {
 	memConfig := memberlist.DefaultWANConfig()
+	stdLogger := slog.NewLogLogger(slog.Default().Handler(), logging.LogLevel())
+	memConfig.Logger = stdLogger
 	memConfig.Name = cfg.NodeName
 
 	memConfig.BindAddr = cfg.BindAddr
@@ -83,6 +87,10 @@ func New(cfg *Config) (membership.Membership, error) {
 func (m *memImpl) Join(seeds []string) error {
 	_, err := m.list.Join(seeds)
 	return err
+}
+
+func (m *memImpl) Num() int {
+	return m.list.NumMembers()
 }
 
 func (m *memImpl) LocalNode() types.Node {

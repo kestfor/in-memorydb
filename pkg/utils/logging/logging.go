@@ -14,15 +14,20 @@ var logLevelMapping = map[string]slog.Level{
 }
 
 func InitDefault(nodeId string) {
+	level := LogLevel()
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+	})).With("node_id", nodeId)
+	slog.SetDefault(logger)
+}
+
+func LogLevel() slog.Level {
 	level := strings.ToLower(os.Getenv("LOG_LEVEL"))
 
 	logLevel, ok := logLevelMapping[level]
 	if !ok {
 		logLevel = slog.LevelInfo
 	}
-
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: logLevel,
-	})).With("node_id", nodeId)
-	slog.SetDefault(logger)
+	return logLevel
 }

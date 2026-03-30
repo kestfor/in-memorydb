@@ -14,7 +14,7 @@ services:
     ports:
       - "8081:8080"
     environment:
-      - LOG_LEVEL=ERROR
+      - LOG_LEVEL=DEBUG
       - SECURITY_ENABLED=true
       - SECURITY_CA_CERT=/etc/lume/security/ca.crt
       - SECURITY_CERT=/etc/lume/security/tls.crt
@@ -39,7 +39,7 @@ services:
     ports:
       - "8082:8080"
     environment:
-      - LOG_LEVEL=ERROR
+      - LOG_LEVEL=DEBUG
       - SECURITY_ENABLED=true
       - SECURITY_CA_CERT=/etc/lume/security/ca.crt
       - SECURITY_CERT=/etc/lume/security/tls.crt

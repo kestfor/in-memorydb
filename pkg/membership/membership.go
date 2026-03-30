@@ -1,8 +1,9 @@
 package membership
 
 import (
-	"github.com/kestfor/in-memorydb/pkg/types"
 	"time"
+
+	"github.com/kestfor/in-memorydb/pkg/types"
 )
 
 type Membership interface {
@@ -18,4 +19,6 @@ type Membership interface {
 
 	// Join allows the current node to join a cluster using the provided list of seed node addresses.
 	Join(seeds []string) error
+
+	Num() int
 }
