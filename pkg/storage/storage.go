@@ -27,7 +27,7 @@ var ErrInternal = errors.New("internal error")
 
 // bufferPutWithTracing wraps buffer.Put operation with tracing externally
 // since buffer operations are lightweight
-func bufferPutWithTracing(ctx context.Context, buffer updates_buffer.UpdatesBuffer, update *types.Update) {
+func bufferPutWithTracing(ctx context.Context, buffer updates_buffer.UpdatesBuffer, update types.Update) {
 	_, span := tracing.StartSpan(ctx, spans.SpanBufferPut)
 	defer span.End()
 	buffer.Put(update)
@@ -43,7 +43,7 @@ type Storage struct {
 	memberlist membership.Membership          // controls membership
 	wal        wal.WAL                        // write-ahead-log
 
-	updatesChan chan<- []*types.Update
+	updatesChan chan<- []types.Update
 	shutdown    context.CancelFunc
 }
 
@@ -197,7 +197,7 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 
 	seqNum := s.vm.Advance(key)
 
-	update := &types.Update{
+	update := types.Update{
 		NodeID:       nodeID,
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    ts,
@@ -230,7 +230,7 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 
 		seqNum := s.vm.Advance(key)
 
-		update := &types.Update{
+		update := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelete,
 			TimeStamp:    entry.SetTimeStamp,
@@ -274,7 +274,7 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 
 		delta := t.Increment(val)
 
-		upd := &types.Update{
+		upd := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
@@ -318,7 +318,7 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 		seqNum := s.vm.Advance(key)
 		delta := t.Decrement(val)
 
-		upd := &types.Update{
+		upd := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
@@ -364,7 +364,7 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 
 		delta := t.Write(val)
 
-		upd := &types.Update{
+		upd := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),

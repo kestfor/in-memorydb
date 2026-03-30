@@ -78,12 +78,13 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 
 				}
 			} else {
-				pbs, err := fromDomainUpdates(covering)
-				if err != nil {
-					slog.ErrorContext(ctx, "grpc.Get: Error while converting", "fromNodeID", nodeID, "updates", covering, "err", err)
-					continue
-				}
-				result = append(result, pbs...)
+				// TODO check if used
+				//pbs, err := fromDomainUpdates(covering)
+				//if err != nil {
+				//	slog.ErrorContext(ctx, "grpc.Get: Error while converting", "fromNodeID", nodeID, "updates", covering, "err", err)
+				//	continue
+				//}
+				//result = append(result, pbs...)
 			}
 		}
 	}

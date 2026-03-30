@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"hash/crc32"
+	"log/slog"
 	"sync"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/kestfor/in-memorydb/pkg/observability/spans"
@@ -39,7 +41,7 @@ type Config struct {
 	// MaxSegments is the maximum number of segments allowed before the oldest segment is deleted
 	MaxSegmentsNum int `yaml:"-" default:"100000000"` // TODO add yaml tag after snapshot implementation
 
-	BatchSize int `yaml:"batch_size" default:"500"`
+	BatchSize int `yaml:"batch_size" default:"1000"`
 
 	WriteChanSize int `yaml:"write_chan_size" default:"50000"`
 }
@@ -71,6 +73,31 @@ func (c *Config) populateMissed() {
 	}
 }
 
+// todo configure
+func (w *walWrapper) backgroundFlush() {
+	slog.Info("running flush WAL in background")
+	ticker := time.NewTicker(time.Second)
+	for _ = range ticker.C {
+		if w.batchSize > 0 {
+			w.mu.Lock()
+			_ = w.flushLocked()
+			w.mu.Unlock()
+			slog.Debug("flush performed")
+		}
+	}
+}
+
+func (ww *walWrapper) flushLocked() error {
+	if ww.batchSize > 0 {
+		if err := ww.w.WriteBatch(ww.batch); err != nil {
+			return err
+		}
+		ww.batchSize = 0
+		ww.batch = ww.batch[:0]
+	}
+	return nil
+}
+
 func New(config Config) (WAL, error) {
 	config.populateMissed()
 
@@ -79,18 +106,23 @@ func New(config Config) (WAL, error) {
 		Prefix:           "segment_",
 		SegmentThreshold: config.SegmentThreshold,
 		MaxSegments:      config.MaxSegmentsNum,
+		IsInSyncDiskMode: false,
 	}
 
 	w, err := gowal.NewWAL(cfg)
 	if err != nil {
 		return nil, err
 	}
-	return &walWrapper{
+	res := &walWrapper{
 		w:         w,
 		batchSize: 0,
 		batchCap:  config.BatchSize,
 		batch:     make([]gowal.Record, 0, config.BatchSize),
-	}, nil
+	}
+
+	//go res.backgroundFlush()
+
+	return res, nil
 }
 
 // TODO можно кэшировать
@@ -99,7 +131,7 @@ func createIndex(nodeID string, seqNum uint64) uint64 {
 	return (h << 32) | (seqNum & 0xffffffff)
 }
 
-func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
+func (ww *walWrapper) Append(ctx context.Context, u types.Update) error {
 	ctx, span := tracing.StartSpan(ctx, spans.SpanWALAppend, trace.WithAttributes(attribute.String("node_id", u.NodeID)))
 	defer span.End()
 
@@ -124,12 +156,10 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 	ww.batchSize++
 
 	if ww.batchSize == ww.batchCap {
-		if err := ww.w.WriteBatch(ww.batch); err != nil {
+		if err := ww.flushLocked(); err != nil {
 			ww.mu.Unlock()
 			return tracing.RecordError(ctx, err)
 		}
-		ww.batchSize = 0
-		ww.batch = ww.batch[:0]
 	}
 
 	ww.mu.Unlock()
@@ -139,7 +169,7 @@ func (ww *walWrapper) Append(ctx context.Context, u *types.Update) error {
 	return nil
 }
 
-func (ww *walWrapper) Get(nodeID string, seq uint64) (*types.Update, error) {
+func (ww *walWrapper) Get(nodeID string, seq uint64) (types.Update, error) {
 	walIndex := createIndex(nodeID, seq)
 
 	ww.mu.Lock()
@@ -149,28 +179,28 @@ func (ww *walWrapper) Get(nodeID string, seq uint64) (*types.Update, error) {
 			var u types.Update
 			err := json.Unmarshal(ww.batch[ind].Value, &u)
 			if err != nil {
-				return nil, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
+				return types.Update{}, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
 			}
-			return &u, nil
+			return u, nil
 		}
 	}
 	ww.mu.Unlock()
 
 	_, val, err := ww.w.Get(walIndex)
 	if err != nil {
-		return nil, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w: %w", nodeID, seq, err, ErrNotFound)
+		return types.Update{}, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w: %w", nodeID, seq, err, ErrNotFound)
 	}
 
 	var u types.Update
 	err = json.Unmarshal(val, &u)
 	if err != nil {
-		return nil, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
+		return types.Update{}, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
 	}
 
-	return &u, nil
+	return u, nil
 }
 
-func (ww *walWrapper) Replay(ctx context.Context, nodeID string, fromSeq uint64, fn func(update *types.Update) error) error {
+func (ww *walWrapper) Replay(ctx context.Context, nodeID string, fromSeq uint64, fn func(update types.Update) error) error {
 	ctx, span := tracing.StartSpan(ctx, spans.SpanWALReplay, trace.WithAttributes(attribute.String("node_id", nodeID)))
 	defer span.End()
 
@@ -185,7 +215,7 @@ func (ww *walWrapper) Replay(ctx context.Context, nodeID string, fromSeq uint64,
 			if err != nil {
 				return tracing.RecordError(ctx, fmt.Errorf("WAL.Replay(node: '%s', seq: '%d'): %w", nodeID, idx, err))
 			}
-			if err := fn(&u); err != nil {
+			if err := fn(u); err != nil {
 				return tracing.RecordError(ctx, fmt.Errorf("WAL.Replay(node: '%s', seq: '%d'): %w", nodeID, idx, err))
 			}
 		}
@@ -195,7 +225,7 @@ func (ww *walWrapper) Replay(ctx context.Context, nodeID string, fromSeq uint64,
 	return nil
 }
 
-func (ww *walWrapper) ReplayAll(ctx context.Context, fn func(update *types.Update) error) error {
+func (ww *walWrapper) ReplayAll(ctx context.Context, fn func(update types.Update) error) error {
 	ctx, span := tracing.StartSpan(ctx, spans.SpanWALReplayAll)
 	defer span.End()
 
@@ -205,7 +235,7 @@ func (ww *walWrapper) ReplayAll(ctx context.Context, fn func(update *types.Updat
 		if err != nil {
 			return tracing.RecordError(ctx, fmt.Errorf("WAL.ReplayAll(node: '%s'): %w", msg.Key, err))
 		}
-		if err := fn(&u); err != nil {
+		if err := fn(u); err != nil {
 			return tracing.RecordError(ctx, fmt.Errorf("WAL.ReplayAll(node: '%s'): %w", msg.Key, err))
 		}
 	}

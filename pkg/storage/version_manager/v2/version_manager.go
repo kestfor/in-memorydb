@@ -82,7 +82,7 @@ func (vm *VersionManager) Advance(key string) uint64 {
 
 // Update применяет набор updates от remote нод
 // Возвращает slice успешно применённых updates
-func (vm *VersionManager) Update(ctx context.Context, updates ...*types.Update) []*types.Update {
+func (vm *VersionManager) Update(ctx context.Context, updates ...types.Update) []types.Update {
 	if len(updates) == 0 {
 		return nil
 	}
@@ -97,11 +97,11 @@ func (vm *VersionManager) Update(ctx context.Context, updates ...*types.Update) 
 }
 
 // updateSequential последовательно применяет updates
-func (vm *VersionManager) updateSequential(ctx context.Context, updates []*types.Update) []*types.Update {
-	applied := make([]*types.Update, 0, len(updates))
+func (vm *VersionManager) updateSequential(ctx context.Context, updates []types.Update) []types.Update {
+	applied := make([]types.Update, 0, len(updates))
 
 	for _, update := range updates {
-		if vm.handleUpdate(ctx, update) {
+		if vm.handleUpdate(ctx, &update) {
 			applied = append(applied, update)
 		}
 	}
@@ -110,13 +110,13 @@ func (vm *VersionManager) updateSequential(ctx context.Context, updates []*types
 }
 
 // updateParallel параллельно применяет updates через worker pool
-func (vm *VersionManager) updateParallel(ctx context.Context, updates []*types.Update) []*types.Update {
+func (vm *VersionManager) updateParallel(ctx context.Context, updates []types.Update) []types.Update {
 	type result struct {
-		update  *types.Update
+		update  types.Update
 		applied bool
 	}
 
-	jobs := make(chan *types.Update, len(updates))
+	jobs := make(chan types.Update, len(updates))
 	results := make(chan result, len(updates))
 
 	// Запускаем workers
@@ -126,7 +126,7 @@ func (vm *VersionManager) updateParallel(ctx context.Context, updates []*types.U
 		go func() {
 			defer wg.Done()
 			for update := range jobs {
-				applied := vm.handleUpdate(ctx, update)
+				applied := vm.handleUpdate(ctx, &update)
 				results <- result{update, applied}
 			}
 		}()
@@ -144,7 +144,7 @@ func (vm *VersionManager) updateParallel(ctx context.Context, updates []*types.U
 		close(results)
 	}()
 
-	applied := make([]*types.Update, 0, len(updates))
+	applied := make([]types.Update, 0, len(updates))
 	for r := range results {
 		if r.applied {
 			applied = append(applied, r.update)
@@ -247,7 +247,7 @@ func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error
 	count := 0
 	localUpdatesNumber := uint64(0)
 
-	err := wal.ReplayAll(ctx, func(u *types.Update) error {
+	err := wal.ReplayAll(ctx, func(u types.Update) error {
 		count++
 
 		// Периодически проверяем cancellation
@@ -268,7 +268,7 @@ func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error
 		}
 
 		// Применяем update к engine
-		vm.applyUpdateDuringRestore(ctx, u)
+		vm.applyUpdateDuringRestore(ctx, &u)
 
 		return nil
 	})

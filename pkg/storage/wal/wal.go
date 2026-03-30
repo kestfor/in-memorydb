@@ -3,6 +3,7 @@ package wal
 import (
 	"context"
 	"errors"
+
 	"github.com/kestfor/in-memorydb/pkg/types"
 )
 
@@ -10,16 +11,16 @@ var ErrNotFound = errors.New("not found")
 
 type WAL interface {
 	// Append appends new update to the end of the log
-	Append(ctx context.Context, u *types.Update) error
+	Append(ctx context.Context, u types.Update) error
 
 	// Get method returns update with specified nodeID and seqNum, if not exists - ErrNotFound will be returned
-	Get(nodeID string, seq uint64) (*types.Update, error)
+	Get(nodeID string, seq uint64) (types.Update, error)
 
 	// Replay replays log entries for a specified node starting from a given sequence number and applies a processing function.
-	Replay(ctx context.Context, nodeID string, fromSeq uint64, fn func(update *types.Update) error) error
+	Replay(ctx context.Context, nodeID string, fromSeq uint64, fn func(update types.Update) error) error
 
 	// ReplayAll replays all log entries in the write-ahead-log and applies the given processing function to each entry.
-	ReplayAll(ctx context.Context, fn func(update *types.Update) error) error
+	ReplayAll(ctx context.Context, fn func(update types.Update) error) error
 
 	// Close gracefully shuts down the write-ahead log, ensuring all resources are released and pending operations are completed.
 	// Should be called to flush pending values

@@ -2,11 +2,12 @@ package grpc
 
 import (
 	"context"
+	"log/slog"
+	"sync"
+
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	transportpb2 "github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"log/slog"
-	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -76,7 +77,7 @@ func NewGRPCTransport(config *TransportConfig) *GRPCTransport {
 	}
 }
 
-func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*types.Update) error {
+func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []types.Update) error {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return err
@@ -91,7 +92,7 @@ func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*types.
 	return err
 }
 
-func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*types.Update, error) {
+func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]types.Update, error) {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return nil, err

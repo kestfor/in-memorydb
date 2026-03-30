@@ -1,7 +1,7 @@
 package buffer
 
 import (
-	"sync/atomic"
+	"log/slog"
 
 	"github.com/hashicorp/golang-lru/v2"
 	"github.com/kestfor/in-memorydb/pkg/structs"
@@ -10,22 +10,16 @@ import (
 
 // TODO merge updates
 type ringBuffer struct {
-	cache *lru.Cache[string, *types.Update]
-
-	buf  []atomic.Pointer[types.Update]
-	cap  uint64
-	head atomic.Uint64
+	cache *lru.Cache[string, types.Update]
 }
 
 func NewUpdatesBuffer(size int) *ringBuffer {
-	cache, err := lru.New[string, *types.Update](size)
+	cache, err := lru.New[string, types.Update](size)
 	if err != nil {
 		panic(err)
 	}
 
 	r := &ringBuffer{
-		buf:   make([]atomic.Pointer[types.Update], size),
-		cap:   uint64(size),
 		cache: cache,
 	}
 	return r
@@ -34,20 +28,21 @@ func NewUpdatesBuffer(size int) *ringBuffer {
 // если использовать чисто циклический буфер то в пике с 340к рпс вырастает до 387к
 // размер буффера - 1000, при увеличении размера рпс будет падать в случае с ring, в отличие от lru
 // при размере буффера в 10000 рпс lru - 381к, ring - 197k, lru явно выигрывает
-func (r *ringBuffer) Put(updates ...*types.Update) {
+func (r *ringBuffer) Put(updates ...types.Update) {
 	for _, newUpd := range updates {
+		cacheKey := newUpd.Key + ":" + newUpd.NodeID
+
 		// TODO шиза с мержем и ссылками на апдейты
-		//upd, ok := r.cache.Get(newUpd.Key)
-		//if ok {
-		//	err := upd.Merge(newUpd)
-		//	if err != nil {
-		//		r.cache.Add(upd.Key, newUpd)
-		//		slog.Error("failed to merge updates", "err", err)
-		//		continue
-		//	}
-		//} else {
-		//	upd = newUpd
-		//}
+		upd, ok := r.cache.Get(cacheKey)
+		if ok {
+
+			err := upd.Merge(newUpd)
+			if err != nil {
+				slog.Error("failed to merge updates", "err", err)
+				continue
+			}
+			r.cache.Add(cacheKey, upd)
+		}
 
 		r.cache.Add(newUpd.Key, newUpd)
 	}
@@ -69,8 +64,8 @@ func (r *ringBuffer) Put(updates ...*types.Update) {
 	//}
 }
 
-func (r *ringBuffer) PeekN(n int) []*types.Update {
-	out := make([]*types.Update, 0, n)
+func (r *ringBuffer) PeekN(n int) []types.Update {
+	out := make([]types.Update, 0, n)
 
 	for _, u := range r.cache.Values() {
 		out = append(out, u)
@@ -98,7 +93,7 @@ func (r *ringBuffer) PeekN(n int) []*types.Update {
 }
 
 // TODO remove
-func (r *ringBuffer) Get(key string, nodeID string) ([]*types.Update, bool) {
+func (r *ringBuffer) Get(key string, nodeID string) ([]types.Update, bool) {
 	panic("deprecated, cannot be used")
 	//head := r.head.Load()
 	//
@@ -128,7 +123,7 @@ func (r *ringBuffer) Get(key string, nodeID string) ([]*types.Update, bool) {
 }
 
 // TODO remove
-func (r *ringBuffer) GetCovering(nodeID string, rr structs.Range) []*types.Update {
+func (r *ringBuffer) GetCovering(nodeID string, rr structs.Range) []types.Update {
 	panic("deprecated, cannot be used")
 	//head := r.head.Load()
 	//

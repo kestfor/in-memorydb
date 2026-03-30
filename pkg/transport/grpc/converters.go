@@ -14,7 +14,7 @@ import (
 
 var ErrCannotConvert = errors.New("cannot convert to transport data")
 
-func fromDomainUpdate(update *types.Update) ([]byte, error) {
+func fromDomainUpdate(update types.Update) ([]byte, error) {
 	jsonPayload, err := json.Marshal(update)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrCannotConvert, err)
@@ -22,7 +22,7 @@ func fromDomainUpdate(update *types.Update) ([]byte, error) {
 	return jsonPayload, nil
 }
 
-func fromDomainUpdates(updates []*types.Update) ([][]byte, error) {
+func fromDomainUpdates(updates []types.Update) ([][]byte, error) {
 	result := make([][]byte, 0, len(updates))
 	for _, update := range updates {
 		u, err := fromDomainUpdate(update)
@@ -34,14 +34,14 @@ func fromDomainUpdates(updates []*types.Update) ([][]byte, error) {
 	return result, nil
 }
 
-func toDomainUpdate(update []byte) (*types.Update, error) {
+func toDomainUpdate(update []byte) (types.Update, error) {
 
 	var upd types.Update
 	if err := json.Unmarshal(update, &upd); err != nil {
-		return nil, err
+		return types.Update{}, err
 	}
 
-	return &upd, nil
+	return upd, nil
 }
 
 func fromDomainVersions(versions map[string][]structs.Range) map[string]*transportpb.RangeList {
@@ -78,8 +78,8 @@ func toDomainVersions(versions map[string]*transportpb.RangeList) map[string][]s
 	return result
 }
 
-func toDomainUpdates(updates [][]byte) ([]*types.Update, error) {
-	result := make([]*types.Update, 0, len(updates))
+func toDomainUpdates(updates [][]byte) ([]types.Update, error) {
+	result := make([]types.Update, 0, len(updates))
 	for _, update := range updates {
 		u, err := toDomainUpdate(update)
 		if err != nil {

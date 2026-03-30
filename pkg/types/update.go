@@ -35,14 +35,14 @@ type Payload interface {
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Update struct {
-	NodeID       string         `json:"node_id"`
-	Type         UpdateType     `json:"type"`
+	Seq          uint64         `json:"seq"`
 	TimeStamp    *hlc.Timestamp `json:"time_stamp"`     // timestamp of current update
 	SetTimeStamp *hlc.Timestamp `json:"set_time_stamp"` // oldest update's timestamp, associated with same key and type
-	Seq          uint64         `json:"seq"`
-	Key          string         `json:"key"`
 	Payload      crdt.Delta     `json:"payload,omitempty"`
+	Type         UpdateType     `json:"type"`
 	TTL          uint8          `json:"ttl"`
+	Key          string         `json:"key"`
+	NodeID       string         `json:"node_id"`
 }
 
 // types for marshaling data
@@ -85,7 +85,7 @@ func (u Update) MarshalJSON() ([]byte, error) {
 }
 
 // TODO set -> delta transition
-func (u *Update) Merge(new *Update) error {
+func (u *Update) Merge(new Update) error {
 	if u.Key != new.Key {
 		return fmt.Errorf("cannot merge updates with different keys: %v and %v: %w", u.Key, new.Key, ErrCannotMerge)
 	}
@@ -105,6 +105,7 @@ func (u *Update) Merge(new *Update) error {
 		u.Type = new.Type
 		u.Payload = new.Payload
 	} else {
+		// мб нежелательное share так как в wal уже лежит этот update
 		err := u.Payload.Merge(new.Payload)
 		if err != nil {
 			return fmt.Errorf("error merging payloads: %w: %w", err, ErrCannotMerge)

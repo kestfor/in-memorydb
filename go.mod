@@ -1,6 +1,6 @@
 module github.com/kestfor/in-memorydb
 
-go 1.25.0
+go 1.26.0
 
 replace github.com/kestfor/in-memorydb/api/lume => ./api/lume
 

@@ -12,7 +12,7 @@ import (
 
 type VersionManager interface {
 	Advance(key string) uint64
-	Update(ctx context.Context, updates ...*types.Update) []*types.Update
+	Update(ctx context.Context, updates ...types.Update) []types.Update
 	VectorClockContiguous() types.VectorClock
 	VectorClockMax() types.VectorClock
 	VersionDiff(remote types.VectorClock) map[string][]structs.Range

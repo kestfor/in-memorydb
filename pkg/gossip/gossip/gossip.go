@@ -62,10 +62,10 @@ type DefaultGossip struct {
 	gbuffer *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
 	wal     wal.WAL
 
-	updatesChannel    chan []*types.Update // channel for clients updates, periodically reads and send data from this channel to other peers
-	shutdown          context.CancelFunc   // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
-	antiEntropyBucket uint32               // current bucket for partitioned anti-entropy rotation
-	numBuckets        uint32               // total number of hash buckets for anti-entropy
+	updatesChannel    chan []types.Update // channel for clients updates, periodically reads and send data from this channel to other peers
+	shutdown          context.CancelFunc  // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
+	antiEntropyBucket uint32              // current bucket for partitioned anti-entropy rotation
+	numBuckets        uint32              // total number of hash buckets for anti-entropy
 }
 
 const defaultNumBuckets = versionmanagerv2.DefaultNumBuckets
@@ -80,14 +80,14 @@ func NewDefaultGossip(config *Config, transport transport.Transport, list member
 		buffer:         buffer,
 		engine:         engine,
 		gbuffer:        gossip_buffer.NewGossipBuffer(5000), // TODO настроить размер
-		updatesChannel: make(chan []*types.Update, 10),      // TODO настроить размер
+		updatesChannel: make(chan []types.Update, 10),       // TODO настроить размер
 		numBuckets:     defaultNumBuckets,
 	}
 }
 
 // Start initializes and starts the gossip process, returning a channel for updates and an error, if any occurs.
 // It also registers grpc server for update exchange between peers
-func (g *DefaultGossip) Start(ctx context.Context) (chan<- []*types.Update, error) {
+func (g *DefaultGossip) Start(ctx context.Context) (chan<- []types.Update, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	g.shutdown = cancel
 
@@ -107,7 +107,7 @@ func (g *DefaultGossip) Shutdown() error {
 	return nil
 }
 
-func (g *DefaultGossip) Send(ctx context.Context, data []*types.Update) error {
+func (g *DefaultGossip) Send(ctx context.Context, data []types.Update) error {
 	ctx, span := tracing.StartSpan(ctx, spans.SpanGossipSend, trace.WithAttributes(attribute.Int("fanout", g.config.Fanout)))
 	defer span.End()
 
@@ -145,7 +145,7 @@ func (g *DefaultGossip) Send(ctx context.Context, data []*types.Update) error {
 	return nil
 }
 
-func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*types.Update) <-chan error {
+func (g *DefaultGossip) AsyncSend(ctx context.Context, data []types.Update) <-chan error {
 	ch := make(chan error, 1)
 	go func() {
 		ch <- g.Send(ctx, data)
@@ -156,7 +156,7 @@ func (g *DefaultGossip) AsyncSend(ctx context.Context, data []*types.Update) <-c
 }
 
 // TODO добавить возможность указать конкретного peer
-func (g *DefaultGossip) Pull(ctx context.Context, peer types.Node, version map[string][]structs.Range) ([]*types.Update, error) {
+func (g *DefaultGossip) Pull(ctx context.Context, peer types.Node, version map[string][]structs.Range) ([]types.Update, error) {
 	ctx, span := tracing.StartSpan(ctx, spans.SpanGossipPull)
 	defer span.End()
 
@@ -203,7 +203,7 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 	sem := make(chan struct{}, 5) // TODO где MaxConcurrentSends в конфиге
 	for updates := range g.updatesChannel {
 		sem <- struct{}{}
-		go func(u []*types.Update) {
+		go func(u []types.Update) {
 			defer func() { <-sem }()
 			ctx, span := tracing.StartSpan(ctx, spans.SpanGossipReadUpdates, trace.WithAttributes(attribute.Int("updates_count", len(u))))
 			defer span.End()
