@@ -3,6 +3,11 @@ package v1
 import (
 	"container/list"
 	"context"
+	"log/slog"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
 	"github.com/kestfor/in-memorydb/pkg/observability/spans"
@@ -10,10 +15,6 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/utils"
-	"log/slog"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 const defaultInitialShards = 256
@@ -32,7 +33,7 @@ type markItem struct {
 }
 
 type Engine struct {
-	nodeID    string
+	//nodeID    string
 	shards    atomic.Pointer[[]*shard]
 	numShards atomic.Uint32
 	clock     *hlc.Time

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kestfor/in-memorydb/api/lume"
+	lume "github.com/kestfor/in-memorydb/api/lume"
 	"log"
 	"strconv"
 	"sync"
@@ -43,29 +43,29 @@ func (c *Client) setKeys(ctx context.Context, n int) error {
 	return nil
 }
 
-func (c *Client) deleteKeys(ctx context.Context, n int) error {
-	for i := 1; i <= n; i++ {
-		k := getKey(c.clientNum, i)
-		_, err := c.cl.Delete(ctx, &lume.DeleteRequest{Key: k})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
+//func (c *Client) deleteKeys(ctx context.Context, n int) error {
+//	for i := 1; i <= n; i++ {
+//		k := getKey(c.clientNum, i)
+//		_, err := c.cl.Delete(ctx, &lume.DeleteRequest{Key: k})
+//		if err != nil {
+//			return err
+//		}
+//	}
+//	return nil
+//}
 
-func (c *Client) getKeys(ctx context.Context, n int) ([]string, error) {
-	result := make([]string, n)
-	for i := 1; i <= n; i++ {
-		k := getKey(c.clientNum, i)
-		resp, err := c.cl.Get(ctx, &lume.GetRequest{Key: k})
-		if err != nil {
-			return nil, err
-		}
-		result[i-1] = string(resp.GetRegisterData().Val)
-	}
-	return result, nil
-}
+//func (c *Client) getKeys(ctx context.Context, n int) ([]string, error) {
+//	result := make([]string, n)
+//	for i := 1; i <= n; i++ {
+//		k := getKey(c.clientNum, i)
+//		resp, err := c.cl.Get(ctx, &lume.GetRequest{Key: k})
+//		if err != nil {
+//			return nil, err
+//		}
+//		result[i-1] = string(resp.GetRegisterData().Val)
+//	}
+//	return result, nil
+//}
 
 func getKey(clNum int, keyN int) string {
 	return fmt.Sprintf("client:%d:key:%d", clNum, keyN)

@@ -35,7 +35,7 @@ const maxSendNum = 10000
 
 type Config struct {
 	AdvertiseAddress      string `yaml:"bind_address" env:"GOSSIP_BIND_ADDRESS" required:"true"`
-	Port                  uint16 `yaml:"port" env:"GOSSIP_PORT" default:"50052" required:"true"`
+	Port                  uint16 `yaml:"port" env:"GOSSIP_PORT" default:"8081" required:"true"`
 	Protocol              string `yaml:"protocol" env:"GOSSIP_PROTOCOL" default:"SWIM"`
 	AntiEntropyIntervalMs int    `yaml:"interval" env:"GOSSIP_ANT_ENTROPY_INTERVAL" default:"5000"`
 	Fanout                int    `yaml:"fanout" env:"GOSSIP_FANOUT" default:"3"`
@@ -59,8 +59,9 @@ type DefaultGossip struct {
 	buffer         buffer.UpdatesBuffer // local updates buffer
 	engine         engine.Engine        // for key-based anti-entropy server
 
-	gbuffer *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
-	wal     wal.WAL
+	gbuffer    *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
+	wal        wal.WAL
+	serverOpts []grpcserver.ServerOption
 
 	updatesChannel    chan []types.Update // channel for clients updates, periodically reads and send data from this channel to other peers
 	shutdown          context.CancelFunc  // shutdown is a function to cancel the context, used to trigger graceful shutdown of ongoing processes.
@@ -70,7 +71,7 @@ type DefaultGossip struct {
 
 const defaultNumBuckets = versionmanagerv2.DefaultNumBuckets
 
-func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, engine engine.Engine) *DefaultGossip {
+func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, engine engine.Engine, serverOpts ...grpcserver.ServerOption) *DefaultGossip {
 	return &DefaultGossip{
 		config:         config,
 		transport:      transport,
@@ -79,6 +80,7 @@ func NewDefaultGossip(config *Config, transport transport.Transport, list member
 		wal:            wal,
 		buffer:         buffer,
 		engine:         engine,
+		serverOpts:     serverOpts,
 		gbuffer:        gossip_buffer.NewGossipBuffer(5000), // TODO настроить размер
 		updatesChannel: make(chan []types.Update, 10),       // TODO настроить размер
 		numBuckets:     defaultNumBuckets,
@@ -330,10 +332,11 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 	}
 
 	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager, g.engine)
-	serv := grpcserver.NewServer(grpcserver.ChainUnaryInterceptor(
+	opts := append(g.serverOpts, grpcserver.ChainUnaryInterceptor(
 		tracing.UnaryPanicRecoveryInterceptor(),
 		tracing.UnaryServerInterceptor(),
 	))
+	serv := grpcserver.NewServer(opts...)
 	transportpb.RegisterUpdatesServer(serv, updatesServer)
 	go func() {
 		if err := serv.Serve(lis); err != nil {

@@ -12,22 +12,22 @@ import (
 	"github.com/kestfor/in-memorydb/tests/comparison/monitoring"
 )
 
-func runClientGet(ctx context.Context, dbClient client.Client, keyPool *KeyPool) {
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			u := keyPool.GetKey()
-
-			_, err := dbClient.Get(ctx, u)
-			if err != nil {
-				slog.Warn("get failed", "err", err)
-			}
-		}
-	}
-}
+//func runClientGet(ctx context.Context, dbClient client.Client, keyPool *KeyPool) {
+//
+//	for {
+//		select {
+//		case <-ctx.Done():
+//			return
+//		default:
+//			u := keyPool.GetKey()
+//
+//			_, err := dbClient.Get(ctx, u)
+//			if err != nil {
+//				slog.Warn("get failed", "err", err)
+//			}
+//		}
+//	}
+//}
 
 func preloadKeys(ctx context.Context, dbClient client.Client, cfg Test) *KeyPool {
 	pool := NewKeyPool()

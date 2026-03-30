@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kestfor/in-memorydb/api/lume"
+	lume "github.com/kestfor/in-memorydb/api/lume"
 	configpkg "github.com/kestfor/in-memorydb/pkg/configx/v2"
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	config "github.com/kestfor/in-memorydb/pkg/storage"

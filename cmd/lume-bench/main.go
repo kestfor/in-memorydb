@@ -60,13 +60,12 @@ import (
 )
 
 var (
-	port      = flag.String("port", "50051", "Localhost port to connect to.")
+	port      = flag.String("port", "50053", "Localhost port to connect to.")
 	numRPC    = flag.Int("r", 1, "The number of concurrent RPCs on each connection.")
 	numConn   = flag.Int("c", 1, "The number of parallel connections.")
 	warmupDur = flag.Int("w", 10, "Warm-up duration in seconds")
 	duration  = flag.Int("d", 60, "Benchmark duration in seconds")
 	rqSize    = flag.Int("req", 1, "Request message size in bytes.")
-	rspSize   = flag.Int("resp", 1, "Response message size in bytes.")
 	rpcType   = flag.String("rpc_type", "unary",
 		`Configure different client rpc type. Valid options are:
 		   unary;
@@ -269,9 +268,9 @@ func makeCaller(cc *grpc.ClientConn, pool *keyPool) func() {
 				}
 			}
 		}
-	} else {
-		panic("streaming RPC type not implemented")
 	}
+
+	panic("unknown rpc type")
 }
 
 func parseHist(hist *stats.Histogram) {
