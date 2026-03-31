@@ -16,20 +16,18 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// number of updates that a node can send via one get call
-const maxUpdatesNumber = 10000
-
 type updatesServer struct {
 	transportpb.UnimplementedUpdatesServer
-	vm      version_manager.VersionManager
-	buffer  buffer.UpdatesBuffer
-	gbuffer *gossip_buffer.GossipBuffer
-	wal     wal.WAL
-	engine  engine.Engine
+	vm               version_manager.VersionManager
+	buffer           buffer.UpdatesBuffer
+	gbuffer          *gossip_buffer.GossipBuffer
+	wal              wal.WAL
+	engine           engine.Engine
+	maxUpdatesPerGet int
 }
 
-func NewUpdatesServer(buffer buffer.UpdatesBuffer, gbuffer *gossip_buffer.GossipBuffer, wal wal.WAL, vm version_manager.VersionManager, engine engine.Engine) *updatesServer {
-	return &updatesServer{buffer: buffer, gbuffer: gbuffer, wal: wal, vm: vm, engine: engine}
+func NewUpdatesServer(buffer buffer.UpdatesBuffer, gbuffer *gossip_buffer.GossipBuffer, wal wal.WAL, vm version_manager.VersionManager, engine engine.Engine, maxUpdatesPerGet int) *updatesServer {
+	return &updatesServer{buffer: buffer, gbuffer: gbuffer, wal: wal, vm: vm, engine: engine, maxUpdatesPerGet: maxUpdatesPerGet}
 }
 
 // Get retrieves the updates for the requested version ranges, using both buffer and WAL as data sources.
@@ -38,13 +36,13 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 	var result [][]byte
 
 	for nodeID, missedRange := range missedRanges {
-		if len(result) >= maxUpdatesNumber {
+		if len(result) >= s.maxUpdatesPerGet {
 			break
 		}
 
 		for _, r := range missedRange.GetRanges() {
 
-			if len(result) >= maxUpdatesNumber {
+			if len(result) >= s.maxUpdatesPerGet {
 				break
 			}
 
@@ -58,7 +56,7 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 
 			// fallback to wal
 			if len(covering) == 0 {
-				for seq := r.Start; seq <= r.End && len(result) < maxUpdatesNumber; seq++ {
+				for seq := r.Start; seq <= r.End && len(result) < s.maxUpdatesPerGet; seq++ {
 
 					upd, err := s.wal.Get(nodeID, seq)
 

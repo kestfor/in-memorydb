@@ -71,7 +71,7 @@ func Run(ctx context.Context, configPath *string) {
 		os.Exit(1)
 	}
 	serverOpts := []grpc.ServerOption{
-		grpc.MaxConcurrentStreams(2048),
+		grpc.MaxConcurrentStreams(cfg.Node.MaxConcurrentStreams),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryPanicRecoveryInterceptor(),
 			tracing.UnaryServerInterceptor(),

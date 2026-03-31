@@ -111,7 +111,7 @@ func (s *Storage) GracefulStop() error {
 
 func (s *Storage) startBufferRead(ctx context.Context) {
 	go func() {
-		ticker := time.NewTicker(time.Second * 5) // TODO
+		ticker := time.NewTicker(s.config.Buffer.ReadInterval)
 		for {
 			select {
 			case <-ticker.C:
@@ -130,7 +130,7 @@ func (s *Storage) startBufferRead(ctx context.Context) {
 
 // TODO выглядит так как будто апдейты не буферизируются
 func (s *Storage) bufferReadRound() error {
-	upds := s.buffer.PeekN(100)
+	upds := s.buffer.PeekN(s.config.Buffer.PeekBatchSize)
 	if len(upds) == 0 {
 		return nil
 	}

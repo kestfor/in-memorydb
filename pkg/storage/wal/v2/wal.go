@@ -25,7 +25,6 @@ const (
 	defaultSegmentThreshold = 1000
 	defaultMaxSegments      = 100000000
 	defaultBatchSize        = 500
-	defaultWriteChanSize    = 50000
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -42,8 +41,6 @@ type Config struct {
 	MaxSegmentsNum int `yaml:"-" default:"100000000"` // TODO add yaml tag after snapshot implementation
 
 	BatchSize int `yaml:"batch_size" default:"1000"`
-
-	WriteChanSize int `yaml:"write_chan_size" default:"50000"`
 }
 
 type walWrapper struct {
@@ -67,9 +64,6 @@ func (c *Config) populateMissed() {
 	}
 	if c.BatchSize == 0 {
 		c.BatchSize = defaultBatchSize
-	}
-	if c.WriteChanSize == 0 {
-		c.WriteChanSize = defaultWriteChanSize
 	}
 }
 

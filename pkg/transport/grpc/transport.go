@@ -14,22 +14,28 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type TransportConfig struct{}
+type TransportConfig struct {
+	MaxMessageSize   int `yaml:"max_message_size" env:"TRANSPORT_MAX_MESSAGE_SIZE" default:"1073741824"`
+	MaxUpdatesPerGet int `yaml:"max_updates_per_get" env:"TRANSPORT_MAX_UPDATES_PER_GET" default:"10000"`
+}
 
 type ClientPool struct {
-	mu       sync.Mutex
-	clients  map[string]*grpc.ClientConn
-	dialOpts []grpc.DialOption
+	mu             sync.Mutex
+	clients        map[string]*grpc.ClientConn
+	dialOpts       []grpc.DialOption
+	maxMessageSize int
 }
 
 type GRPCTransport struct {
-	pool *ClientPool
+	config *TransportConfig
+	pool   *ClientPool
 }
 
-func NewClientPool(dialOpts ...grpc.DialOption) *ClientPool {
+func NewClientPool(maxMessageSize int, dialOpts ...grpc.DialOption) *ClientPool {
 	return &ClientPool{
-		clients:  make(map[string]*grpc.ClientConn),
-		dialOpts: dialOpts,
+		clients:        make(map[string]*grpc.ClientConn),
+		dialOpts:       dialOpts,
+		maxMessageSize: maxMessageSize,
 	}
 }
 
@@ -48,10 +54,9 @@ func (p *ClientPool) GetClient(peer string, addr string) (transportpb2.UpdatesCl
 		}
 	}
 
-	maxSize := 1024 * 1024 * 1024 // TODO
 	opts := make([]grpc.DialOption, len(p.dialOpts))
 	copy(opts, p.dialOpts)
-	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize)))
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(p.maxMessageSize)))
 	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, err
@@ -77,7 +82,8 @@ func (p *ClientPool) CloseAll() {
 
 func NewGRPCTransport(config *TransportConfig, dialOpts ...grpc.DialOption) *GRPCTransport {
 	return &GRPCTransport{
-		pool: NewClientPool(dialOpts...),
+		config: config,
+		pool:   NewClientPool(config.MaxMessageSize, dialOpts...),
 	}
 }
 

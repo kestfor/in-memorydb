@@ -31,15 +31,18 @@ import (
 	grpcserver "google.golang.org/grpc"
 )
 
-const maxSendNum = 10000
-
 type Config struct {
-	AdvertiseAddress      string `yaml:"bind_address" env:"GOSSIP_BIND_ADDRESS" required:"true"`
-	Port                  uint16 `yaml:"port" env:"GOSSIP_PORT" default:"8081" required:"true"`
-	Protocol              string `yaml:"protocol" env:"GOSSIP_PROTOCOL" default:"SWIM"`
-	AntiEntropyIntervalMs int    `yaml:"interval" env:"GOSSIP_ANT_ENTROPY_INTERVAL" default:"5000"`
-	Fanout                int    `yaml:"fanout" env:"GOSSIP_FANOUT" default:"3"`
-	Retries               int    `yaml:"retries" env:"GOSSIP_RETRIES" default:"3"`
+	AdvertiseAddress    string        `yaml:"bind_address" env:"GOSSIP_BIND_ADDRESS" required:"true"`
+	Port                uint16        `yaml:"port" env:"GOSSIP_PORT" default:"8081" required:"true"`
+	Protocol            string        `yaml:"protocol" env:"GOSSIP_PROTOCOL" default:"SWIM"`
+	AntiEntropyInterval time.Duration `yaml:"interval" env:"GOSSIP_ANT_ENTROPY_INTERVAL" default:"5s"`
+	Fanout              int           `yaml:"fanout" env:"GOSSIP_FANOUT" default:"3"`
+	Retries             int           `yaml:"retries" env:"GOSSIP_RETRIES" default:"3"`
+
+	BufferSize         int           `yaml:"buffer_size" env:"GOSSIP_BUFFER_SIZE" default:"5000"`
+	MaxConcurrentSends int           `yaml:"max_concurrent_sends" env:"GOSSIP_MAX_CONCURRENT_SENDS" default:"5"`
+	MaxSendPerRound    int           `yaml:"max_send_per_round" env:"GOSSIP_MAX_SEND_PER_ROUND" default:"10000"`
+	AntiEntropyTimeout time.Duration `yaml:"anti_entropy_timeout" env:"GOSSIP_ANTI_ENTROPY_TIMEOUT" default:"60s"`
 }
 
 var ErrNoPeers = errors.New("no peers available")
@@ -52,12 +55,13 @@ var ErrNoPeers = errors.New("no peers available")
 // Server answers to incoming other clients messages
 // Client calls other servers to receive updates
 type DefaultGossip struct {
-	config         *Config
-	memberlist     membership.Membership
-	transport      transport.Transport
-	versionManager version_manager.VersionManager
-	buffer         buffer.UpdatesBuffer // local updates buffer
-	engine         engine.Engine        // for key-based anti-entropy server
+	config          *Config
+	transportConfig *grpc.TransportConfig
+	memberlist      membership.Membership
+	transport       transport.Transport
+	versionManager  version_manager.VersionManager
+	buffer          buffer.UpdatesBuffer // local updates buffer
+	engine          engine.Engine        // for key-based anti-entropy server
 
 	gbuffer    *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
 	wal        wal.WAL
@@ -69,21 +73,20 @@ type DefaultGossip struct {
 	numBuckets        uint32              // total number of hash buckets for anti-entropy
 }
 
-const defaultNumBuckets = versionmanagerv2.DefaultNumBuckets
-
-func NewDefaultGossip(config *Config, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, engine engine.Engine, serverOpts ...grpcserver.ServerOption) *DefaultGossip {
+func NewDefaultGossip(config *Config, transportConfig *grpc.TransportConfig, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, engine engine.Engine, serverOpts ...grpcserver.ServerOption) *DefaultGossip {
 	return &DefaultGossip{
-		config:         config,
-		transport:      transport,
-		memberlist:     list,
-		versionManager: manager,
-		wal:            wal,
-		buffer:         buffer,
-		engine:         engine,
-		serverOpts:     serverOpts,
-		gbuffer:        gossip_buffer.NewGossipBuffer(5000), // TODO настроить размер
-		updatesChannel: make(chan []types.Update, 10),       // TODO настроить размер
-		numBuckets:     defaultNumBuckets,
+		config:          config,
+		transportConfig: transportConfig,
+		transport:       transport,
+		memberlist:      list,
+		versionManager:  manager,
+		wal:             wal,
+		buffer:          buffer,
+		engine:          engine,
+		serverOpts:      serverOpts,
+		gbuffer:         gossip_buffer.NewGossipBuffer(config.BufferSize),
+		updatesChannel:  make(chan []types.Update, 10),
+		numBuckets:      versionmanagerv2.DefaultNumBuckets,
 	}
 }
 
@@ -202,7 +205,7 @@ func (g *DefaultGossip) GetVersionVector(ctx context.Context, peer types.Node) (
 // readUpdates processes incoming updates from the updatesChannel and sends them asynchronously to peers.
 // A semaphore is used to limit the number of concurrently executed send operations.
 func (g *DefaultGossip) readUpdates(ctx context.Context) {
-	sem := make(chan struct{}, 5) // TODO где MaxConcurrentSends в конфиге
+	sem := make(chan struct{}, g.config.MaxConcurrentSends)
 	for updates := range g.updatesChannel {
 		sem <- struct{}{}
 		go func(u []types.Update) {
@@ -213,10 +216,10 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 			clusterSize := len(g.memberlist.Members())
 
 			for index := range u {
-				u[index].TTL = getTTLNumForAsync(clusterSize, g.config.Fanout, g.config.AntiEntropyIntervalMs/1000)
+				u[index].TTL = getTTLNumForAsync(clusterSize, g.config.Fanout, int(g.config.AntiEntropyInterval.Seconds()))
 			}
 
-			ttlUpds := g.gbuffer.PeekN(maxSendNum - len(u))
+			ttlUpds := g.gbuffer.PeekN(g.config.MaxSendPerRound - len(u))
 			u = append(u, ttlUpds...)
 
 			if err := g.Send(ctx, u); err != nil {
@@ -240,7 +243,7 @@ func (g *DefaultGossip) getRandomPeer() (types.Node, error) {
 
 // runAntiEntropy periodically triggers the anti-entropy process to ensure data consistency across gossip nodes.
 func (g *DefaultGossip) runAntiEntropy(ctx context.Context) {
-	ticker := time.NewTicker(time.Duration(g.config.AntiEntropyIntervalMs) * time.Millisecond)
+	ticker := time.NewTicker(g.config.AntiEntropyInterval)
 	defer ticker.Stop()
 	for {
 		select {
@@ -272,7 +275,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	}
 	span.SetAttributes(attribute.String("peer", peer.ID()))
 
-	withTimeOut, cancel := context.WithTimeout(ctx, time.Second*60)
+	withTimeOut, cancel := context.WithTimeout(ctx, g.config.AntiEntropyTimeout)
 	defer cancel()
 
 	// Step 1: Get remote key digests for this bucket
@@ -299,7 +302,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	}
 
 	// Step 3: Pull key states for stale keys
-	withTimeOut, cancel = context.WithTimeout(ctx, time.Second*60)
+	withTimeOut, cancel = context.WithTimeout(ctx, g.config.AntiEntropyTimeout)
 	defer cancel()
 
 	keyStates, err := g.transport.PullKeyStates(withTimeOut, peer.GossipAddr().String(), staleKeys)
@@ -331,7 +334,7 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.AdvertiseAddress, g.config.Port, err)
 	}
 
-	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager, g.engine)
+	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager, g.engine, g.transportConfig.MaxUpdatesPerGet)
 	opts := append(g.serverOpts, grpcserver.ChainUnaryInterceptor(
 		tracing.UnaryPanicRecoveryInterceptor(),
 		tracing.UnaryServerInterceptor(),

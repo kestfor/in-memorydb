@@ -1,27 +1,60 @@
+# =============================================
+# Lume-db Node Configuration Template
+# =============================================
+# All duration values use Go duration format: 500ms, 5s, 1m, 1h
+# Fields marked [required] must be specified.
+# Fields with (default: ...) can be omitted.
+
 node:
-  id: "node1" # node identification, must be unique across cluster
-  bind_address: "127.0.0.1" # main node bind address
-  port: 9090 # node port that listens for clients requests
+  id: "node1"                    # [required] unique node identifier across the cluster
+  bind_address: "0.0.0.0"       # address to bind the client gRPC server (default: 0.0.0.0)
+  port: 8080                     # port for client gRPC API (default: 8080)
+  max_concurrent_streams: 2048   # max concurrent gRPC streams per client connection (default: 2048)
+
 gossip:
-  port: 9091 # port for peer-to-peer communication inside the cluster for update transfer
-  protocol: "SWIM" # protocol name
-  interval: 500 # interval in ms between anti-entropy
-  fanout: 3 # num of nodes for random updates distribution
-  retries: 3 # num of retries to send data for each node
+  bind_address: "0.0.0.0"       # [required] address for peer-to-peer gossip communication
+  port: 8081                     # port for gossip protocol (default: 8081)
+  interval: 5s                   # interval between anti-entropy rounds (default: 5s)
+  fanout: 3                      # number of random peers to send updates to per round (default: 3)
+  retries: 3                     # number of retry attempts per peer when sending updates (default: 3)
+  buffer_size: 10000              # size of the gossip propagation buffer (default: 5000)
+  max_concurrent_sends: 5        # max parallel send operations per round (default: 5) TODO мб переименовать или вообще убрать, т.к. может быть не нужно
+  max_send_per_round: 10000      # max number of updates to send in one gossip round (default: 10000) TODO переименовать
+  anti_entropy_timeout: 60s      # timeout for anti-entropy requests to peers (default: 60s) TODO мб убрать
+
 membership:
-  port: 9092 # port for peer-to-peer communication inside the cluster for membership checking
-seeds:
-  - "195.0.0.2:9090" # list of known seeds to join the cluster
+  # advertise_addr: "192.168.0.1"  # advertise address for other nodes; auto-detected if empty
+  port: 8082                     # port for memberlist protocol (default: 8082)
+
+seeds: # list of known seed nodes to join the cluster
+  - "192.168.0.2"
+
 persistence:
-  enabled: true
+  enabled: true                  # enable WAL-based persistence (default: true)
   wal:
-    path: "wal_dir"
-    segment_threshold: 1000 # num of entry in one segment file
-  snap_dir: "snap"
-  snapshot_interval: 10
+    path: "./wal_data"           # directory for WAL segment files (default: ./wal)
+    segment_threshold: 1000      # number of records per segment before rotation (default: 1000)
+    batch_size: 1000             # number of records to batch before flushing to disk (default: 1000)
+
+engine:
+  initial_shards: 256            # number of hash table shards at startup (default: 256)
+  delete_threshold: 1m           # grace period before tombstoned keys are garbage-collected (default: 1m)
+
+buffer:
+  size: 10000                     # capacity of the updates buffer (default: 1000)
+  read_interval: 5s              # how often buffered updates are flushed to gossip (default: 5s)
+  peek_batch_size: 3000           # max updates to read from buffer per flush round (default: 100)
+
+transport:
+  max_message_size: 1073741824   # max gRPC message size in bytes (default: 1073741824 = 1GB) TODO мб сделать парсинг размера с суффиксом (100MB, 1GB и т.д.)
+  max_updates_per_get: 10000     # max updates returned in a single Get response (default: 10000) TODO переименовать
+
 security:
-  enabled: true
-  ca_cert: "ca.crt"
-  ca_key: "ca.key"
-  cert: "node1.crt"
-  key: "node1.key"
+  mode: "disabled"               # TLS mode: "disabled", "internal" (node-to-node), "full" (+ client TLS) (default: internal)
+  ca_cert: "/etc/lume/security/ca.crt"   # path to CA certificate (default: /etc/lume/security/ca.crt)
+  cert: "/etc/lume/security/tls.crt"     # path to node certificate (default: /etc/lume/security/tls.crt)
+  key: "/etc/lume/security/tls.key"      # path to node private key (default: /etc/lume/security/tls.key)
+
+trace:
+  enabled: false                 # enable OpenTelemetry tracing (default: false)
+  endpoint: "localhost:4318"     # OTLP HTTP exporter endpoint (default: localhost:4318)
