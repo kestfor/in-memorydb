@@ -8,7 +8,7 @@ import (
 	lume "github.com/kestfor/in-memorydb/api/lume"
 	"github.com/kestfor/in-memorydb/pkg/storage"
 
-	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type NodeServer struct {
@@ -29,7 +29,7 @@ func (n *NodeServer) GracefulStopStorage() error {
 	return n.storage.GracefulStop()
 }
 
-func (n *NodeServer) Set(ctx context.Context, request *lume.SetRequest) (*empty.Empty, error) {
+func (n *NodeServer) Set(ctx context.Context, request *lume.SetRequest) (*emptypb.Empty, error) {
 	domainType, err := toDomainCRDTType(request.GetCrdtType())
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (n *NodeServer) Set(ctx context.Context, request *lume.SetRequest) (*empty.
 
 	slog.InfoContext(ctx, "node.Set: Successfully set key", "key", request.GetKey())
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (n *NodeServer) Get(ctx context.Context, request *lume.GetRequest) (*lume.GetResponse, error) {
@@ -72,26 +72,26 @@ func (n *NodeServer) Delete(ctx context.Context, request *lume.DeleteRequest) (*
 	return &lume.DeleteResponse{Ok: ok}, nil
 }
 
-func (n *NodeServer) Apply(ctx context.Context, request *lume.ApplyRequest) (*empty.Empty, error) {
+func (n *NodeServer) Apply(ctx context.Context, request *lume.ApplyRequest) (*emptypb.Empty, error) {
 	switch op := request.GetOperation().(type) {
 	case *lume.ApplyRequest_CounterOperationInc:
 		_, err := n.storage.ApplyInc(ctx, request.Key, op.CounterOperationInc.Val)
 		if err != nil {
 			slog.ErrorContext(ctx, "node.Do: Error while incrementing counter", "err", err, "key", request.Key)
 		}
-		return &empty.Empty{}, err
+		return &emptypb.Empty{}, err
 	case *lume.ApplyRequest_CounterOperationDec:
 		_, err := n.storage.ApplyDec(ctx, request.Key, op.CounterOperationDec.Val)
 		if err != nil {
 			slog.ErrorContext(ctx, "node.Do: Error while decrementing counter", "err", err, "key", request.Key)
 		}
-		return &empty.Empty{}, err
+		return &emptypb.Empty{}, err
 	case *lume.ApplyRequest_RegisterOperation:
 		_, err := n.storage.ApplySetRegister(ctx, request.Key, op.RegisterOperation.Value)
 		if err != nil {
 			slog.ErrorContext(ctx, "node.Do: Error while registering operation", "err", err, "key", request.Key)
 		}
-		return &empty.Empty{}, err
+		return &emptypb.Empty{}, err
 	default:
 		return nil, fmt.Errorf("unknown operation type: %T", op)
 	}

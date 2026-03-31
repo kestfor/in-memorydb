@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	lume "github.com/kestfor/in-memorydb/api/lume"
+	"google.golang.org/protobuf/ptypes/empty"
 )
 
 type MockServer struct {
