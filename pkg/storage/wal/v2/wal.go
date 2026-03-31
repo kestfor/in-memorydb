@@ -109,14 +109,19 @@ func New(config Config) (WAL, error) {
 		return nil, err
 	}
 	res := &walWrapper{
-		w:         w,
-		batchSize: 0,
-		batchCap:  config.BatchSize,
-		batch:     make([]gowal.Record, 0, config.BatchSize),
-		keyGen:    NewKeyGen(),
+		w:              w,
+		batchSize:      0,
+		batchCap:       config.BatchSize,
+		flushInterval:  config.FlushInterval,
+		flushTimestamp: *atomic.NewTime(time.Now()),
+		batch:          make([]gowal.Record, 0, config.BatchSize),
+		keyGen:         NewKeyGen(),
 	}
 
-	//go res.backgroundFlush()
+	// if flush interval is set, start background flush
+	if config.FlushInterval > 0 {
+		go res.backgroundFlush()
+	}
 
 	return res, nil
 }
@@ -163,7 +168,7 @@ func (ww *walWrapper) Get(nodeID string, seq uint64) (types.Update, error) {
 	walIndex := ww.keyGen.Key(nodeID, seq)
 
 	ww.mu.Lock()
-	for ind := 0; ind <= ww.batchSize; ind++ {
+	for ind := 0; ind < ww.batchSize; ind++ {
 		if ww.batch[ind].Index == walIndex {
 			defer ww.mu.Unlock()
 			var u types.Update

@@ -44,7 +44,7 @@ func (r *ringBuffer) Put(updates ...types.Update) {
 			r.cache.Add(cacheKey, upd)
 		}
 
-		r.cache.Add(newUpd.Key, newUpd)
+		r.cache.Add(cacheKey, newUpd)
 	}
 	//for _, u := range updates {
 	//	found := false
