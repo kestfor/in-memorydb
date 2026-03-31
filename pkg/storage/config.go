@@ -14,7 +14,7 @@ type Config struct {
 	Node        NodeConfig                `yaml:"node"`
 	Gossip      gossip.Config             `yaml:"gossip"`
 	Membership  MembershipConfig          `yaml:"membership"`
-	Seeds       []string                  `yaml:"seeds"`
+	Seeds       []string                  `yaml:"seeds" env:"SEEDS"`
 	Persistence PersistenceConfig         `yaml:"persistence"`
 	Security    tlsx.SecurityConfig       `yaml:"security"`
 	Transport   transport.TransportConfig `yaml:"transport"`
