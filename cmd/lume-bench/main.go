@@ -89,7 +89,7 @@ var (
 		   streaming.`)
 	reqType  = flag.String("request_type", "mixed", "Request type: get, set, or mixed")
 	poolSize = flag.Int("pool_size", 10000, "Size of the key pool")
-	testName = flag.String("test_name", "", "Name of the test used for creating profiles.")
+	testName = flag.String("test_name", "bench", "Name of the test used for creating profiles.")
 	wg       sync.WaitGroup
 	hopts    = stats.HistogramOptions{
 		NumBuckets:   2495,
@@ -127,6 +127,9 @@ func main() {
 	flag.Parse()
 	if *testName == "" {
 		logger.Fatal("-test_name not set")
+	}
+	if len(ports) == 0 {
+		ports = append(ports, "8080")
 	}
 
 	// Validate request type
@@ -174,7 +177,7 @@ func main() {
 
 	warmDeadline := time.Now().Add(time.Duration(*warmupDur) * time.Second)
 	endDeadline := warmDeadline.Add(time.Duration(*duration) * time.Second)
-	cf, err := os.Create("/tmp/" + *testName + ".cpu")
+	cf, err := os.Create("./" + *testName + ".cpu")
 	if err != nil {
 		logger.Fatalf("Error creating file: %v", err)
 	}
@@ -189,7 +192,7 @@ func main() {
 	wg.Wait()
 	cpu := time.Duration(syscall.GetCPUTime() - cpuBeg)
 	pprof.StopCPUProfile()
-	mf, err := os.Create("/tmp/" + *testName + ".mem")
+	mf, err := os.Create("./" + *testName + ".mem")
 	if err != nil {
 		logger.Fatalf("Error creating file: %v", err)
 	}
