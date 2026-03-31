@@ -44,8 +44,8 @@ engine:
 
 buffer:
   size: 10000                    # capacity of the current node updates buffer (default: 1000)
-  read_interval: 5s              # how often buffered updates are flushed to gossip  (default: 5s)
-  peek_batch_size: 3000          # max updates to read from buffer per flush round (default: 100)
+  read_interval: 5s              # how often buffered updates are flushed to gossip  (default: 1s)
+  peek_batch_size: 3000          # max updates to read from buffer per flush round (default: 1000)
 
 transport:
   max_message_size: 1073741824   # max gRPC message size in bytes (default: 1073741824 = 1GB) TODO мб сделать парсинг размера с суффиксом (100MB, 1GB и т.д.)
