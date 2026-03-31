@@ -13,8 +13,10 @@ membership:
   # При запуске под docker-compose оставьте advertise_addr пустым, чтобы автоматически использовать IP/интерфейс контейнера.
   # advertise_addr: "192.168.0.1"
   port: 8082
+engine:
+  shards_num: 512
 persistence:
-  enabled: false
+  enabled: true
   wal:
     path: ./wal_data_1
     segment_threshold: 10000

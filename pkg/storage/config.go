@@ -24,7 +24,7 @@ type Config struct {
 }
 
 type TraceConfig struct {
-	Endpoint string `yaml:"endpoint" env:"TRACE_ENDPOINT" required:"true" default:"localhost:4318"`
+	Endpoint string `yaml:"endpoint" env:"TRACE_ENDPOINT" default:"localhost:4318"`
 	Enabled  bool   `yaml:"enabled" env:"TRACE_ENABLED" default:"false"`
 }
 
@@ -41,7 +41,7 @@ type MembershipConfig struct {
 }
 
 type PersistenceConfig struct {
-	Enabled   bool         `yaml:"enabled" default:"true"`
+	Enabled   bool         `yaml:"enabled" default:"false"`
 	WalConfig walv2.Config `yaml:"wal"`
 }
 
@@ -50,6 +50,6 @@ type ReplicationConfig struct {
 
 type BufferConfig struct {
 	Size          int           `yaml:"size" env:"BUFFER_SIZE" default:"1000"`
-	ReadInterval  time.Duration `yaml:"read_interval" env:"BUFFER_READ_INTERVAL" default:"5s"`
-	PeekBatchSize int           `yaml:"peek_batch_size" env:"BUFFER_PEEK_BATCH_SIZE" default:"100"`
+	ReadInterval  time.Duration `yaml:"read_interval" env:"BUFFER_READ_INTERVAL" default:"1s"`
+	PeekBatchSize int           `yaml:"peek_batch_size" env:"BUFFER_PEEK_BATCH_SIZE" default:"500"`
 }

@@ -3,7 +3,6 @@ package wal
 import (
 	"context"
 	"fmt"
-	"hash/crc32"
 	"log/slog"
 	"sync"
 	"time"
@@ -13,18 +12,12 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/observability/tracing"
 	. "github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/types"
+	"go.uber.org/atomic"
 
 	"github.com/kestfor/gowal"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-)
-
-const (
-	defaultWalPath          = "./wal"
-	defaultSegmentThreshold = 1000
-	defaultMaxSegments      = 100000000
-	defaultBatchSize        = 500
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -38,13 +31,34 @@ type Config struct {
 	SegmentThreshold int `yaml:"segment_threshold" env:"WAL_SEGMENT_THRESHOLD" default:"1000"`
 
 	// MaxSegments is the maximum number of segments allowed before the oldest segment is deleted
-	MaxSegmentsNum int `yaml:"-" default:"100000000"` // TODO add yaml tag after snapshot implementation
+	MaxSegmentsNum int `yaml:"-" env:"WAL_MAX_SEGMENTS" default:"100000000"`
 
-	BatchSize int `yaml:"batch_size" default:"1000"`
+	// BatchSize is the number of records after which a batch is flushed to the WAL
+	BatchSize int `yaml:"batch_size" default:"1000" env:"WAL_BATCH_SIZE"`
+
+	// FlushInterval is the interval after which a batch is flushed to the WAL
+	// 0s means that the batch will be flushed only when the batch is full
+	FlushInterval time.Duration `yaml:"flush_interval" default:"0s" env:"WAL_FLUSH_INTERVAL"`
+
+	// SyncMode enables synchronous writes to the WAL,
+	// which ensures that the data is written to disk before the write operation returns,
+	// by calling fsync on the file descriptor.
+	// This is useful for applications that require no data loss in case of a crash.
+	SyncMode bool `yaml:"sync_mode" default:"false" env:"WAL_SYNC_MODE"`
 }
 
 type walWrapper struct {
 	w *gowal.Wal
+
+	keyGen *KeyGen
+
+	// flushTimestamp is the last time a batch was flushed to the WAL
+	// if flush was performed between ticks, the batch will not be flushed again
+	// it is used to prevent flushing the batch multiple times in case of high load.
+	flushTimestamp atomic.Time
+
+	// flushInterval guarantees that the batch will be flushed at least once every flushInterval
+	flushInterval time.Duration
 
 	mu        sync.Mutex
 	batch     []gowal.Record
@@ -52,32 +66,20 @@ type walWrapper struct {
 	batchCap  int
 }
 
-func (c *Config) populateMissed() {
-	if c.Path == "" {
-		c.Path = defaultWalPath
-	}
-	if c.SegmentThreshold == 0 {
-		c.SegmentThreshold = defaultSegmentThreshold
-	}
-	if c.MaxSegmentsNum == 0 {
-		c.MaxSegmentsNum = defaultMaxSegments
-	}
-	if c.BatchSize == 0 {
-		c.BatchSize = defaultBatchSize
-	}
-}
-
-// todo configure
-func (w *walWrapper) backgroundFlush() {
+func (ww *walWrapper) backgroundFlush() {
 	slog.Info("running flush WAL in background")
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(ww.flushInterval)
 	for _ = range ticker.C {
-		if w.batchSize > 0 {
-			w.mu.Lock()
-			_ = w.flushLocked()
-			w.mu.Unlock()
-			slog.Debug("flush performed")
+
+		ww.mu.Lock()
+		if time.Since(ww.flushTimestamp.Load()) < ww.flushInterval || ww.batchSize == 0 {
+			ww.mu.Unlock()
+			continue
 		}
+
+		_ = ww.flushLocked()
+		ww.mu.Unlock()
+		slog.Debug("flush performed")
 	}
 }
 
@@ -88,19 +90,18 @@ func (ww *walWrapper) flushLocked() error {
 		}
 		ww.batchSize = 0
 		ww.batch = ww.batch[:0]
+		ww.flushTimestamp.Store(time.Now())
 	}
 	return nil
 }
 
 func New(config Config) (WAL, error) {
-	config.populateMissed()
-
 	cfg := gowal.Config{
 		Dir:              config.Path,
 		Prefix:           "segment_",
 		SegmentThreshold: config.SegmentThreshold,
 		MaxSegments:      config.MaxSegmentsNum,
-		IsInSyncDiskMode: false,
+		IsInSyncDiskMode: config.SyncMode,
 	}
 
 	w, err := gowal.NewWAL(cfg)
@@ -112,17 +113,12 @@ func New(config Config) (WAL, error) {
 		batchSize: 0,
 		batchCap:  config.BatchSize,
 		batch:     make([]gowal.Record, 0, config.BatchSize),
+		keyGen:    NewKeyGen(),
 	}
 
 	//go res.backgroundFlush()
 
 	return res, nil
-}
-
-// TODO можно кэшировать
-func createIndex(nodeID string, seqNum uint64) uint64 {
-	h := uint64(crc32.ChecksumIEEE([]byte(nodeID)))
-	return (h << 32) | (seqNum & 0xffffffff)
 }
 
 func (ww *walWrapper) Append(ctx context.Context, u types.Update) error {
@@ -139,7 +135,7 @@ func (ww *walWrapper) Append(ctx context.Context, u types.Update) error {
 	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite)
 
 	ww.mu.Lock()
-	walIndex := createIndex(u.NodeID, u.Seq)
+	walIndex := ww.keyGen.Key(u.NodeID, u.Seq)
 	record := gowal.Record{
 		Key:   u.NodeID,
 		Index: walIndex,
@@ -164,7 +160,7 @@ func (ww *walWrapper) Append(ctx context.Context, u types.Update) error {
 }
 
 func (ww *walWrapper) Get(nodeID string, seq uint64) (types.Update, error) {
-	walIndex := createIndex(nodeID, seq)
+	walIndex := ww.keyGen.Key(nodeID, seq)
 
 	ww.mu.Lock()
 	for ind := 0; ind <= ww.batchSize; ind++ {

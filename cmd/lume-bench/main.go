@@ -35,6 +35,10 @@ const (
 	boldGrn = bold + green
 )
 
+const (
+	progressTick = time.Millisecond * 500
+)
+
 var hopts = stats.HistogramOptions{
 	NumBuckets:   2495,
 	GrowthFactor: .01,
@@ -249,7 +253,7 @@ func prepopulate(cc *grpc.ClientConn, pool *keyPool) error {
 }
 
 func reportProgress(ctx context.Context, warmEnd time.Time, ops, errs *atomic.Int64) {
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(progressTick)
 	defer ticker.Stop()
 
 	var prevOps int64
