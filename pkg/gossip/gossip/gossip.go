@@ -39,9 +39,15 @@ type Config struct {
 	Fanout              int           `yaml:"fanout" env:"GOSSIP_FANOUT" default:"3"`
 	Retries             int           `yaml:"retries" env:"GOSSIP_RETRIES" default:"3"`
 
-	// BufferSize is a gBuffer size, containing updates from other nodes to resend for ttl times
-	// flow: peek n from main buffer + peek m from gbuffer -> send to other nodes, decrement ttl for gBuffer updates
+	// BufferSize is a gBuffer size, containing updates from other nodes to resend
+	// flow: peek n from main buffer + peek m from gbuffer -> send to other nodes
 	// n = MaxBatchSize - n, where n - updates_buffer.PeekBatchSize
+	// for example:
+	//		setting updates_buffer.PeekBatchSize ~ MaxBatchSize / len(peers)
+	//		makes approximately equal updates distribution per peer
+	//
+	//		specifying for some peers lower BufferSize and higher updates_buffer.PeekBatchSize
+	//	 	increases their updates distribution
 	BufferSize   int `yaml:"buffer_size" env:"GOSSIP_BUFFER_SIZE" default:"5000"`
 	MaxBatchSize int `yaml:"max_batch_size" env:"GOSSIP_MAX_BATCH_SIZE" default:"10000"`
 

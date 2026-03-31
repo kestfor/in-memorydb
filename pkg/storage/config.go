@@ -51,5 +51,5 @@ type ReplicationConfig struct {
 type BufferConfig struct {
 	Size          int           `yaml:"size" env:"BUFFER_SIZE" default:"1000"`
 	ReadInterval  time.Duration `yaml:"read_interval" env:"BUFFER_READ_INTERVAL" default:"1s"`
-	PeekBatchSize int           `yaml:"peek_batch_size" env:"BUFFER_PEEK_BATCH_SIZE" default:"500"`
+	PeekBatchSize int           `yaml:"peek_batch_size" env:"BUFFER_PEEK_BATCH_SIZE" default:"1000"`
 }

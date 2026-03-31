@@ -44,7 +44,7 @@ engine:
 
 buffer:
   size: 10000                    # capacity of the current node updates buffer (default: 1000)
-  read_interval: 5s              # how often buffered updates are flushed to gossip (default: 5s)
+  read_interval: 5s              # how often buffered updates are flushed to gossip  (default: 5s)
   peek_batch_size: 3000          # max updates to read from buffer per flush round (default: 100)
 
 transport:
