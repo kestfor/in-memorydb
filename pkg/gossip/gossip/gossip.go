@@ -39,10 +39,16 @@ type Config struct {
 	Fanout              int           `yaml:"fanout" env:"GOSSIP_FANOUT" default:"3"`
 	Retries             int           `yaml:"retries" env:"GOSSIP_RETRIES" default:"3"`
 
-	BufferSize         int           `yaml:"buffer_size" env:"GOSSIP_BUFFER_SIZE" default:"5000"`
-	MaxConcurrentSends int           `yaml:"max_concurrent_sends" env:"GOSSIP_MAX_CONCURRENT_SENDS" default:"5"`
-	MaxSendPerRound    int           `yaml:"max_send_per_round" env:"GOSSIP_MAX_SEND_PER_ROUND" default:"10000"`
-	AntiEntropyTimeout time.Duration `yaml:"anti_entropy_timeout" env:"GOSSIP_ANTI_ENTROPY_TIMEOUT" default:"60s"`
+	// BufferSize is a gBuffer size, containing updates from other nodes to resend for ttl times
+	// flow: peek n from main buffer + peek m from gbuffer -> send to other nodes, decrement ttl for gBuffer updates
+	// n = MaxBatchSize - n, where n - updates_buffer.PeekBatchSize
+	BufferSize   int `yaml:"buffer_size" env:"GOSSIP_BUFFER_SIZE" default:"5000"`
+	MaxBatchSize int `yaml:"max_batch_size" env:"GOSSIP_MAX_BATCH_SIZE" default:"10000"`
+
+	// The WorkerPoolSize parameter determines how many parallel communication goroutines can exist.
+	WorkerPoolSize int `yaml:"worker_pool_size" env:"GOSSIP_WORKER_POOL_SIZE" default:"5"`
+
+	RequestTimeout time.Duration `yaml:"-" env:"GOSSIP_REQUEST_TIMEOUT" default:"60s"`
 }
 
 var ErrNoPeers = errors.New("no peers available")
@@ -63,6 +69,7 @@ type DefaultGossip struct {
 	buffer          buffer.UpdatesBuffer // local updates buffer
 	engine          engine.Engine        // for key-based anti-entropy server
 
+	// gbuffer contains only updates from other nodes, not for current
 	gbuffer    *gossip_buffer.GossipBuffer // buffer used for epidemic data sending
 	wal        wal.WAL
 	serverOpts []grpcserver.ServerOption
@@ -85,7 +92,7 @@ func NewDefaultGossip(config *Config, transportConfig *grpc.TransportConfig, tra
 		engine:          engine,
 		serverOpts:      serverOpts,
 		gbuffer:         gossip_buffer.NewGossipBuffer(config.BufferSize),
-		updatesChannel:  make(chan []types.Update, 10),
+		updatesChannel:  make(chan []types.Update, 100),
 		numBuckets:      versionmanagerv2.DefaultNumBuckets,
 	}
 }
@@ -205,7 +212,7 @@ func (g *DefaultGossip) GetVersionVector(ctx context.Context, peer types.Node) (
 // readUpdates processes incoming updates from the updatesChannel and sends them asynchronously to peers.
 // A semaphore is used to limit the number of concurrently executed send operations.
 func (g *DefaultGossip) readUpdates(ctx context.Context) {
-	sem := make(chan struct{}, g.config.MaxConcurrentSends)
+	sem := make(chan struct{}, g.config.WorkerPoolSize)
 	for updates := range g.updatesChannel {
 		sem <- struct{}{}
 		go func(u []types.Update) {
@@ -219,7 +226,7 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 				u[index].TTL = getTTLNumForAsync(clusterSize, g.config.Fanout, int(g.config.AntiEntropyInterval.Seconds()))
 			}
 
-			ttlUpds := g.gbuffer.PeekN(g.config.MaxSendPerRound - len(u))
+			ttlUpds := g.gbuffer.PeekN(g.config.MaxBatchSize - len(u))
 			u = append(u, ttlUpds...)
 
 			if err := g.Send(ctx, u); err != nil {
@@ -275,7 +282,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	}
 	span.SetAttributes(attribute.String("peer", peer.ID()))
 
-	withTimeOut, cancel := context.WithTimeout(ctx, g.config.AntiEntropyTimeout)
+	withTimeOut, cancel := context.WithTimeout(ctx, g.config.RequestTimeout)
 	defer cancel()
 
 	// Step 1: Get remote key digests for this bucket
@@ -302,7 +309,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	}
 
 	// Step 3: Pull key states for stale keys
-	withTimeOut, cancel = context.WithTimeout(ctx, g.config.AntiEntropyTimeout)
+	withTimeOut, cancel = context.WithTimeout(ctx, g.config.RequestTimeout)
 	defer cancel()
 
 	keyStates, err := g.transport.PullKeyStates(withTimeOut, peer.GossipAddr().String(), staleKeys)
@@ -334,7 +341,7 @@ func (g *DefaultGossip) listenUpdates(ctx context.Context) error {
 		return fmt.Errorf("cannot listen updates on '%s:%d': %w", g.config.AdvertiseAddress, g.config.Port, err)
 	}
 
-	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager, g.engine, g.transportConfig.MaxUpdatesPerGet)
+	updatesServer := grpc.NewUpdatesServer(g.buffer, g.gbuffer, g.wal, g.versionManager, g.engine, g.transportConfig.MaxBatchSize)
 	opts := append(g.serverOpts, grpcserver.ChainUnaryInterceptor(
 		tracing.UnaryPanicRecoveryInterceptor(),
 		tracing.UnaryServerInterceptor(),
