@@ -8,6 +8,7 @@ ignore (
 	./pkg/storage/updates_buffer/v1
 	./pkg/storage/updates_buffer/v2
 	./pkg/storage/version_manager/v1
+	./pkg/storage/wal/v1
 )
 
 require (
