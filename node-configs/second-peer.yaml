@@ -8,7 +8,7 @@ gossip:
   bind_address: "0.0.0.0"
   port: 8081
   fanout: 3
-  interval: 10000
+  interval: 10s
   retries: 2
 membership:
   port: 8082
@@ -18,7 +18,7 @@ persistence:
     path: ./wal_data_2
     segment_threshold: 10000
 security:
-  mode: internal
+  mode: disabled
   ca_cert: ./node-configs/certs/ca.crt
   cert: ./node-configs/certs/second/second.crt
   key: ./node-configs/certs/second/second.key

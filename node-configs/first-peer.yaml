@@ -6,13 +6,15 @@ gossip:
   bind_address: "0.0.0.0"
   port: 8081
   fanout: 3
-  interval: 10000
+  interval: 10s
   retries: 2
 membership:
   # advertise_addr задается явно, если запускать узлы на разных физических устройствах.
   # При запуске под docker-compose оставьте advertise_addr пустым, чтобы автоматически использовать IP/интерфейс контейнера.
   # advertise_addr: "192.168.0.1"
   port: 8082
+engine:
+  shards_num: 512
 persistence:
   enabled: true
   wal:

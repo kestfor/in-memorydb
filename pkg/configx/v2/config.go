@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -155,11 +156,19 @@ func setFieldValue(field reflect.Value, value string) error {
 	case reflect.String:
 		field.SetString(value)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		intVal, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			return err
+		if field.Type() == reflect.TypeOf(time.Duration(0)) {
+			d, err := time.ParseDuration(value)
+			if err != nil {
+				return err
+			}
+			field.SetInt(int64(d))
+		} else {
+			intVal, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return err
+			}
+			field.SetInt(intVal)
 		}
-		field.SetInt(intVal)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		uintVal, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {

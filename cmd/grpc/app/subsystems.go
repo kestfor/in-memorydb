@@ -12,7 +12,7 @@ import (
 	vmv2 "github.com/kestfor/in-memorydb/pkg/storage/version_manager/v2"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal/noop"
-	walv1 "github.com/kestfor/in-memorydb/pkg/storage/wal/v1"
+	walv2 "github.com/kestfor/in-memorydb/pkg/storage/wal/v2"
 	"github.com/kestfor/in-memorydb/pkg/tlsx"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc"
 	googlegrpc "google.golang.org/grpc"
@@ -20,7 +20,7 @@ import (
 )
 
 func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
-	eng := enginev1.NewEngine(enginev1.WithNodeID(cfg.Node.ID))
+	eng := enginev1.NewEngineFromConfig(cfg.Node.ID, cfg.Engine)
 	vm := vmv2.NewVersionManager(cfg.Node.ID, eng)
 
 	dialOpts, err := buildDialOpts(cfg)
@@ -36,7 +36,7 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 
 	var writeLog wal.WAL
 	if cfg.Persistence.Enabled {
-		writeLog, err = walv1.New(cfg.Persistence.WalConfig)
+		writeLog, err = walv2.New(cfg.Persistence.WalConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -49,8 +49,8 @@ func BuildSubsystems(cfg *storage.Config) (*storage.Subsystems, error) {
 		return nil, err
 	}
 
-	buffer := bufferv3.NewUpdatesBuffer(1000) // TODO: move to config
-	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, transport, members, vm, writeLog, buffer, serverOpts...)
+	buffer := bufferv3.NewUpdatesBuffer(cfg.Buffer.Size)
+	goss := gossipimpl.NewDefaultGossip(&cfg.Gossip, &cfg.Transport, transport, members, vm, writeLog, buffer, eng, serverOpts...)
 
 	return &storage.Subsystems{
 		Engine:         eng,

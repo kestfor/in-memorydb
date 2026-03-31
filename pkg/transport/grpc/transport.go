@@ -2,33 +2,40 @@ package grpc
 
 import (
 	"context"
+	"log/slog"
+	"sync"
+
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	transportpb2 "github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"log/slog"
-	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type TransportConfig struct{}
+type TransportConfig struct {
+	MaxMessageSize int `yaml:"max_message_size" env:"TRANSPORT_MAX_MESSAGE_SIZE" default:"1073741824"`
+	MaxBatchSize   int `yaml:"max_batch_size" env:"TRANSPORT_MAX_BATCH_SIZE" default:"10000"`
+}
 
 type ClientPool struct {
-	mu       sync.Mutex
-	clients  map[string]*grpc.ClientConn
-	dialOpts []grpc.DialOption
+	mu             sync.Mutex
+	clients        map[string]*grpc.ClientConn
+	dialOpts       []grpc.DialOption
+	maxMessageSize int
 }
 
 type GRPCTransport struct {
-	pool *ClientPool
+	config *TransportConfig
+	pool   *ClientPool
 }
 
-func NewClientPool(dialOpts ...grpc.DialOption) *ClientPool {
+func NewClientPool(maxMessageSize int, dialOpts ...grpc.DialOption) *ClientPool {
 	return &ClientPool{
-		clients:  make(map[string]*grpc.ClientConn),
-		dialOpts: dialOpts,
+		clients:        make(map[string]*grpc.ClientConn),
+		dialOpts:       dialOpts,
+		maxMessageSize: maxMessageSize,
 	}
 }
 
@@ -47,10 +54,9 @@ func (p *ClientPool) GetClient(peer string, addr string) (transportpb2.UpdatesCl
 		}
 	}
 
-	maxSize := 1024 * 1024 * 1024 // TODO
 	opts := make([]grpc.DialOption, len(p.dialOpts))
 	copy(opts, p.dialOpts)
-	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize)))
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(p.maxMessageSize)))
 	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, err
@@ -76,11 +82,12 @@ func (p *ClientPool) CloseAll() {
 
 func NewGRPCTransport(config *TransportConfig, dialOpts ...grpc.DialOption) *GRPCTransport {
 	return &GRPCTransport{
-		pool: NewClientPool(dialOpts...),
+		config: config,
+		pool:   NewClientPool(config.MaxMessageSize, dialOpts...),
 	}
 }
 
-func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*types.Update) error {
+func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []types.Update) error {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return err
@@ -95,7 +102,7 @@ func (t *GRPCTransport) Send(ctx context.Context, addr string, updates []*types.
 	return err
 }
 
-func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*types.Update, error) {
+func (t *GRPCTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]types.Update, error) {
 	client, err := t.pool.GetClient(addr, addr)
 	if err != nil {
 		return nil, err
@@ -119,4 +126,31 @@ func (t *GRPCTransport) GetVersion(ctx context.Context, addr string) (map[string
 		return nil, err
 	}
 	return resp.VectorClock, nil
+}
+
+func (t *GRPCTransport) GetKeyDigests(ctx context.Context, addr string, bucket uint32) (map[string]uint64, error) {
+	client, err := t.pool.GetClient(addr, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.GetKeyDigests(ctx, &transportpb2.GetKeyDigestsRequest{Bucket: bucket})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetDigests(), nil
+}
+
+func (t *GRPCTransport) PullKeyStates(ctx context.Context, addr string, keys []string) ([]*types.KeyState, error) {
+	client, err := t.pool.GetClient(addr, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.PullKeyStates(ctx, &transportpb2.PullKeyStatesRequest{Keys: keys})
+	if err != nil {
+		return nil, err
+	}
+
+	return toKeyStates(resp.GetKeyStates()), nil
 }

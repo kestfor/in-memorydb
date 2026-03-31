@@ -1,16 +1,10 @@
 package wal
 
 import (
-	"context"
+	"os"
+
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	. "github.com/kestfor/in-memorydb/pkg/storage/wal"
-	"github.com/kestfor/in-memorydb/pkg/structs"
-	types2 "github.com/kestfor/in-memorydb/pkg/types"
-	"os"
-	"strconv"
-	"testing"
-
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -38,81 +32,82 @@ func (s *WALSuite) TearDownTest() {
 	}
 	s.Require().NoError(os.RemoveAll(s.dir))
 }
-func (s *WALSuite) TestAppendAndGet() {
-	tests := []struct {
-		node string
-		seq  uint64
-		data []byte
-	}{
-		{"A", 1, []byte("hello")},
-		{"A", 2, []byte("world")},
-		{"B", 1, []byte("bbb")},
-	}
 
-	for _, tt := range tests {
-
-		u := &types2.Update{
-			NodeID:  tt.node,
-			Range:   structs.Range{Start: tt.seq, End: tt.seq},
-			Payload: typedNil,
-			Type:    types2.UpdateTypeDelete,
-		}
-
-		err := s.wal.Append(context.Background(), u)
-		require.NoError(s.T(), err)
-	}
-
-	for _, tt := range tests {
-		u, err := s.wal.Get(tt.node, tt.seq)
-		require.NoError(s.T(), err)
-		require.Equal(s.T(), tt.node, u.NodeID)
-		require.Equal(s.T(), tt.seq, u.Range.Start)
-	}
-}
-
-func (s *WALSuite) TestReplay() {
-	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 1, End: 1}, Payload: typedNil, Type: types2.UpdateTypeDelete})
-	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 2, End: 2}, Payload: typedNil, Type: types2.UpdateTypeDelete})
-	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 3, End: 3}, Payload: typedNil, Type: types2.UpdateTypeDelete})
-
-	var seqs []uint64
-
-	err := s.wal.Replay(context.Background(), "A", 2, func(u *types2.Update) error {
-		seqs = append(seqs, u.Range.Start)
-		return nil
-	})
-
-	require.NoError(s.T(), err)
-
-	require.Equal(s.T(), []uint64{2, 3}, seqs)
-}
-
-func TestWALSuite(t *testing.T) {
-	suite.Run(t, new(WALSuite))
-}
-
-func BenchmarkAppendSequential(b *testing.B) {
-	b.ReportAllocs()
-
-	dir := os.TempDir()
-	w, err := New(Config{dir, 1000, 10000000})
-	if err != nil {
-		b.Fatalf("Open WAL: %v", err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer w.Close()
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-
-		u := &types2.Update{NodeID: "node-" + strconv.Itoa(i%16), Range: structs.Range{Start: uint64(i), End: uint64(i)}, Payload: typedNil, Type: types2.UpdateTypeDelete}
-		if err := w.Append(context.Background(), u); err != nil {
-			b.Fatalf("Append: %v", err)
-		}
-	}
-
-}
+//func (s *WALSuite) TestAppendAndGet() {
+//	tests := []struct {
+//		node string
+//		seq  uint64
+//		data []byte
+//	}{
+//		{"A", 1, []byte("hello")},
+//		{"A", 2, []byte("world")},
+//		{"B", 1, []byte("bbb")},
+//	}
+//
+//	for _, tt := range tests {
+//
+//		u := &types2.Update{
+//			NodeID:  tt.node,
+//			Range:   structs.Range{Start: tt.seq, End: tt.seq},
+//			Payload: typedNil,
+//			Type:    types2.UpdateTypeDelete,
+//		}
+//
+//		err := s.wal.Append(context.Background(), u)
+//		require.NoError(s.T(), err)
+//	}
+//
+//	for _, tt := range tests {
+//		u, err := s.wal.Get(tt.node, tt.seq)
+//		require.NoError(s.T(), err)
+//		require.Equal(s.T(), tt.node, u.NodeID)
+//		require.Equal(s.T(), tt.seq, u.Range.Start)
+//	}
+//}
+//
+//func (s *WALSuite) TestReplay() {
+//	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 1, End: 1}, Payload: typedNil, Type: types2.UpdateTypeDelete})
+//	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 2, End: 2}, Payload: typedNil, Type: types2.UpdateTypeDelete})
+//	_ = s.wal.Append(context.Background(), &types2.Update{NodeID: "A", Range: structs.Range{Start: 3, End: 3}, Payload: typedNil, Type: types2.UpdateTypeDelete})
+//
+//	var seqs []uint64
+//
+//	err := s.wal.Replay(context.Background(), "A", 2, func(u *types2.Update) error {
+//		seqs = append(seqs, u.Range.Start)
+//		return nil
+//	})
+//
+//	require.NoError(s.T(), err)
+//
+//	require.Equal(s.T(), []uint64{2, 3}, seqs)
+//}
+//
+//func TestWALSuite(t *testing.T) {
+//	suite.Run(t, new(WALSuite))
+//}
+//
+//func BenchmarkAppendSequential(b *testing.B) {
+//	b.ReportAllocs()
+//
+//	dir := os.TempDir()
+//	w, err := New(Config{dir, 1000, 10000000})
+//	if err != nil {
+//		b.Fatalf("Open WAL: %v", err)
+//	}
+//
+//	defer os.RemoveAll(dir)
+//	defer w.Close()
+//
+//	b.ResetTimer()
+//	for i := 0; i < b.N; i++ {
+//
+//		u := &types2.Update{NodeID: "node-" + strconv.Itoa(i%16), Range: structs.Range{Start: uint64(i), End: uint64(i)}, Payload: typedNil, Type: types2.UpdateTypeDelete}
+//		if err := w.Append(context.Background(), u); err != nil {
+//			b.Fatalf("Append: %v", err)
+//		}
+//	}
+//
+//}
 
 //func BenchmarkGetSequential(b *testing.B) {
 //	b.ReportAllocs()

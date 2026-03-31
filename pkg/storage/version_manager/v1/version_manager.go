@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1/entry_updater"
@@ -57,7 +58,7 @@ func (vm *VersionManager) RestoreSeq(nodeID string) {
 }
 
 // Advance увеличивает локальный счетчик обновлений на 1, добавляет в историю
-func (vm *VersionManager) Advance() uint64 {
+func (vm *VersionManager) Advance(key string) uint64 {
 	vm.mu.Lock()
 	res := vm.seq.Add(1)
 	defer vm.mu.Unlock()
@@ -308,6 +309,21 @@ func (vm *VersionManager) handleNewEntry(ctx context.Context, update *types.Upda
 //
 //	return true
 //}
+
+// KeyDigests is not supported in v1 — returns empty map
+func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
+	return make(map[string]uint64)
+}
+
+// KeyVersionClock is not supported in v1 — returns nil
+func (vm *VersionManager) KeyVersionClock(key string) map[string]uint64 {
+	return nil
+}
+
+// MergeKeyState is not supported in v1 — returns error
+func (vm *VersionManager) MergeKeyState(ctx context.Context, state *types.KeyState) error {
+	return fmt.Errorf("MergeKeyState not supported in v1 VersionManager")
+}
 
 // RestoreFromWal iterates through all saved in wal and apply them
 func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error {

@@ -35,9 +35,38 @@ message RestoreSeqRequest {
   string node_id = 1;
 }
 
+message GetKeyDigestsRequest {
+  uint32 bucket = 1;
+}
+
+message GetKeyDigestsResponse {
+  map<string, uint64> digests = 1;
+}
+
+message PullKeyStatesRequest {
+  repeated string keys = 1;
+}
+
+message KeyStateProto {
+  string key = 1;
+  string crdt_type = 2;
+  bytes state = 3;
+  bool tombstone = 4;
+  uint64 set_time_stamp_wall = 5;
+  uint64 set_time_stamp_lamport = 6;
+  string set_time_stamp_id = 7;
+  map<string, uint64> vc = 8;
+}
+
+message PullKeyStatesResponse {
+  repeated KeyStateProto key_states = 1;
+}
+
 service Updates {
   rpc Publish(PublishRequest) returns (google.protobuf.Empty);
   rpc RestoreSeq(RestoreSeqRequest) returns (google.protobuf.Empty);
   rpc Get(GetRequest) returns (GetResponse);
   rpc GetVersionVector(google.protobuf.Empty) returns (GetVersionVectorResponse);
+  rpc GetKeyDigests(GetKeyDigestsRequest) returns (GetKeyDigestsResponse);
+  rpc PullKeyStates(PullKeyStatesRequest) returns (PullKeyStatesResponse);
 }

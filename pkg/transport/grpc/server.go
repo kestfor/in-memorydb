@@ -2,30 +2,32 @@ package grpc
 
 import (
 	"context"
+	"log/slog"
+
 	"github.com/kestfor/in-memorydb/pkg/gossip/gossip_buffer"
+	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	buffer "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
-	"log/slog"
+	"github.com/kestfor/in-memorydb/pkg/types"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// number of updates that a node can send via one get call
-const maxUpdatesNumber = 10000
-
 type updatesServer struct {
 	transportpb.UnimplementedUpdatesServer
-	vm      version_manager.VersionManager
-	buffer  buffer.UpdatesBuffer
-	gbuffer *gossip_buffer.GossipBuffer
-	wal     wal.WAL
+	vm               version_manager.VersionManager
+	buffer           buffer.UpdatesBuffer
+	gbuffer          *gossip_buffer.GossipBuffer
+	wal              wal.WAL
+	engine           engine.Engine
+	maxUpdatesPerGet int
 }
 
-func NewUpdatesServer(buffer buffer.UpdatesBuffer, gbuffer *gossip_buffer.GossipBuffer, wal wal.WAL, vm version_manager.VersionManager) *updatesServer {
-	return &updatesServer{buffer: buffer, gbuffer: gbuffer, wal: wal, vm: vm}
+func NewUpdatesServer(buffer buffer.UpdatesBuffer, gbuffer *gossip_buffer.GossipBuffer, wal wal.WAL, vm version_manager.VersionManager, engine engine.Engine, maxUpdatesPerGet int) *updatesServer {
+	return &updatesServer{buffer: buffer, gbuffer: gbuffer, wal: wal, vm: vm, engine: engine, maxUpdatesPerGet: maxUpdatesPerGet}
 }
 
 // Get retrieves the updates for the requested version ranges, using both buffer and WAL as data sources.
@@ -34,13 +36,13 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 	var result [][]byte
 
 	for nodeID, missedRange := range missedRanges {
-		if len(result) >= maxUpdatesNumber {
+		if len(result) >= s.maxUpdatesPerGet {
 			break
 		}
 
 		for _, r := range missedRange.GetRanges() {
 
-			if len(result) >= maxUpdatesNumber {
+			if len(result) >= s.maxUpdatesPerGet {
 				break
 			}
 
@@ -54,7 +56,7 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 
 			// fallback to wal
 			if len(covering) == 0 {
-				for seq := r.Start; seq <= r.End && len(result) < maxUpdatesNumber; seq++ {
+				for seq := r.Start; seq <= r.End && len(result) < s.maxUpdatesPerGet; seq++ {
 
 					upd, err := s.wal.Get(nodeID, seq)
 
@@ -74,12 +76,13 @@ func (s *updatesServer) Get(ctx context.Context, request *transportpb.GetRequest
 
 				}
 			} else {
-				pbs, err := fromDomainUpdates(covering)
-				if err != nil {
-					slog.ErrorContext(ctx, "grpc.Get: Error while converting", "fromNodeID", nodeID, "updates", covering, "err", err)
-					continue
-				}
-				result = append(result, pbs...)
+				// TODO check if used
+				//pbs, err := fromDomainUpdates(covering)
+				//if err != nil {
+				//	slog.ErrorContext(ctx, "grpc.Get: Error while converting", "fromNodeID", nodeID, "updates", covering, "err", err)
+				//	continue
+				//}
+				//result = append(result, pbs...)
 			}
 		}
 	}
@@ -134,3 +137,45 @@ func (s *updatesServer) GetVersionVector(ctx context.Context, request *emptypb.E
 //func (s *updatesServer) RestoreSeq(ctx context.Context, request *transportpb.RestoreSeqRequest) (*emptypb.Empty, error) {
 //
 //}
+
+// GetKeyDigests returns per-key version clock hashes for key-based anti-entropy
+func (s *updatesServer) GetKeyDigests(ctx context.Context, request *transportpb.GetKeyDigestsRequest) (*transportpb.GetKeyDigestsResponse, error) {
+	digests := s.vm.KeyDigests(request.GetBucket())
+	slog.DebugContext(ctx, "grpc.GetKeyDigests: Successfully sent key digests", "count", len(digests), "bucket", request.GetBucket())
+	return &transportpb.GetKeyDigestsResponse{Digests: digests}, nil
+}
+
+// PullKeyStates returns full CRDT state for requested keys
+func (s *updatesServer) PullKeyStates(ctx context.Context, request *transportpb.PullKeyStatesRequest) (*transportpb.PullKeyStatesResponse, error) {
+	keys := request.GetKeys()
+	states := make([]*types.KeyState, 0, len(keys))
+
+	for _, key := range keys {
+		entry, ok := s.engine.Get(ctx, key)
+		if !ok {
+			continue
+		}
+
+		entry.Mu.RLock()
+		stateBytes, err := entry.Object.MarshalJSON()
+		if err != nil {
+			entry.Mu.RUnlock()
+			slog.ErrorContext(ctx, "grpc.PullKeyStates: failed to marshal CRDT state", "key", key, "error", err)
+			continue
+		}
+		ks := &types.KeyState{
+			Key:          key,
+			CRDTType:     entry.Object.Type(),
+			State:        stateBytes,
+			Tombstone:    entry.Tombstone,
+			SetTimeStamp: entry.SetTimeStamp,
+			VC:           s.vm.KeyVersionClock(key),
+		}
+		entry.Mu.RUnlock()
+
+		states = append(states, ks)
+	}
+
+	slog.DebugContext(ctx, "grpc.PullKeyStates: Successfully sent key states", "requested", len(keys), "sent", len(states))
+	return &transportpb.PullKeyStatesResponse{KeyStates: fromKeyStates(states)}, nil
+}

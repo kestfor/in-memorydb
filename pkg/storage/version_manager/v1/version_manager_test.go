@@ -524,10 +524,10 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 	counter := crdt.NewPNCounter("test-node")
 	localTs1 := &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "test-node"}
 	vm.engine.PutWithTimeStamp(ctx, localTs1, "key", counter, nil)
-	vm.Advance()
+	vm.Advance("key")
 
 	counter.Increment(1)
-	vm.Advance()
+	vm.Advance("key")
 
 	assert.True(t, vm.history.HasRange("test-node", structs.Range{Start: 1, End: 2}))
 
@@ -760,14 +760,14 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Add("test-node", uint64(1)).
 //						Times(1)
 //
-//					seq := s.vm.Advance()
+//					seq := s.vm.Advance("key")
 //					s.Equal(uint64(1), seq)
 //
 //					s.history.EXPECT().
 //						Add("test-node", uint64(2)).
 //						Times(1)
 //
-//					seq = s.vm.Advance()
+//					seq = s.vm.Advance("key")
 //					s.Equal(uint64(2), seq)
 //				}
 //

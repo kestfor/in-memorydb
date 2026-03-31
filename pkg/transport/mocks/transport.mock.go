@@ -57,6 +57,36 @@ func (mr *MockTransportMockRecorder) GetVersion(ctx, addr any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersion", reflect.TypeOf((*MockTransport)(nil).GetVersion), ctx, addr)
 }
 
+// GetKeyDigests mocks base method.
+func (m *MockTransport) GetKeyDigests(ctx context.Context, addr string, bucket uint32) (map[string]uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKeyDigests", ctx, addr, bucket)
+	ret0, _ := ret[0].(map[string]uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetKeyDigests indicates an expected call of GetKeyDigests.
+func (mr *MockTransportMockRecorder) GetKeyDigests(ctx, addr, bucket any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeyDigests", reflect.TypeOf((*MockTransport)(nil).GetKeyDigests), ctx, addr, bucket)
+}
+
+// PullKeyStates mocks base method.
+func (m *MockTransport) PullKeyStates(ctx context.Context, addr string, keys []string) ([]*types.KeyState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PullKeyStates", ctx, addr, keys)
+	ret0, _ := ret[0].([]*types.KeyState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PullKeyStates indicates an expected call of PullKeyStates.
+func (mr *MockTransportMockRecorder) PullKeyStates(ctx, addr, keys any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullKeyStates", reflect.TypeOf((*MockTransport)(nil).PullKeyStates), ctx, addr, keys)
+}
+
 // Pull mocks base method.
 func (m *MockTransport) Pull(ctx context.Context, addr string, versions map[string][]structs.Range) ([]*types.Update, error) {
 	m.ctrl.T.Helper()

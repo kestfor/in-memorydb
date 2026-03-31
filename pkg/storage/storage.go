@@ -16,7 +16,6 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
-	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/types"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -28,7 +27,7 @@ var ErrInternal = errors.New("internal error")
 
 // bufferPutWithTracing wraps buffer.Put operation with tracing externally
 // since buffer operations are lightweight
-func bufferPutWithTracing(ctx context.Context, buffer updates_buffer.UpdatesBuffer, update *types.Update) {
+func bufferPutWithTracing(ctx context.Context, buffer updates_buffer.UpdatesBuffer, update types.Update) {
 	_, span := tracing.StartSpan(ctx, spans.SpanBufferPut)
 	defer span.End()
 	buffer.Put(update)
@@ -44,7 +43,7 @@ type Storage struct {
 	memberlist membership.Membership          // controls membership
 	wal        wal.WAL                        // write-ahead-log
 
-	updatesChan chan<- []*types.Update
+	updatesChan chan<- []types.Update
 	shutdown    context.CancelFunc
 }
 
@@ -74,9 +73,8 @@ func (s *Storage) StartUp(ctx context.Context) error {
 
 	if len(s.config.Seeds) > 0 {
 		err := s.memberlist.Join(s.config.Seeds)
-		if err != nil || len(s.memberlist.Members()) == 1 {
-			n := s.memberlist.LocalNode()
-			slog.Debug("storage.NewStorage: cannot join cluster, choosing standalone mode", "known seeds", s.config.Seeds, "node", n)
+		if err != nil {
+			slog.Debug("storage.NewStorage: cannot join cluster, choosing standalone mode", "known seeds", s.config.Seeds, "error", err)
 		}
 	}
 
@@ -113,7 +111,7 @@ func (s *Storage) GracefulStop() error {
 
 func (s *Storage) startBufferRead(ctx context.Context) {
 	go func() {
-		ticker := time.NewTicker(time.Second * 5) // TODO
+		ticker := time.NewTicker(s.config.Buffer.ReadInterval)
 		for {
 			select {
 			case <-ticker.C:
@@ -132,7 +130,7 @@ func (s *Storage) startBufferRead(ctx context.Context) {
 
 // TODO выглядит так как будто апдейты не буферизируются
 func (s *Storage) bufferReadRound() error {
-	upds := s.buffer.PeekN(100)
+	upds := s.buffer.PeekN(s.config.Buffer.PeekBatchSize)
 	if len(upds) == 0 {
 		return nil
 	}
@@ -196,14 +194,14 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 
 	// increase sequence num
 
-	seqNum := s.vm.Advance()
+	seqNum := s.vm.Advance(key)
 
-	update := &types.Update{
+	update := types.Update{
 		NodeID:       nodeID,
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    ts,
 		SetTimeStamp: ts, // since its set update
-		Range:        structs.Range{Start: seqNum, End: seqNum},
+		Seq:          seqNum,
 		Key:          key,
 		Payload:      nilDelta, // since there is no data
 	}
@@ -229,14 +227,14 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 
 	if ok {
 
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 
-		update := &types.Update{
+		update := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelete,
 			TimeStamp:    entry.SetTimeStamp,
 			SetTimeStamp: entry.SetTimeStamp, // delete action equal to set action for conflict resolving
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 			Payload:      &crdt.PNCounterDelta{}, // since its delete update, no data specified
 		}
@@ -271,17 +269,17 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
 
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 
 		delta := t.Increment(val)
 
-		upd := &types.Update{
+		upd := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 		}
 
@@ -316,16 +314,16 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 		delta := t.Decrement(val)
 
-		upd := &types.Update{
+		upd := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 		}
 
@@ -361,17 +359,17 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.LWWHLCRegister:
-		seqNum := s.vm.Advance()
+		seqNum := s.vm.Advance(key)
 
 		delta := t.Write(val)
 
-		upd := &types.Update{
+		upd := types.Update{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Range:        structs.Range{Start: seqNum, End: seqNum},
+			Seq:          seqNum,
 			Key:          key,
 		}
 
