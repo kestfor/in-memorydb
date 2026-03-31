@@ -15,8 +15,8 @@ import (
 )
 
 type TransportConfig struct {
-	MaxMessageSize   int `yaml:"max_message_size" env:"TRANSPORT_MAX_MESSAGE_SIZE" default:"1073741824"`
-	MaxUpdatesPerGet int `yaml:"max_updates_per_get" env:"TRANSPORT_MAX_UPDATES_PER_GET" default:"10000"`
+	MaxMessageSize int `yaml:"max_message_size" env:"TRANSPORT_MAX_MESSAGE_SIZE" default:"1073741824"`
+	MaxBatchSize   int `yaml:"max_batch_size" env:"TRANSPORT_MAX_BATCH_SIZE" default:"10000"`
 }
 
 type ClientPool struct {

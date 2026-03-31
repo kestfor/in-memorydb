@@ -16,7 +16,6 @@ type Config struct {
 	Membership  MembershipConfig          `yaml:"membership"`
 	Seeds       []string                  `yaml:"seeds"`
 	Persistence PersistenceConfig         `yaml:"persistence"`
-	Replication ReplicationConfig         `yaml:"replication"`
 	Security    tlsx.SecurityConfig       `yaml:"security"`
 	Transport   transport.TransportConfig `yaml:"transport"`
 	TraceConfig TraceConfig               `yaml:"trace"`
