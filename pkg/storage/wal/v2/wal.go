@@ -199,8 +199,9 @@ func (ww *walWrapper) Replay(ctx context.Context, nodeID string, fromSeq uint64,
 	ctx, span := tracing.StartSpan(ctx, spans.SpanWALReplay, trace.WithAttributes(attribute.String("node_id", nodeID)))
 	defer span.End()
 
+	// TODO устарело, нужно исправить вычисление idx
 	for msg := range ww.w.Iterator() {
-		idx := msg.Idx & 0xffffffff
+		idx := msg.Idx & idMask
 		key := msg.Key
 		val := msg.Value
 

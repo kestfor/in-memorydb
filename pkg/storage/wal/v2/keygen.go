@@ -9,6 +9,7 @@ import (
 // 13 бит на строку (до 8192 строк), 51 бит на id
 // нет коллизий пока не будет 8192 строк, ~2.25 квадриллиона id, для mvp более чем достаточно
 const stringBits = 13
+const idMask = (1 << (64 - stringBits)) - 1
 
 type keyMap = map[string]uint64
 
@@ -22,7 +23,7 @@ type KeyGen struct {
 func NewKeyGen() *KeyGen {
 	kg := &KeyGen{
 		bits: stringBits,
-		mask: (1 << (64 - stringBits)) - 1,
+		mask: idMask,
 	}
 	kg.mapping.Store(new(make(keyMap)))
 	return kg
