@@ -8,8 +8,8 @@ import (
 )
 
 type LWWHLCRegisterDelta struct {
-	Value []byte         `json:"value"`
-	TS    *hlc.Timestamp `json:"ts"`
+	Value []byte        `json:"value"`
+	TS    hlc.Timestamp `json:"ts"`
 }
 
 func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
@@ -18,7 +18,7 @@ func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
 		return fmt.Errorf("cannot merge %T with %T", d, other)
 	}
 
-	if d.TS == nil || (od.TS != nil && d.TS.Before(od.TS)) {
+	if d.TS.IsZero() || (!od.TS.IsZero() && d.TS.Before(od.TS)) {
 		d.Value = od.Value
 		d.TS = od.TS
 	}
@@ -30,7 +30,6 @@ func (d *LWWHLCRegisterDelta) CreateCRDT() (CRDT, error) {
 	return &LWWHLCRegister{
 		value: d.Value,
 		ts:    d.TS,
-		clock: nil,
 	}, nil
 }
 
@@ -70,7 +69,7 @@ type LWWHLCRegister struct {
 	mu    sync.RWMutex
 	id    string
 	value json.RawMessage
-	ts    *hlc.Timestamp
+	ts    hlc.Timestamp
 	clock *hlc.Time
 }
 
@@ -78,7 +77,6 @@ func NewLWWHLCRegister(id string) *LWWHLCRegister {
 	clock := hlc.NewHLC(id)
 	return &LWWHLCRegister{
 		id:    id,
-		ts:    nil,
 		clock: clock,
 	}
 }
@@ -118,7 +116,7 @@ func (r *LWWHLCRegister) ApplyDelta(delta Delta) error {
 
 	r.clock.SyncWithRemote(d.TS)
 
-	if r.ts == nil || (r.ts != nil && r.ts.Before(d.TS)) {
+	if r.ts.IsZero() || r.ts.Before(d.TS) {
 		r.value = d.Value
 		r.ts = d.TS
 	}
@@ -145,7 +143,7 @@ func (r *LWWHLCRegister) Merge(other CRDT) error {
 
 	r.clock.SyncWithRemote(o.ts)
 
-	if r.ts == nil || r.ts.Before(o.ts) {
+	if r.ts.IsZero() || r.ts.Before(o.ts) {
 		r.value = o.value
 		r.ts = o.ts
 	}
@@ -172,7 +170,7 @@ func (r *LWWHLCRegister) MarshalJSON() ([]byte, error) {
 	data := struct {
 		ID        string          `json:"id"`
 		Value     json.RawMessage `json:"value"`
-		Timestamp *hlc.Timestamp  `json:"timestamp"`
+		Timestamp hlc.Timestamp   `json:"timestamp"`
 	}{
 		ID:        r.id,
 		Value:     val,
@@ -187,7 +185,7 @@ func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 	var tmp struct {
 		ID        string          `json:"id"`
 		Value     json.RawMessage `json:"value"`
-		Timestamp *hlc.Timestamp  `json:"timestamp"`
+		Timestamp hlc.Timestamp   `json:"timestamp"`
 	}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
@@ -202,7 +200,7 @@ func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 	r.ts = tmp.Timestamp
 	r.clock = hlc.NewHLC(r.id)
 
-	if r.ts != nil {
+	if !r.ts.IsZero() {
 		r.clock.SyncWithRemote(r.ts)
 	}
 

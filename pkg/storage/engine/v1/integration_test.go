@@ -29,7 +29,7 @@ func TestFullLifecycle(t *testing.T) {
 	// 1. Create
 	obj := &MockCRDT{value: "initial"}
 	ts1 := e.Put(ctx, "test-key", obj, nil)
-	require.NotNil(t, ts1)
+	require.False(t, ts1.IsZero())
 
 	// 2. Read
 	entry, ok := e.Get(ctx, "test-key")
@@ -39,7 +39,7 @@ func TestFullLifecycle(t *testing.T) {
 	// 3. Update
 	obj2 := &MockCRDT{value: "updated"}
 	ts2 := e.Put(ctx, "test-key", obj2, nil)
-	require.NotNil(t, ts2)
+	require.False(t, ts2.IsZero())
 	assert.True(t, ts2.After(ts1))
 
 	entry2, ok := e.Get(ctx, "test-key")
@@ -211,7 +211,7 @@ func TestTimestampConsistency(t *testing.T) {
 
 	// Записываем много значений быстро
 	const numOps = 1000
-	timestamps := make([]*hlc.Timestamp, numOps)
+	timestamps := make([]hlc.Timestamp, numOps)
 
 	for i := 0; i < numOps; i++ {
 		key := fmt.Sprintf("key-%d", i)
@@ -310,7 +310,7 @@ func TestEmptyEngineOperations(t *testing.T) {
 	// Проверяем что engine остался в консистентном состоянии
 	obj := &MockCRDT{value: "test"}
 	ts := e.Put(ctx, "test-key", obj, nil)
-	assert.NotNil(t, ts)
+	assert.False(t, ts.IsZero())
 
 	entry, ok = e.Get(ctx, "test-key")
 	assert.True(t, ok)
@@ -340,7 +340,7 @@ func TestLargeKeyValues(t *testing.T) {
 
 	obj := &MockCRDT{value: string(longValue)}
 	ts := e.Put(ctx, string(longKey), obj, nil)
-	require.NotNil(t, ts)
+	require.False(t, ts.IsZero())
 
 	entry, ok := e.Get(ctx, string(longKey))
 	require.True(t, ok)

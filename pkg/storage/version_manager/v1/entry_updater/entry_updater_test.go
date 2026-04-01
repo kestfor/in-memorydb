@@ -53,7 +53,7 @@ func (s *EntryUpdaterTestSuite) newMockCRDT(typ string) *MockCRDT {
 func (s *EntryUpdaterTestSuite) TestCreateFromUpdateSet() {
 	update := &types.Update{
 		Type:         types.UpdateTypeSet,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
 		Payload:      s.newMockDelta("counter"),
 	}
 
@@ -75,7 +75,7 @@ func (s *EntryUpdaterTestSuite) TestCreateFromUpdateDelta() {
 	delta := s.newMockDelta("counter")
 	update := &types.Update{
 		Type:         types.UpdateTypeDelta,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
 		Payload:      delta,
 	}
 
@@ -95,7 +95,7 @@ func (s *EntryUpdaterTestSuite) TestCreateFromUpdateDelta() {
 func (s *EntryUpdaterTestSuite) TestCreateFromUpdateError() {
 	update := &types.Update{
 		Type:         types.UpdateTypeSet,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100},
 		Payload:      s.newMockDelta("unk"),
 	}
 
@@ -115,14 +115,14 @@ func (s *EntryUpdaterTestSuite) TestCreateFromUpdateError() {
 func (s *EntryUpdaterTestSuite) TestApplyUpdateSet() {
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
 		Tombstone:    false,
 	}
 
 	update := &types.Update{
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
 		Payload:      s.newMockDelta("counter"),
 	}
 
@@ -143,14 +143,14 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateSet() {
 func (s *EntryUpdaterTestSuite) TestApplyUpdateSetOldTimestamp() {
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "new"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "new"},
 		Tombstone:    false,
 	}
 
 	update := &types.Update{
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "old"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "old"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "old"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "old"},
 		Payload:      s.newMockDelta("counter"),
 	}
 
@@ -166,15 +166,15 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaSameType() {
 	existingCRDT := s.newMockCRDT("counter")
 	entry := &engine.CRDTEntry{
 		Object:       existingCRDT,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
 	delta := s.newMockDelta("counter")
 	update := &types.Update{
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same
+		TimeStamp:    hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same
 		Payload:      delta,
 	}
 
@@ -190,7 +190,7 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaSameType() {
 func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaDifferentTypeNewerSetTS() {
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
 		Tombstone:    false,
 	}
 
@@ -198,8 +198,8 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaDifferentTypeNewerSetTS() {
 	delta := s.newMockDelta("register")
 	update := &types.Update{
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"}, // Newer!
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"}, // Newer!
 		Payload:      delta,
 	}
 
@@ -221,15 +221,15 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaDifferentTypeNewerSetTS() {
 func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaDifferentTypeSameSetTS() {
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
 	update := &types.Update{
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same
-		Payload:      s.newMockDelta("register"),                           // Different type!
+		TimeStamp:    hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same
+		Payload:      s.newMockDelta("register"),                          // Different type!
 	}
 
 	// this update should be ignored since it has the same SetTimeStamp
@@ -245,14 +245,14 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateDeltaDifferentTypeSameSetTS() {
 func (s *EntryUpdaterTestSuite) TestApplyUpdateDelete() {
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
 		Tombstone:    false,
 	}
 
 	update := &types.Update{
 		Type:         types.UpdateTypeDelete,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "new"},
 	}
 
 	result := s.updater.ApplyUpdate(entry, update)
@@ -269,13 +269,13 @@ func (s *EntryUpdaterTestSuite) TestApplyUpdateDelete() {
 func (s *EntryUpdaterTestSuite) TestApplyUpdateUnknownType() {
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50},
 		Tombstone:    false,
 	}
 
 	update := &types.Update{
 		Type:      types.UpdateType("unk"), // Unknown type
-		TimeStamp: &hlc.Timestamp{WallTime: 100},
+		TimeStamp: hlc.Timestamp{WallTime: 100},
 	}
 
 	result := s.updater.ApplyUpdate(entry, update)
@@ -294,7 +294,7 @@ func TestEntryUpdaterIntegrationGCounter(t *testing.T) {
 	// Create entry from Set update
 	update1 := &types.Update{
 		Type:         types.UpdateTypeSet,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
 		Payload:      crdt.NewPNCounter("test-node").Increment(1),
 	}
 
@@ -311,8 +311,8 @@ func TestEntryUpdaterIntegrationGCounter(t *testing.T) {
 
 	update2 := &types.Update{
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
 		Payload:      delta,
 	}
 
@@ -330,15 +330,15 @@ func TestEntryUpdaterTimestampOrdering(t *testing.T) {
 	counter := crdt.NewPNCounter("test-node")
 	entry := &engine.CRDTEntry{
 		Object:       counter,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
 	// Try to apply update with older timestamp
 	oldUpdate := &types.Update{
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
+		TimeStamp:    hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
 		Payload:      &crdt.PNCounterDelta{},
 	}
 
@@ -352,8 +352,8 @@ func TestEntryUpdaterTimestampOrdering(t *testing.T) {
 	newUpdate := &types.Update{
 		NodeID:       "test-node",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "new"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
+		TimeStamp:    hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "new"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old"},
 		Payload:      newCounter.Increment(10),
 	}
 
@@ -370,7 +370,7 @@ func TestEntryUpdaterConcurrentDeltaApplications(t *testing.T) {
 	counter := crdt.NewPNCounter("test-node")
 	entry := &engine.CRDTEntry{
 		Object:       counter,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
@@ -381,8 +381,8 @@ func TestEntryUpdaterConcurrentDeltaApplications(t *testing.T) {
 
 		update := &types.Update{
 			Type:         types.UpdateTypeDelta,
-			TimeStamp:    &hlc.Timestamp{WallTime: uint64(110 + i), Lamport: 0, ID: fmt.Sprintf("node-%d", i)},
-			SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
+			TimeStamp:    hlc.Timestamp{WallTime: uint64(110 + i), Lamport: 0, ID: fmt.Sprintf("node-%d", i)},
+			SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node"},
 			Payload:      delta,
 		}
 

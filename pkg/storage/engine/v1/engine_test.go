@@ -78,7 +78,7 @@ func (s *EngineTestSuite) TestPutAndGet() {
 	obj := &MockCRDT{value: "test-value"}
 
 	ts := s.engine.Put(s.ctx, "key1", obj, nil)
-	s.NotNil(ts)
+	s.False(ts.IsZero())
 
 	entry, ok := s.engine.Get(s.ctx, "key1")
 	s.True(ok)
@@ -306,7 +306,7 @@ func (s *EngineTestSuite) TestShardDistribution() {
 // === HLC Timestamp Tests ===
 
 func (s *EngineTestSuite) TestTimestampMonotonicity() {
-	timestamps := make([]*hlc.Timestamp, 100)
+	timestamps := make([]hlc.Timestamp, 100)
 
 	for i := 0; i < 100; i++ {
 		key := fmt.Sprintf("key-%d", i)
@@ -328,7 +328,7 @@ func (s *EngineTestSuite) TestPutWithTimestamp() {
 	ts := clock.Now()
 
 	// Искусственно делаем timestamp "из будущего"
-	futureTS := &hlc.Timestamp{
+	futureTS := hlc.Timestamp{
 		WallTime: ts.WallTime + uint64(time.Second),
 		Lamport:  ts.Lamport + 1,
 		ID:       ts.ID,
@@ -350,7 +350,7 @@ func (s *EngineTestSuite) TestPutWithTimestamp() {
 func (s *EngineTestSuite) TestEmptyKey() {
 	obj := &MockCRDT{value: "test"}
 	ts := s.engine.Put(s.ctx, "", obj, nil)
-	s.NotNil(ts)
+	s.False(ts.IsZero())
 
 	entry, ok := s.engine.Get(s.ctx, "")
 	s.True(ok)
@@ -374,7 +374,7 @@ func (s *EngineTestSuite) TestVeryLongKey() {
 func (s *EngineTestSuite) TestNilCallback() {
 	obj := &MockCRDT{value: "test"}
 	ts := s.engine.Put(s.ctx, "key1", obj, nil)
-	s.NotNil(ts)
+	s.False(ts.IsZero())
 }
 
 //func (s *EngineTestSuite) TestCountKeysAccuracy() {

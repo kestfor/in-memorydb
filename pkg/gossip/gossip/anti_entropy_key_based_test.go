@@ -25,7 +25,7 @@ func TestAntiEntropyKeyBased_PNCounterConvergence(t *testing.T) {
 	// Node A: create counter and increment to 10
 	counterA := crdt.NewPNCounter("node-a")
 	counterA.Increment(10)
-	engA.PutWithTimeStamp(ctx, &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node-a"}, "counter:x", counterA, nil)
+	engA.PutWithTimeStamp(ctx, hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node-a"}, "counter:x", counterA, nil)
 	vmA.Advance("counter:x")
 
 	// --- Node B setup ---
@@ -35,7 +35,7 @@ func TestAntiEntropyKeyBased_PNCounterConvergence(t *testing.T) {
 	// Node B: create counter and increment to 20
 	counterB := crdt.NewPNCounter("node-b")
 	counterB.Increment(20)
-	engB.PutWithTimeStamp(ctx, &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node-b"}, "counter:x", counterB, nil)
+	engB.PutWithTimeStamp(ctx, hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node-b"}, "counter:x", counterB, nil)
 	vmB.Advance("counter:x")
 
 	// --- Simulate anti-entropy: B pulls from A ---
@@ -103,7 +103,7 @@ func TestAntiEntropyKeyBased_NewKeyFromRemote(t *testing.T) {
 
 	counter := crdt.NewPNCounter("node-a")
 	counter.Increment(42)
-	engA.PutWithTimeStamp(ctx, &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node-a"}, "new-key", counter, nil)
+	engA.PutWithTimeStamp(ctx, hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "node-a"}, "new-key", counter, nil)
 	vmA.Advance("new-key")
 
 	// Node B is empty

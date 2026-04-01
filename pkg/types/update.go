@@ -35,14 +35,14 @@ type Payload interface {
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Update struct {
-	Seq          uint64         `json:"seq"`
-	TimeStamp    *hlc.Timestamp `json:"time_stamp"`     // timestamp of current update
-	SetTimeStamp *hlc.Timestamp `json:"set_time_stamp"` // oldest update's timestamp, associated with same key and type
-	Payload      crdt.Delta     `json:"payload,omitempty"`
-	Type         UpdateType     `json:"type"`
-	TTL          uint8          `json:"ttl"`
-	Key          string         `json:"key"`
-	NodeID       string         `json:"node_id"`
+	Seq          uint64        `json:"seq"`
+	TimeStamp    hlc.Timestamp `json:"time_stamp"`     // timestamp of current update
+	SetTimeStamp hlc.Timestamp `json:"set_time_stamp"` // oldest update's timestamp, associated with same key and type
+	Payload      crdt.Delta    `json:"payload,omitempty"`
+	Type         UpdateType    `json:"type"`
+	TTL          uint8         `json:"ttl"`
+	Key          string        `json:"key"`
+	NodeID       string        `json:"node_id"`
 }
 
 // types for marshaling data

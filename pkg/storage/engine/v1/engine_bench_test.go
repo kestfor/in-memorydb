@@ -279,7 +279,7 @@ func BenchmarkHLCNowConcurrent(b *testing.B) {
 
 func BenchmarkHLCSyncWithRemote(b *testing.B) {
 	clock := hlc.NewHLC("bench-node")
-	remote := &hlc.Timestamp{
+	remote := hlc.Timestamp{
 		WallTime: uint64(b.N),
 		Lamport:  100,
 		ID:       "remote-node",
@@ -295,7 +295,7 @@ func BenchmarkHLCSyncWithRemote(b *testing.B) {
 
 func BenchmarkHLCSyncConcurrent(b *testing.B) {
 	clock := hlc.NewHLC("bench-node")
-	remote := &hlc.Timestamp{
+	remote := hlc.Timestamp{
 		WallTime: uint64(b.N),
 		Lamport:  100,
 		ID:       "remote-node",
@@ -312,8 +312,8 @@ func BenchmarkHLCSyncConcurrent(b *testing.B) {
 }
 
 func BenchmarkTimestampCompare(b *testing.B) {
-	ts1 := &hlc.Timestamp{WallTime: 100, Lamport: 50, ID: "node-1"}
-	ts2 := &hlc.Timestamp{WallTime: 200, Lamport: 60, ID: "node-2"}
+	ts1 := hlc.Timestamp{WallTime: 100, Lamport: 50, ID: "node-1"}
+	ts2 := hlc.Timestamp{WallTime: 200, Lamport: 60, ID: "node-2"}
 
 	b.ResetTimer()
 	b.ReportAllocs()

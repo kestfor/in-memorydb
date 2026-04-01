@@ -425,14 +425,14 @@ func (vm *VersionManager) MergeKeyState(ctx context.Context, state *types.KeySta
 			}
 		} else {
 			// Type mismatch: remote SetTimeStamp wins if newer
-			if state.SetTimeStamp != nil && (entry.SetTimeStamp == nil || entry.SetTimeStamp.Before(state.SetTimeStamp)) {
+			if !state.SetTimeStamp.IsZero() && (entry.SetTimeStamp.IsZero() || entry.SetTimeStamp.Before(state.SetTimeStamp)) {
 				entry.Object = remoteCRDT
 				entry.SetTimeStamp = state.SetTimeStamp
 			}
 		}
 
 		// Handle tombstone
-		if state.Tombstone && (entry.SetTimeStamp == nil || !state.SetTimeStamp.Before(entry.SetTimeStamp)) {
+		if state.Tombstone && (entry.SetTimeStamp.IsZero() || !state.SetTimeStamp.Before(entry.SetTimeStamp)) {
 			entry.Mu.Unlock()
 			vm.engine.DeleteWithTimeStamp(ctx, state.SetTimeStamp, state.Key)
 		} else {

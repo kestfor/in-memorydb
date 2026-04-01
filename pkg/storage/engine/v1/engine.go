@@ -28,7 +28,7 @@ type shard struct {
 
 type markItem struct {
 	key          string
-	setTimeStamp *hlc.Timestamp
+	setTimeStamp hlc.Timestamp
 	expiryAt     int64
 }
 
@@ -153,11 +153,11 @@ func (e *Engine) Get(ctx context.Context, key string) (*engine.CRDTEntry, bool) 
 	return entry, true
 }
 
-func (e *Engine) Put(ctx context.Context, key string, obj crdt.CRDT, callback engine.Callback) *hlc.Timestamp {
+func (e *Engine) Put(ctx context.Context, key string, obj crdt.CRDT, callback engine.Callback) hlc.Timestamp {
 	return e.PutWithTimeStamp(ctx, e.Clock().Now(), key, obj, callback)
 }
 
-func (e *Engine) PutWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string, obj crdt.CRDT, callback engine.Callback) *hlc.Timestamp {
+func (e *Engine) PutWithTimeStamp(ctx context.Context, ts hlc.Timestamp, key string, obj crdt.CRDT, callback engine.Callback) hlc.Timestamp {
 	_, span := tracing.StartSpan(ctx, spans.SpanEnginePutWithTimestamp)
 	defer span.End()
 
@@ -172,7 +172,7 @@ func (e *Engine) PutWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key st
 	}
 
 	val.Object = obj
-	val.SetTimeStamp = ts.Copy()
+	val.SetTimeStamp = ts
 	val.Tombstone = false
 
 	if !ok {
@@ -198,7 +198,7 @@ func (e *Engine) Delete(ctx context.Context, key string) (*engine.CRDTEntry, boo
 }
 
 // DeleteWithTimeStamp marks a key as a tombstone with a specified timestamp and schedules it for garbage collection.
-func (e *Engine) DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string) (*engine.CRDTEntry, bool) {
+func (e *Engine) DeleteWithTimeStamp(ctx context.Context, ts hlc.Timestamp, key string) (*engine.CRDTEntry, bool) {
 	sh := e.shardFor(key)
 	sh.mu.Lock()
 	ent, ok := sh.data[key]
@@ -209,11 +209,11 @@ func (e *Engine) DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key
 	}
 
 	ent.Tombstone = true
-	ent.SetTimeStamp = ts.Copy()
+	ent.SetTimeStamp = ts
 	sh.mu.Unlock()
 
 	item := markItem{
-		setTimeStamp: ts.Copy(),
+		setTimeStamp: ts,
 		key:          key,
 		expiryAt:     time.Now().UnixNano() + int64(e.opts.DeleteThreshold),
 	}

@@ -77,7 +77,7 @@ func (eu *EntryUpdater) CreateFromUpdate(update *types.Update) (*engine.CRDTEntr
 
 	return &engine.CRDTEntry{
 		Object:       newCRDT,
-		SetTimeStamp: update.SetTimeStamp.Copy(),
+		SetTimeStamp: update.SetTimeStamp,
 		Tombstone:    false,
 	}, nil
 }
@@ -98,7 +98,7 @@ func (eu *EntryUpdater) applySet(entry *engine.CRDTEntry, update *types.Update) 
 
 	// Заменяем объект
 	entry.Object = newCRDT
-	entry.SetTimeStamp = update.SetTimeStamp.Copy()
+	entry.SetTimeStamp = update.SetTimeStamp
 	entry.Tombstone = false
 
 	return UpdateResult{Applied: true, Modified: true}
@@ -152,6 +152,6 @@ func (eu *EntryUpdater) applyDelta(entry *engine.CRDTEntry, update *types.Update
 
 func (eu *EntryUpdater) applyDelete(entry *engine.CRDTEntry, update *types.Update) UpdateResult {
 	entry.Tombstone = true
-	entry.SetTimeStamp = update.SetTimeStamp.Copy()
+	entry.SetTimeStamp = update.SetTimeStamp
 	return UpdateResult{Applied: true, Modified: true}
 }

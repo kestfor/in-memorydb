@@ -38,13 +38,13 @@ func TestHandleUpdateUpdatesKeyVC(t *testing.T) {
 	counter := crdt.NewPNCounter("remote")
 	delta := counter.Increment(5)
 
-	update := &types.Update{
+	update := types.Update{
 		NodeID:       "remote",
 		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
 		Payload:      delta,
 	}
 
@@ -117,7 +117,7 @@ func TestMergeKeyState_NewKey(t *testing.T) {
 		CRDTType:     crdt.CRDTTypePNCounter,
 		State:        stateBytes,
 		Tombstone:    false,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
 		VC:           map[string]uint64{"remote": 5},
 	}
 
@@ -142,7 +142,7 @@ func TestMergeKeyState_ExistingKey_MergeCRDT(t *testing.T) {
 	// Create local counter with value 10
 	localCounter := crdt.NewPNCounter("local")
 	localCounter.Increment(10)
-	eng.PutWithTimeStamp(ctx, &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "local"}, "key1", localCounter, nil)
+	eng.PutWithTimeStamp(ctx, hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "local"}, "key1", localCounter, nil)
 	vm.Advance("key1")
 
 	// Create remote counter with value 20
@@ -156,7 +156,7 @@ func TestMergeKeyState_ExistingKey_MergeCRDT(t *testing.T) {
 		CRDTType:     crdt.CRDTTypePNCounter,
 		State:        remoteState,
 		Tombstone:    false,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
 		VC:           map[string]uint64{"remote": 3},
 	}
 
@@ -177,7 +177,7 @@ func TestMergeKeyState_Tombstone_RemoteNewer(t *testing.T) {
 	// Create local entry
 	localCounter := crdt.NewPNCounter("local")
 	localCounter.Increment(5)
-	eng.PutWithTimeStamp(ctx, &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "local"}, "key1", localCounter, nil)
+	eng.PutWithTimeStamp(ctx, hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "local"}, "key1", localCounter, nil)
 
 	// Remote sends tombstone with newer timestamp
 	remoteState, _ := crdt.NewPNCounter("remote").MarshalJSON()
@@ -186,7 +186,7 @@ func TestMergeKeyState_Tombstone_RemoteNewer(t *testing.T) {
 		CRDTType:     crdt.CRDTTypePNCounter,
 		State:        remoteState,
 		Tombstone:    true,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "remote"},
 		VC:           map[string]uint64{"remote": 2},
 	}
 
@@ -208,7 +208,7 @@ func TestMergeKeyState_VCMerge(t *testing.T) {
 
 	// Create entry in engine
 	counter := crdt.NewPNCounter("local")
-	eng.PutWithTimeStamp(ctx, &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "local"}, "key1", counter, nil)
+	eng.PutWithTimeStamp(ctx, hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "local"}, "key1", counter, nil)
 
 	// Remote state with different VC
 	remoteState, _ := crdt.NewPNCounter("remote").MarshalJSON()
@@ -217,7 +217,7 @@ func TestMergeKeyState_VCMerge(t *testing.T) {
 		CRDTType:     crdt.CRDTTypePNCounter,
 		State:        remoteState,
 		Tombstone:    false,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
 		VC:           map[string]uint64{"remote": 5, "local": 0},
 	}
 

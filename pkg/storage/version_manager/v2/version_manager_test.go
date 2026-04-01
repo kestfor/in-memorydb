@@ -74,13 +74,13 @@ func TestVersionManager_Update(t *testing.T) {
 	counter := crdt.NewPNCounter("test-node")
 	counterDelta := counter.Increment(1)
 
-	update1 := &types.Update{
+	update1 := types.Update{
 		NodeID:       "remote-node",
 		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      counterDelta,
 	}
 
@@ -106,13 +106,13 @@ func TestVersionManager_UpdateDuplicate(t *testing.T) {
 	counter := crdt.NewPNCounter("test-node")
 	counterDelta := counter.Increment(1)
 
-	update := &types.Update{
+	update := types.Update{
 		NodeID:       "remote-node",
 		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      counterDelta,
 	}
 
@@ -138,13 +138,13 @@ func TestVersionManager_UpdateDelta(t *testing.T) {
 	counter := crdt.NewPNCounter("remote-node")
 	counterDelta := counter.Increment(5)
 
-	update1 := &types.Update{
+	update1 := types.Update{
 		NodeID:       "remote-node",
 		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      counterDelta,
 	}
 
@@ -155,13 +155,13 @@ func TestVersionManager_UpdateDelta(t *testing.T) {
 	// Это симулирует корректную последовательность операций от одной ноды
 	delta2 := counter.Increment(10)
 
-	update2 := &types.Update{
+	update2 := types.Update{
 		NodeID:       "remote-node",
 		Seq:          2,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      delta2,
 	}
 
@@ -195,26 +195,26 @@ func TestVersionManager_UpdateDelete(t *testing.T) {
 	counter := crdt.NewPNCounter("remote-node")
 	counterDelta := counter.Increment(1)
 
-	update1 := &types.Update{
+	update1 := types.Update{
 		NodeID:       "remote-node",
 		Seq:          1,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      counterDelta,
 	}
 
 	vm.Update(ctx, update1)
 
 	// Удаляем
-	update2 := &types.Update{
+	update2 := types.Update{
 		NodeID:       "remote-node",
 		Seq:          2,
 		Key:          "counter:1",
 		Type:         types.UpdateTypeDelete,
-		TimeStamp:    &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
 		Payload:      &crdt.PNCounterDelta{},
 	}
 
@@ -238,19 +238,19 @@ func TestVersionManager_UpdateParallel(t *testing.T) {
 
 	// Создаём много updates для разных ключей
 	const numUpdates = 100
-	updates := make([]*types.Update, numUpdates)
+	updates := make([]types.Update, numUpdates)
 
 	for i := 0; i < numUpdates; i++ {
 		counter := crdt.NewPNCounter("remote-node")
 		counterDelta := counter.Increment(int64(i))
 
-		updates[i] = &types.Update{
+		updates[i] = types.Update{
 			NodeID:       "remote-node",
 			Seq:          uint64(i) + 1,
 			Key:          "counter:" + string(rune('A'+i%26)) + string(rune('0'+i/26)),
 			Type:         types.UpdateTypeSet,
-			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
-			SetTimeStamp: &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
+			TimeStamp:    hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
+			SetTimeStamp: hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
 			Payload:      counterDelta,
 		}
 	}
@@ -286,13 +286,13 @@ func TestVersionManager_VectorClockContiguous(t *testing.T) {
 	counterDelta := counter.Increment(1)
 
 	for i := 1; i <= 5; i++ {
-		update := &types.Update{
+		update := types.Update{
 			NodeID:       "remote-node",
 			Seq:          uint64(i),
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
-			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
-			SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+			TimeStamp:    hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
+			SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 			Payload:      counterDelta,
 		}
 		vm.Update(ctx, update)
@@ -324,13 +324,13 @@ func TestVersionManager_VectorClockMax(t *testing.T) {
 	counter := crdt.NewPNCounter("remote-node")
 
 	for _, seq := range []uint64{1, 2, 5, 6, 10} {
-		update := &types.Update{
+		update := types.Update{
 			NodeID:       "remote-node",
 			Seq:          seq,
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
-			TimeStamp:    &hlc.Timestamp{WallTime: 100 + seq, Lamport: 0, ID: "remote-node"},
-			SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+			TimeStamp:    hlc.Timestamp{WallTime: 100 + seq, Lamport: 0, ID: "remote-node"},
+			SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 			Payload:      counter.Increment(1),
 		}
 		vm.Update(ctx, update)
@@ -358,13 +358,13 @@ func TestVersionManager_VersionDiff(t *testing.T) {
 	counter := crdt.NewPNCounter("remote-node")
 
 	for i := 1; i <= 5; i++ {
-		update := &types.Update{
+		update := types.Update{
 			NodeID:       "remote-node",
 			Seq:          uint64(i),
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
-			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
-			SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+			TimeStamp:    hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
+			SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 			Payload:      counter.Increment(1),
 		}
 		vm.Update(ctx, update)
@@ -403,44 +403,44 @@ func TestVersionManager_ComplexConflictResolution(t *testing.T) {
 	// node2: Set register, Delete
 	// Delete с более поздним timestamp должен выиграть
 
-	upd1 := &types.Update{
+	upd1 := types.Update{
 		NodeID:       "remote-node-1",
 		Seq:          1,
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		TimeStamp:    hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
 		Payload:      &crdt.PNCounterDelta{},
 	}
 
-	upd2 := &types.Update{
+	upd2 := types.Update{
 		NodeID:       "remote-node-2",
 		Seq:          1,
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
+		TimeStamp:    hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
 		Payload:      &crdt.LWWHLCRegisterDelta{},
 	}
 
 	counterDelta := crdt.NewPNCounter("remote-node-1").Increment(10)
-	upd3 := &types.Update{
+	upd3 := types.Update{
 		NodeID:       "remote-node-1",
 		Seq:          2,
 		Key:          "key",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-1"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		TimeStamp:    hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
 		Payload:      counterDelta,
 	}
 
-	upd4 := &types.Update{
+	upd4 := types.Update{
 		NodeID:       "remote-node-2",
 		Seq:          2,
 		Key:          "key",
 		Type:         types.UpdateTypeDelete,
-		TimeStamp:    &hlc.Timestamp{WallTime: 104, Lamport: 0, ID: "remote-node-2"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 104, Lamport: 0, ID: "remote-node-2"},
+		TimeStamp:    hlc.Timestamp{WallTime: 104, Lamport: 0, ID: "remote-node-2"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 104, Lamport: 0, ID: "remote-node-2"},
 		Payload:      &crdt.LWWHLCRegisterDelta{},
 	}
 
@@ -498,13 +498,13 @@ func BenchmarkVersionManager_Update(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		counter := crdt.NewPNCounter("remote-node")
-		update := &types.Update{
+		update := types.Update{
 			NodeID:       "remote-node",
 			Seq:          uint64(i) + 1,
 			Key:          "key",
 			Type:         types.UpdateTypeDelta,
-			TimeStamp:    &hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
-			SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+			TimeStamp:    hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote-node"},
+			SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 			Payload:      counter.Increment(1),
 		}
 		vm.Update(ctx, update)
@@ -521,7 +521,7 @@ func BenchmarkVersionManager_UpdateBatch(b *testing.B) {
 	ctx := context.Background()
 
 	const batchSize = 100
-	updates := make([]*types.Update, batchSize)
+	updates := make([]types.Update, batchSize)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -529,13 +529,13 @@ func BenchmarkVersionManager_UpdateBatch(b *testing.B) {
 		for j := 0; j < batchSize; j++ {
 			seq := uint64(i*batchSize + j + 1)
 			counter := crdt.NewPNCounter("remote-node")
-			updates[j] = &types.Update{
+			updates[j] = types.Update{
 				NodeID:       "remote-node",
 				Seq:          uint64(seq),
 				Key:          "key:" + string(rune('A'+j%26)),
 				Type:         types.UpdateTypeDelta,
-				TimeStamp:    &hlc.Timestamp{WallTime: seq, Lamport: 0, ID: "remote-node"},
-				SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+				TimeStamp:    hlc.Timestamp{WallTime: seq, Lamport: 0, ID: "remote-node"},
+				SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 				Payload:      counter.Increment(1),
 			}
 		}
@@ -557,13 +557,13 @@ func BenchmarkVersionManager_VectorClockContiguous(b *testing.B) {
 		nodeID := "node" + string(rune('A'+node))
 		for i := 1; i <= 100; i++ {
 			counter := crdt.NewPNCounter(nodeID)
-			update := &types.Update{
+			update := types.Update{
 				NodeID:       nodeID,
 				Seq:          uint64(i),
 				Key:          "key",
 				Type:         types.UpdateTypeDelta,
-				TimeStamp:    &hlc.Timestamp{WallTime: uint64(i), Lamport: 0, ID: nodeID},
-				SetTimeStamp: &hlc.Timestamp{WallTime: 1, Lamport: 0, ID: nodeID},
+				TimeStamp:    hlc.Timestamp{WallTime: uint64(i), Lamport: 0, ID: nodeID},
+				SetTimeStamp: hlc.Timestamp{WallTime: 1, Lamport: 0, ID: nodeID},
 				Payload:      counter.Increment(1),
 			}
 			vm.Update(ctx, update)

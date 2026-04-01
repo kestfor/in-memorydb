@@ -94,8 +94,8 @@ func (s *VersionManagerTestSuite) TestUpdateSetNewKey() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "new-key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      delta,
 	}
 
@@ -126,8 +126,8 @@ func (s *VersionManagerTestSuite) TestUpdateDeltaNewKey() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "new-key",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      delta,
 	}
 
@@ -155,7 +155,7 @@ func (s *VersionManagerTestSuite) TestUpdateSetExistingKey() {
 	oldCRDT := s.newMockCRDT("counter")
 	oldEntry := &engine.CRDTEntry{
 		Object:       oldCRDT,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old-node"},
 		Tombstone:    false,
 	}
 
@@ -165,8 +165,8 @@ func (s *VersionManagerTestSuite) TestUpdateSetExistingKey() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "existing-key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      delta,
 	}
 
@@ -193,7 +193,7 @@ func (s *VersionManagerTestSuite) TestUpdateDeltaExistingKey() {
 	existingCRDT := s.newMockCRDT("counter")
 	entry := &engine.CRDTEntry{
 		Object:       existingCRDT,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
@@ -203,8 +203,8 @@ func (s *VersionManagerTestSuite) TestUpdateDeltaExistingKey() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "existing-key",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
+		TimeStamp:    hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
 		Payload:      delta,
 	}
 
@@ -223,7 +223,7 @@ func (s *VersionManagerTestSuite) TestUpdateDelete() {
 	existingCRDT := s.newMockCRDT("counter")
 	entry := &engine.CRDTEntry{
 		Object:       existingCRDT,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
@@ -232,8 +232,8 @@ func (s *VersionManagerTestSuite) TestUpdateDelete() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "key-to-delete",
 		Type:         types.UpdateTypeDelete,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 	}
 
 	s.engine.EXPECT().Update(gomock.Any(), "key-to-delete", gomock.Any()).
@@ -256,7 +256,7 @@ func (s *VersionManagerTestSuite) TestUpdateOldTimestamp() {
 	// Существующий entry с более новым timestamp
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
@@ -267,8 +267,8 @@ func (s *VersionManagerTestSuite) TestUpdateOldTimestamp() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      delta,
 	}
 
@@ -285,7 +285,7 @@ func (s *VersionManagerTestSuite) TestUpdateTypeMismatch() {
 	// Entry с типом GCounter
 	entry := &engine.CRDTEntry{
 		Object:       s.newMockCRDT("counter"),
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
@@ -296,8 +296,8 @@ func (s *VersionManagerTestSuite) TestUpdateTypeMismatch() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "key",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
 		Payload:      delta,
 	}
 
@@ -326,7 +326,7 @@ func (s *VersionManagerTestSuite) TestUpdateTypeMismatchWithNewerSetTS() {
 	oldCRDT := s.newMockCRDT("counter")
 	entry := &engine.CRDTEntry{
 		Object:       oldCRDT,
-		SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 		Tombstone:    false,
 	}
 
@@ -337,8 +337,8 @@ func (s *VersionManagerTestSuite) TestUpdateTypeMismatchWithNewerSetTS() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "key",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"}, // Newer!
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"}, // Newer!
 		Payload:      delta,
 	}
 
@@ -383,8 +383,8 @@ func (s *VersionManagerTestSuite) TestUpdateBatch() {
 			Range:        structs.Range{Start: 1, End: 1},
 			Key:          "key1",
 			Type:         types.UpdateTypeSet,
-			TimeStamp:    &hlc.Timestamp{WallTime: 100},
-			SetTimeStamp: &hlc.Timestamp{WallTime: 100},
+			TimeStamp:    hlc.Timestamp{WallTime: 100},
+			SetTimeStamp: hlc.Timestamp{WallTime: 100},
 			Payload:      delta1,
 		},
 		{
@@ -392,8 +392,8 @@ func (s *VersionManagerTestSuite) TestUpdateBatch() {
 			Range:        structs.Range{Start: 2, End: 2},
 			Key:          "key2",
 			Type:         types.UpdateTypeSet,
-			TimeStamp:    &hlc.Timestamp{WallTime: 101},
-			SetTimeStamp: &hlc.Timestamp{WallTime: 101},
+			TimeStamp:    hlc.Timestamp{WallTime: 101},
+			SetTimeStamp: hlc.Timestamp{WallTime: 101},
 			Payload:      delta2,
 		},
 	}
@@ -422,8 +422,8 @@ func (s *VersionManagerTestSuite) TestUpdateCRDTCreationError() {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100},
+		TimeStamp:    hlc.Timestamp{WallTime: 100},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100},
 		Payload:      delta,
 	}
 
@@ -458,8 +458,8 @@ func TestVersionManagerIntegration(t *testing.T) {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "counter:1",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      counterDelta,
 	}
 
@@ -481,8 +481,8 @@ func TestVersionManagerIntegration(t *testing.T) {
 		Range:        structs.Range{Start: 2, End: 2},
 		Key:          "counter:1",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 		Payload:      delta2,
 	}
 
@@ -495,8 +495,8 @@ func TestVersionManagerIntegration(t *testing.T) {
 		Range:        structs.Range{Start: 3, End: 3},
 		Key:          "counter:1",
 		Type:         types.UpdateTypeDelete,
-		TimeStamp:    &hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
+		TimeStamp:    hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
 	}
 
 	applied = vm.Update(ctx, update3)
@@ -522,7 +522,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 
 	// локальные изменения
 	counter := crdt.NewPNCounter("test-node")
-	localTs1 := &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "test-node"}
+	localTs1 := hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "test-node"}
 	vm.engine.PutWithTimeStamp(ctx, localTs1, "key", counter, nil)
 	vm.Advance("key")
 
@@ -538,8 +538,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		TimeStamp:    hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
 		Payload:      &crdt.PNCounterDelta{},
 	}
 
@@ -548,8 +548,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 		Range:        structs.Range{Start: 1, End: 1},
 		Key:          "key",
 		Type:         types.UpdateTypeSet,
-		TimeStamp:    &hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
+		TimeStamp:    hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-2"},
 		Payload:      &crdt.LWWHLCRegisterDelta{},
 	}
 
@@ -559,8 +559,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 		Range:        structs.Range{Start: 2, End: 2},
 		Key:          "key",
 		Type:         types.UpdateTypeDelta,
-		TimeStamp:    &hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-1"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		TimeStamp:    hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
 		Payload:      counterDelta,
 	}
 
@@ -569,8 +569,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 		Range:        structs.Range{Start: 2, End: 2},
 		Key:          "key",
 		Type:         types.UpdateTypeDelete,
-		TimeStamp:    &hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-2"},
-		SetTimeStamp: &hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-2"},
+		TimeStamp:    hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-2"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-2"},
 		Payload:      &crdt.LWWHLCRegisterDelta{},
 	}
 
@@ -667,7 +667,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Lamport:  uint64(j),
 //						ID:       "remote-node",
 //					},
-//					SetTimeStamp: &hlc.Timestamp{
+//					SetTimeStamp: hlc.Timestamp{
 //						WallTime: uint64(time.Now().UnixNano()),
 //						Lamport:  uint64(j),
 //						ID:       "remote-node",
@@ -808,8 +808,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "new-key",
 //						Type:         types.UpdateTypeSet,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 //						Payload:      &mockCRDT{typ: "counter", data: "42"},
 //					}
 //
@@ -858,8 +858,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "new-key",
 //						Type:         types.UpdateTypeDelta,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 //						Payload:      delta,
 //					}
 //
@@ -893,7 +893,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //					oldCRDT := &mockCRDT{typ: "counter", data: "old"}
 //					oldEntry := &engine.CRDTEntry{
 //						Object:       oldCRDT,
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "old-node"},
 //						Tombstone:    false,
 //					}
 //
@@ -903,8 +903,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "existing-key",
 //						Type:         types.UpdateTypeSet,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 //						Payload:      newCRDT,
 //					}
 //
@@ -935,7 +935,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //					existingCRDT := &mockCRDT{typ: "counter", data: "42"}
 //					entry := &engine.CRDTEntry{
 //						Object:       existingCRDT,
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 //						Tombstone:    false,
 //					}
 //
@@ -945,8 +945,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "existing-key",
 //						Type:         types.UpdateTypeDelta,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
+//						TimeStamp:    hlc.Timestamp{WallTime: 60, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
 //						Payload:      delta,
 //					}
 //
@@ -972,8 +972,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "key-to-delete",
 //						Type:         types.UpdateTypeDelete,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 //					}
 //
 //					s.history.EXPECT().HasRange(gomock.Any(), gomock.Any()).Return(false)
@@ -994,7 +994,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //					// Существующий entry с более новым timestamp
 //					entry := &engine.CRDTEntry{
 //						Object:       &mockCRDT{typ: "counter"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "node"},
 //						Tombstone:    false,
 //					}
 //
@@ -1004,8 +1004,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "key",
 //						Type:         types.UpdateTypeSet,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 //						Payload:      &mockCRDT{typ: "counter"},
 //					}
 //
@@ -1024,7 +1024,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //					// Entry с типом "counter"
 //					entry := &engine.CRDTEntry{
 //						Object:       &mockCRDT{typ: "counter"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 //						Tombstone:    false,
 //					}
 //
@@ -1034,8 +1034,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "key",
 //						Type:         types.UpdateTypeDelta,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"}, // Same SetTS
 //						Payload:      &mockCRDT{typ: "register"},                           // Другой тип!
 //					}
 //
@@ -1055,7 +1055,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //					oldCRDT := &mockCRDT{typ: "counter"}
 //					entry := &engine.CRDTEntry{
 //						Object:       oldCRDT,
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 50, Lamport: 0, ID: "node"},
 //						Tombstone:    false,
 //					}
 //
@@ -1066,8 +1066,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "key",
 //						Type:         types.UpdateTypeDelta,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"}, // Newer!
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"}, // Newer!
 //						Payload:      newCRDT,
 //					}
 //
@@ -1116,8 +1116,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //							Range:        structs.Range{Start: 1, End: 1},
 //							Key:          "key1",
 //							Type:         types.UpdateTypeSet,
-//							TimeStamp:    &hlc.Timestamp{WallTime: 100},
-//							SetTimeStamp: &hlc.Timestamp{WallTime: 100},
+//							TimeStamp:    hlc.Timestamp{WallTime: 100},
+//							SetTimeStamp: hlc.Timestamp{WallTime: 100},
 //							Payload:      &mockCRDT{typ: "counter"},
 //						},
 //						{
@@ -1125,8 +1125,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //							Range:        structs.Range{Start: 2, End: 2},
 //							Key:          "key2",
 //							Type:         types.UpdateTypeSet,
-//							TimeStamp:    &hlc.Timestamp{WallTime: 101},
-//							SetTimeStamp: &hlc.Timestamp{WallTime: 101},
+//							TimeStamp:    hlc.Timestamp{WallTime: 101},
+//							SetTimeStamp: hlc.Timestamp{WallTime: 101},
 //							Payload:      &mockCRDT{typ: "register"},
 //						},
 //					}
@@ -1160,8 +1160,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "key",
 //						Type:         types.UpdateTypeSet,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100},
+//						TimeStamp:    hlc.Timestamp{WallTime: 100},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100},
 //						Payload:      &mockCRDT{typ: "unknown"},
 //					}
 //
@@ -1263,8 +1263,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 1, End: 1},
 //						Key:          "counter:1",
 //						Type:         types.UpdateTypeSet,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 //						Payload:      crdt.NewGCounter("test-node"),
 //					}
 //
@@ -1286,8 +1286,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 2, End: 2},
 //						Key:          "counter:1",
 //						Type:         types.UpdateTypeDelta,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 110, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote-node"},
 //						Payload:      counter,
 //					}
 //
@@ -1300,8 +1300,8 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //						Range:        structs.Range{Start: 3, End: 3},
 //						Key:          "counter:1",
 //						Type:         types.UpdateTypeDelete,
-//						TimeStamp:    &hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
-//						SetTimeStamp: &hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
+//						TimeStamp:    hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
+//						SetTimeStamp: hlc.Timestamp{WallTime: 120, Lamport: 0, ID: "remote-node"},
 //					}
 //
 //					applied = vm.Update(ctx, update3)
@@ -1347,7 +1347,7 @@ func TestVersionManagerIntegrationComplex(t *testing.T) {
 //										Lamport:  uint64(j),
 //										ID:       "remote-node",
 //									},
-//									SetTimeStamp: &hlc.Timestamp{
+//									SetTimeStamp: hlc.Timestamp{
 //										WallTime: uint64(time.Now().UnixNano()),
 //										Lamport:  uint64(j),
 //										ID:       "remote-node",
