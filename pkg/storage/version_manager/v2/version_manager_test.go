@@ -454,6 +454,94 @@ func TestVersionManager_ComplexConflictResolution(t *testing.T) {
 	assert.Nil(t, entry)
 }
 
+func TestVersionManager_ComplexConflictResolution2(t *testing.T) {
+	eng := enginev1.NewEngine(
+		enginev1.WithInitialShards(4),
+		enginev1.WithNodeID("test-node"),
+		enginev1.WithDeleteThreshold(time.Minute),
+	)
+	eng.Start(context.Background())
+	defer eng.Stop()
+
+	vm := NewVersionManager("test-node", eng)
+	ctx := context.Background()
+
+	// Сценарий: создается счетчик, удаляется на одной, на другой, создается на первой, должен создаться на второй
+
+	upd1 := types.Update{
+		NodeID:       "remote-node-1",
+		Seq:          1,
+		Key:          "key",
+		Type:         types.UpdateTypeSet,
+		TimeStamp:    hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "remote-node-1"},
+		Payload:      &crdt.PNCounterDelta{},
+	}
+
+	upd2 := types.Update{
+		NodeID:       "remote-node-1",
+		Seq:          2,
+		Key:          "key",
+		Type:         types.UpdateTypeDelta,
+		TimeStamp:    hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 102, Lamport: 0, ID: "remote-node-1"},
+		Payload: &crdt.PNCounterDelta{P: map[string]int64{
+			"remote-node-1": 10,
+		}},
+	}
+
+	upd3 := types.Update{
+		NodeID:       "remote-node-1",
+		Seq:          3,
+		Key:          "key",
+		Type:         types.UpdateTypeDelete,
+		TimeStamp:    hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 103, Lamport: 0, ID: "remote-node-1"},
+		Payload:      &crdt.PNCounterDelta{},
+	}
+
+	upd4 := types.Update{
+		NodeID:       "test-node",
+		Seq:          1,
+		Key:          "key",
+		Type:         types.UpdateTypeDelete,
+		TimeStamp:    hlc.Timestamp{WallTime: 105, Lamport: 0, ID: "test-node"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 105, Lamport: 0, ID: "test-node"},
+		Payload:      &crdt.PNCounterDelta{},
+	}
+
+	upd5 := types.Update{
+		NodeID:       "remote-node-1",
+		Seq:          4,
+		Key:          "key",
+		Type:         types.UpdateTypeDelta,
+		TimeStamp:    hlc.Timestamp{WallTime: 107, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 107, Lamport: 0, ID: "remote-node-1"},
+		Payload:      &crdt.PNCounterDelta{},
+	}
+
+	upd6 := types.Update{
+		NodeID:       "remote-node-1",
+		Seq:          5,
+		Key:          "key",
+		Type:         types.UpdateTypeSet,
+		TimeStamp:    hlc.Timestamp{WallTime: 108, Lamport: 0, ID: "remote-node-1"},
+		SetTimeStamp: hlc.Timestamp{WallTime: 108, Lamport: 0, ID: "remote-node-1"},
+		Payload: &crdt.PNCounterDelta{P: map[string]int64{
+			"remote-node-1": 10,
+		}},
+	}
+
+	// Применяем в порядке
+	_ = vm.Update(ctx, upd1, upd2, upd3, upd4, upd5, upd6)
+
+	// Ключ должен существовать
+	entry, ok := eng.Get(ctx, "key")
+	require.True(t, ok)
+	require.NotNil(t, entry)
+	assert.False(t, entry.Tombstone)
+}
+
 // Benchmarks
 
 func BenchmarkVersionManager_Advance(b *testing.B) {
