@@ -40,6 +40,11 @@ type Engine interface {
 	// Get returns entry with specified key, if entry was marked as deleted, but physically present, method should return nil.
 	// For modifying key that still present use Update instead
 	Get(ctx context.Context, key string) (*CRDTEntry, bool)
+
+	// GetRaw returns entry with specified key including tombstones.
+	// Used by anti-entropy to read and propagate tombstone states.
+	GetRaw(ctx context.Context, key string) (*CRDTEntry, bool)
+
 	Clock() *hlc.Time
 
 	Put(ctx context.Context, key string, obj crdt.CRDT, callback Callback) hlc.Timestamp

@@ -45,6 +45,10 @@ func (m *MockCRDT) ApplyDelta(d crdt.Delta) error {
 	return nil
 }
 
+func (m *MockCRDT) Hash() uint64 {
+	return 0
+}
+
 // Test Suite
 type EngineTestSuite struct {
 	suite.Suite

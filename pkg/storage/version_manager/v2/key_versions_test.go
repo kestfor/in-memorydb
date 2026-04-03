@@ -59,10 +59,24 @@ func TestHandleUpdateUpdatesKeyVC(t *testing.T) {
 func TestKeyDigests(t *testing.T) {
 	eng := enginev1.NewEngine(enginev1.WithInitialShards(4), enginev1.WithNodeID("node-a"))
 	vm := NewVersionManager("node-a", eng)
+	ctx := context.Background()
 
-	vm.Advance("key1")
-	vm.Advance("key2")
-	vm.Advance("key3")
+	// Create actual entries via Update so CRDT state hashes are computed
+	for i, key := range []string{"key1", "key2", "key3"} {
+		counter := crdt.NewPNCounter("remote")
+		delta := counter.Increment(int64(i + 1))
+		update := types.Update{
+			NodeID:       "remote",
+			Seq:          uint64(i + 1),
+			Key:          key,
+			Type:         types.UpdateTypeSet,
+			TimeStamp:    hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote"},
+			SetTimeStamp: hlc.Timestamp{WallTime: uint64(100 + i), Lamport: 0, ID: "remote"},
+			Payload:      delta,
+		}
+		applied := vm.Update(ctx, update)
+		require.Len(t, applied, 1)
+	}
 
 	// Collect digests from all buckets
 	allDigests := make(map[string]uint64)
@@ -73,7 +87,7 @@ func TestKeyDigests(t *testing.T) {
 	}
 	assert.Len(t, allDigests, 3)
 
-	// All hashes should be non-zero
+	// All hashes should be non-zero (based on CRDT state hash)
 	for _, h := range allDigests {
 		assert.NotEqual(t, uint64(0), h)
 	}
@@ -230,19 +244,20 @@ func TestMergeKeyState_VCMerge(t *testing.T) {
 	assert.Equal(t, uint64(5), vc["remote"])
 }
 
-func TestHashVCDeterministic(t *testing.T) {
-	vc := map[string]uint64{"node-a": 1, "node-b": 2, "node-c": 3}
-	h1 := HashVC(vc)
-	h2 := HashVC(vc)
+func TestStateDigestDeterministic(t *testing.T) {
+	h1 := stateDigest(12345, false)
+	h2 := stateDigest(12345, false)
 	assert.Equal(t, h1, h2)
 }
 
-func TestHashVCDifferentForDifferentVCs(t *testing.T) {
-	vc1 := map[string]uint64{"node-a": 1, "node-b": 2}
-	vc2 := map[string]uint64{"node-a": 1, "node-b": 3}
-	h1 := HashVC(vc1)
-	h2 := HashVC(vc2)
+func TestStateDigestDifferentForDifferentStates(t *testing.T) {
+	h1 := stateDigest(12345, false)
+	h2 := stateDigest(12346, false)
 	assert.NotEqual(t, h1, h2)
+
+	// Same hash, different tombstone
+	h3 := stateDigest(12345, true)
+	assert.NotEqual(t, h1, h3)
 }
 
 func TestConcurrentAdvanceAndDigests(t *testing.T) {
