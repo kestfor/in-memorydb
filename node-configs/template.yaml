@@ -1,5 +1,6 @@
+# этот конфиг можно использовать к примеру как шаблон для докер сервисов, добавляя уникальные для ноды данные через ENV
+
 node:
-  id: "first"
   bind_address: "0.0.0.0"
   port: 8080
 gossip:
@@ -9,16 +10,14 @@ gossip:
   interval: 10s
   retries: 2
 membership:
-  # advertise_addr задается явно, если запускать узлы на разных физических устройствах.
-  # При запуске под docker-compose оставьте advertise_addr пустым, чтобы автоматически использовать IP/интерфейс контейнера.
-  # advertise_addr: "192.168.0.1"
   port: 8082
 engine:
-  shards_num: 512
+  shards_num: 256
 persistence:
   enabled: false
   wal:
     path: ./wal_data_1
+    flush_interval: 1s
     batch_size: 5000
     segment_threshold: 10000
 

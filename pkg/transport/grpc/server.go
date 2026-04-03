@@ -105,9 +105,6 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 	// applying updates
 	applied := s.vm.Update(ctx, domainUpdates...)
 
-	// saving applied updates for fast search
-	s.buffer.Put(applied...)
-
 	for _, u := range applied {
 
 		select {
@@ -141,13 +138,14 @@ func (s *updatesServer) GetVersionVector(ctx context.Context, request *emptypb.E
 // GetKeyDigests returns per-key version clock hashes for key-based anti-entropy
 func (s *updatesServer) GetKeyDigests(ctx context.Context, request *transportpb.GetKeyDigestsRequest) (*transportpb.GetKeyDigestsResponse, error) {
 	digests := s.vm.KeyDigests(request.GetBucket())
-	slog.DebugContext(ctx, "grpc.GetKeyDigests: Successfully sent key digests", "count", len(digests), "bucket", request.GetBucket())
+	slog.DebugContext(ctx, "grpc.GetKeyDigests: Successfully sent key digests", "count", len(digests), "bucket", request.GetBucket(), "digests", digests)
 	return &transportpb.GetKeyDigestsResponse{Digests: digests}, nil
 }
 
 // PullKeyStates returns full CRDT state for requested keys
 func (s *updatesServer) PullKeyStates(ctx context.Context, request *transportpb.PullKeyStatesRequest) (*transportpb.PullKeyStatesResponse, error) {
 	keys := request.GetKeys()
+	slog.DebugContext(ctx, "pulling key states", slog.Any("keys", keys))
 	states := make([]*types.KeyState, 0, len(keys))
 
 	for _, key := range keys {
@@ -172,10 +170,10 @@ func (s *updatesServer) PullKeyStates(ctx context.Context, request *transportpb.
 			VC:           s.vm.KeyVersionClock(key),
 		}
 		entry.Mu.RUnlock()
-
 		states = append(states, ks)
 	}
+	slog.DebugContext(ctx, "sending key state to requested peer", "states", states)
 
-	slog.DebugContext(ctx, "grpc.PullKeyStates: Successfully sent key states", "requested", len(keys), "sent", len(states))
+	//slog.DebugContext(ctx, "grpc.PullKeyStates: Successfully sent key states", "requested", len(keys), "sent", len(states))
 	return &transportpb.PullKeyStatesResponse{KeyStates: fromKeyStates(states)}, nil
 }

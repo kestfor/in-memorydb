@@ -39,7 +39,7 @@ persistence:
     batch_size: 1000             # number of records to batch before flushing to disk (default: 1000)
 
 engine:
-  shards_num: 256               # number of hash table shards at startup (default: 256)
+  shards_num: 256                # number of hash table shards at startup (default: 256)
   delete_threshold: 1m           # grace period before tombstoned keys are garbage-collected (default: 1m)
 
 buffer:

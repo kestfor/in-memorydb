@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	lume "github.com/kestfor/in-memorydb/api/lume"
 	"log"
 	"strconv"
 	"sync"
 	"time"
+
+	lume "github.com/kestfor/in-memorydb/api/lume"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -19,7 +20,7 @@ type Client struct {
 }
 
 func getConn(n int) *Client {
-	client, err := grpc.Dial("127.0.0.1:"+strconv.Itoa(50050+n), grpc.WithInsecure())
+	client, err := grpc.Dial("127.0.0.1:"+strconv.Itoa(8080+n), grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 
@@ -99,13 +100,12 @@ func (c *Client) checkAllKeys(ctx context.Context, from, to, keysNum int) (bool,
 	}
 }
 
-func main() {
+func testSetPerClientsConvergence(clientsNum int, keysPerClient int) {
 	wg := sync.WaitGroup{}
-	clients := make([]*Client, 0, 10)
-	keysPerClient := 10000
+	clients := make([]*Client, 0, clientsNum)
 
 	ctx := context.Background()
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= clientsNum; i++ {
 
 		wg.Add(1)
 		client := getConn(i)
@@ -147,5 +147,54 @@ func main() {
 	}
 
 	wg.Wait()
+}
 
+func testClientsPull(clientsNum int, setForClient int, keysPerClient int) {
+	wg := sync.WaitGroup{}
+	clients := make([]*Client, 0, clientsNum-1)
+	ctx := context.Background()
+
+	client := getConn(setForClient)
+	log.Printf("setting keys for client %d...", client.clientNum)
+	err := client.setKeys(ctx, keysPerClient)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	log.Printf("setting keys for client %d done, waiting for consistency...", client.clientNum)
+
+	for i := 1; i <= clientsNum; i++ {
+		if i == setForClient {
+			continue
+		}
+		wg.Add(1)
+		client := getConn(i)
+		clients = append(clients, client)
+
+		go func() {
+			defer wg.Done()
+			ticker := time.NewTicker(time.Second * 10)
+			start := time.Now()
+
+			for {
+				select {
+				case <-ticker.C:
+					ok, err := client.checkAllKeys(ctx, setForClient, setForClient, keysPerClient)
+					if !ok {
+						log.Printf("checkAllKeys failed for client %d: %v, retrying check...", client.clientNum, err)
+					} else {
+						log.Printf("checkAllKeys passed for client %d, elapsed: %s", client.clientNum, time.Since(start).String())
+						return
+					}
+				}
+			}
+
+		}()
+	}
+
+	wg.Wait()
+}
+
+func main() {
+	testClientsPull(3, 1, 10000)
 }

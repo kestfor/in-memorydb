@@ -5,6 +5,22 @@ x-grpc-healthcheck: &grpc-healthcheck
   retries: 3
 
 services:
+  base:
+    cpus: "1.0"
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+    command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+    volumes:
+      - ../node-configs/template.yaml:/lume-config/config.yaml
+    environment:
+      - LOG_LEVEL=DEBUG
+      - SECURITY_ENABLED=true
+    healthcheck: *grpc-healthcheck
+    networks:
+      - cluster_network
+
+
   first:
     container_name: first
     cpus: "1.0"
@@ -23,7 +39,7 @@ services:
       - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
       - ../node-configs/certs/first/first.crt:/etc/lume/security/tls.crt
       - ../node-configs/certs/first/first.key:/etc/lume/security/tls.key
-      - ./data/first-node-wal:/wal_data
+      - ./data/first-node-wal:/wal_data_1
       - ../node-configs/first-peer.yaml:/lume-config/config.yaml
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
     healthcheck: *grpc-healthcheck
@@ -48,7 +64,7 @@ services:
       - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
       - ../node-configs/certs/second/second.crt:/etc/lume/security/tls.crt
       - ../node-configs/certs/second/second.key:/etc/lume/security/tls.key
-      - ./data/second-node-wal:/wal_data
+      - ./data/second-node-wal:/wal_data_2
       - ../node-configs/second-peer.yaml:/lume-config/config.yaml
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
     depends_on:
@@ -57,6 +73,18 @@ services:
     healthcheck: *grpc-healthcheck
     networks:
       - cluster_network
+
+  third:
+    container_name: third
+    extends:
+      service: base
+    environment:
+      NODE_ID: third
+      SEEDS: first,second
+    depends_on:
+      - second
+    ports:
+      - "8083:8080"
 
 
 networks:
