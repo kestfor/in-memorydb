@@ -5,13 +5,13 @@ import (
 	"log/slog"
 
 	"github.com/kestfor/in-memorydb/pkg/gossip/gossip_buffer"
+	"github.com/kestfor/in-memorydb/pkg/storage/anti_entropy"
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	buffer "github.com/kestfor/in-memorydb/pkg/storage/updates_buffer"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
 	"github.com/kestfor/in-memorydb/pkg/structs"
 	"github.com/kestfor/in-memorydb/pkg/transport/grpc/transportpb"
-	"github.com/kestfor/in-memorydb/pkg/types"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -23,11 +23,20 @@ type updatesServer struct {
 	gbuffer          *gossip_buffer.GossipBuffer
 	wal              wal.WAL
 	engine           engine.Engine
+	antiEntropy      *anti_entropy.Service
 	maxUpdatesPerGet int
 }
 
 func NewUpdatesServer(buffer buffer.UpdatesBuffer, gbuffer *gossip_buffer.GossipBuffer, wal wal.WAL, vm version_manager.VersionManager, engine engine.Engine, maxUpdatesPerGet int) *updatesServer {
-	return &updatesServer{buffer: buffer, gbuffer: gbuffer, wal: wal, vm: vm, engine: engine, maxUpdatesPerGet: maxUpdatesPerGet}
+	return &updatesServer{
+		buffer:           buffer,
+		gbuffer:          gbuffer,
+		wal:              wal,
+		vm:               vm,
+		engine:           engine,
+		antiEntropy:      anti_entropy.NewService(engine, vm),
+		maxUpdatesPerGet: maxUpdatesPerGet,
+	}
 }
 
 // Get retrieves the updates for the requested version ranges, using both buffer and WAL as data sources.
@@ -138,42 +147,13 @@ func (s *updatesServer) GetVersionVector(ctx context.Context, request *emptypb.E
 // GetKeyDigests returns per-key version clock hashes for key-based anti-entropy
 func (s *updatesServer) GetKeyDigests(ctx context.Context, request *transportpb.GetKeyDigestsRequest) (*transportpb.GetKeyDigestsResponse, error) {
 	digests := s.vm.KeyDigests(request.GetBucket())
-	slog.DebugContext(ctx, "grpc.GetKeyDigests: Successfully sent key digests", "count", len(digests), "bucket", request.GetBucket(), "digests", digests)
+	slog.DebugContext(ctx, "grpc.GetKeyDigests: Successfully sent key digests", "count", len(digests), "bucket", request.GetBucket())
 	return &transportpb.GetKeyDigestsResponse{Digests: digests}, nil
 }
 
 // PullKeyStates returns full CRDT state for requested keys
 func (s *updatesServer) PullKeyStates(ctx context.Context, request *transportpb.PullKeyStatesRequest) (*transportpb.PullKeyStatesResponse, error) {
-	keys := request.GetKeys()
-	slog.DebugContext(ctx, "pulling key states", slog.Any("keys", keys))
-	states := make([]*types.KeyState, 0, len(keys))
-
-	for _, key := range keys {
-		entry, ok := s.engine.Get(ctx, key)
-		if !ok {
-			continue
-		}
-
-		entry.Mu.RLock()
-		stateBytes, err := entry.Object.MarshalJSON()
-		if err != nil {
-			entry.Mu.RUnlock()
-			slog.ErrorContext(ctx, "grpc.PullKeyStates: failed to marshal CRDT state", "key", key, "error", err)
-			continue
-		}
-		ks := &types.KeyState{
-			Key:          key,
-			CRDTType:     entry.Object.Type(),
-			State:        stateBytes,
-			Tombstone:    entry.Tombstone,
-			SetTimeStamp: entry.SetTimeStamp,
-			VC:           s.vm.KeyVersionClock(key),
-		}
-		entry.Mu.RUnlock()
-		states = append(states, ks)
-	}
-	slog.DebugContext(ctx, "sending key state to requested peer", "states", states)
-
-	//slog.DebugContext(ctx, "grpc.PullKeyStates: Successfully sent key states", "requested", len(keys), "sent", len(states))
+	states := s.antiEntropy.CollectKeyStates(ctx, request.GetKeys())
+	slog.DebugContext(ctx, "grpc.PullKeyStates: Successfully sent key states", "requested", len(request.GetKeys()), "sent", len(states))
 	return &transportpb.PullKeyStatesResponse{KeyStates: fromKeyStates(states)}, nil
 }

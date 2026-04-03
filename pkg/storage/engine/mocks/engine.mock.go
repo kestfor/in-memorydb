@@ -102,6 +102,21 @@ func (mr *MockEngineMockRecorder) Get(ctx, key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockEngine)(nil).Get), ctx, key)
 }
 
+// GetRaw mocks base method.
+func (m *MockEngine) GetRaw(ctx context.Context, key string) (*engine.CRDTEntry, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRaw", ctx, key)
+	ret0, _ := ret[0].(*engine.CRDTEntry)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetRaw indicates an expected call of GetRaw.
+func (mr *MockEngineMockRecorder) GetRaw(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRaw", reflect.TypeOf((*MockEngine)(nil).GetRaw), ctx, key)
+}
+
 // GetOrCreate mocks base method.
 func (m *MockEngine) GetOrCreate(ctx context.Context, key string, createFunc engine.CreateFunc) (*engine.CRDTEntry, bool, error) {
 	m.ctrl.T.Helper()

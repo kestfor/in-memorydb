@@ -1,10 +1,13 @@
 package crdt
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
+	"hash/fnv"
 	"sync"
+
+	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
 )
 
 type LWWHLCRegisterDelta struct {
@@ -209,4 +212,18 @@ func (r *LWWHLCRegister) UnmarshalJSON(data []byte) error {
 
 func (r *LWWHLCRegister) Type() CRDTType {
 	return CRDTTypeLWWHLCRegister
+}
+
+func (r *LWWHLCRegister) Hash() uint64 {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	h := fnv.New64a()
+	h.Write(r.value)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, r.ts.WallTime)
+	h.Write(buf)
+	binary.LittleEndian.PutUint64(buf, r.ts.Lamport)
+	h.Write(buf)
+	h.Write([]byte(r.ts.ID))
+	return h.Sum64()
 }

@@ -153,6 +153,17 @@ func (e *Engine) Get(ctx context.Context, key string) (*engine.CRDTEntry, bool) 
 	return entry, true
 }
 
+func (e *Engine) GetRaw(ctx context.Context, key string) (*engine.CRDTEntry, bool) {
+	shard := e.shardFor(key)
+	shard.mu.RLock()
+	defer shard.mu.RUnlock()
+	entry, ok := shard.data[key]
+	if !ok {
+		return nil, false
+	}
+	return entry, true
+}
+
 func (e *Engine) Put(ctx context.Context, key string, obj crdt.CRDT, callback engine.Callback) hlc.Timestamp {
 	return e.PutWithTimeStamp(ctx, e.Clock().Now(), key, obj, callback)
 }

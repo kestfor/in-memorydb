@@ -109,6 +109,20 @@ func (m *MockCRDT) EXPECT() *MockCRDTMockRecorder {
 	return m.recorder
 }
 
+// Hash mocks base method.
+func (m *MockCRDT) Hash() uint64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Hash")
+	ret0, _ := ret[0].(uint64)
+	return ret0
+}
+
+// Hash indicates an expected call of Hash.
+func (mr *MockCRDTMockRecorder) Hash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Hash", reflect.TypeOf((*MockCRDT)(nil).Hash))
+}
+
 // ApplyDelta mocks base method.
 func (m *MockCRDT) ApplyDelta(delta crdt.Delta) error {
 	m.ctrl.T.Helper()

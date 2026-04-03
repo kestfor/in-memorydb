@@ -1,10 +1,14 @@
 package crdt
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/kestfor/in-memorydb/pkg/structs"
+	"hash/fnv"
+	"sort"
 	"sync"
+
+	"github.com/kestfor/in-memorydb/pkg/structs"
 )
 
 // PNCounter — распределённый счётчик с поддержкой инкремента/декремента, thread-safe но мб это оверхед
@@ -192,6 +196,38 @@ func (c *PNCounter) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(data)
+}
+
+func (c *PNCounter) Hash() uint64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	h := fnv.New64a()
+	buf := make([]byte, 8)
+	// hash P
+	keys := make([]string, 0, len(c.P))
+	for k := range c.P {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		h.Write([]byte(k))
+		binary.LittleEndian.PutUint64(buf, uint64(c.P[k]))
+		h.Write(buf)
+	}
+	// separator
+	h.Write([]byte{0xFF})
+	// hash N
+	keys = keys[:0]
+	for k := range c.N {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		h.Write([]byte(k))
+		binary.LittleEndian.PutUint64(buf, uint64(c.N[k]))
+		h.Write(buf)
+	}
+	return h.Sum64()
 }
 
 // IDs возвращает список всех известных узлов
