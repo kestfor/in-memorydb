@@ -19,10 +19,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/benchmark/stats"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/resolver/manual"
-
-	_ "google.golang.org/grpc/balancer/roundrobin"
 )
 
 // ANSI colors.
@@ -102,12 +98,12 @@ func run(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid request type %q: must be get, set, or mixed", cfg.reqType)
 	}
 
-	totalWorkers := cfg.numConn * cfg.numRPC
+	totalConns := cfg.numConn * len(cfg.ports)
+	totalWorkers := totalConns * cfg.numRPC
 
 	fmt.Println(boldCyn + "========== lume-bench ==========\n" + reset)
 	fmt.Printf("  "+dim+"ports:      	  "+reset+" %v\n", cfg.ports)
-	fmt.Printf("  "+dim+"balancer:   	  "+reset+" round_robin over %d backends\n", len(cfg.ports))
-	fmt.Printf("  "+dim+"connections:	  "+reset+" %d\n", cfg.numConn)
+	fmt.Printf("  "+dim+"connections:	  "+reset+" %d (%d/port x %d ports)\n", totalConns, cfg.numConn, len(cfg.ports))
 	fmt.Printf("  "+dim+"workers:    	  "+reset+" %d (%d/conn)\n", totalWorkers, cfg.numRPC)
 	fmt.Printf("  "+dim+"warmup:     	  "+reset+" %ds\n", cfg.warmup)
 	fmt.Printf("  "+dim+"duration:   	  "+reset+" %ds\n", cfg.duration)
@@ -117,7 +113,7 @@ func run(_ *cobra.Command, _ []string) error {
 	fmt.Println()
 
 	// Connect
-	fmt.Printf(blue+"Connecting"+reset+" via round-robin balancer (%d backends)... ", len(cfg.ports))
+	fmt.Printf(blue+"Connecting"+reset+" to %d port(s)... ", len(cfg.ports))
 	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer connectCancel()
 	ccs, err := connect(connectCtx)
@@ -125,7 +121,7 @@ func run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	defer closeAll(ccs)
-	fmt.Printf(green+"%d balanced connection(s) ready"+reset+"\n", len(ccs))
+	fmt.Printf(green+"%d connection(s) ready"+reset+"\n", len(ccs))
 
 	// Key pool
 	pool := newKeyPool(cfg.poolSize)
@@ -203,30 +199,21 @@ func run(_ *cobra.Command, _ []string) error {
 }
 
 func connect(ctx context.Context) ([]*grpc.ClientConn, error) {
-	// Build resolver addresses from ports.
-	addrs := make([]resolver.Address, 0, len(cfg.ports))
+	ccs := make([]*grpc.ClientConn, 0, cfg.numConn*len(cfg.ports))
 	for _, port := range cfg.ports {
-		addrs = append(addrs, resolver.Address{Addr: "localhost:" + port})
-	}
-
-	r := manual.NewBuilderWithScheme("lume")
-	r.InitialState(resolver.State{Addresses: addrs})
-
-	ccs := make([]*grpc.ClientConn, 0, cfg.numConn)
-	for range cfg.numConn {
-		cc, err := grpc.DialContext(ctx, r.Scheme()+":///",
-			grpc.WithResolvers(r),
-			grpc.WithDefaultServiceConfig(`{"loadBalancingConfig":[{"round_robin":{}}]}`),
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithBlock(),
-			grpc.WithWriteBufferSize(128*1024),
-			grpc.WithReadBufferSize(128*1024),
-		)
-		if err != nil {
-			closeAll(ccs)
-			return nil, fmt.Errorf("dial via balancer: %w", err)
+		for range cfg.numConn {
+			cc, err := grpc.DialContext(ctx, "localhost:"+port,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+				grpc.WithBlock(),
+				grpc.WithWriteBufferSize(128*1024),
+				grpc.WithReadBufferSize(128*1024),
+			)
+			if err != nil {
+				closeAll(ccs)
+				return nil, fmt.Errorf("dial localhost:%s: %w", port, err)
+			}
+			ccs = append(ccs, cc)
 		}
-		ccs = append(ccs, cc)
 	}
 	return ccs, nil
 }
