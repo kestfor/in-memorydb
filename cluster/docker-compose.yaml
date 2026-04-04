@@ -1,5 +1,5 @@
 x-grpc-healthcheck: &grpc-healthcheck
-  test: ["CMD", "grpc_health_probe", "-addr=:8080"]
+  test: [ "CMD", "grpc_health_probe", "-addr=:8080" ]
   interval: 10s
   timeout: 5s
   retries: 3
@@ -85,6 +85,30 @@ services:
       - second
     ports:
       - "8083:8080"
+#
+#  fourth:
+#    container_name: fourth
+#    extends:
+#      service: base
+#    environment:
+#      NODE_ID: fourth
+#      SEEDS: first,second, third
+#    depends_on:
+#      - second
+#    ports:
+#      - "8084:8080"
+#
+#  fifth:
+#    container_name: fifth
+#    extends:
+#      service: base
+#    environment:
+#      NODE_ID: fifth
+#      SEEDS: first,second, third, fourth
+#    depends_on:
+#      - second
+#    ports:
+#      - "8085:8080"
 
 
 networks:

@@ -112,7 +112,7 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 	s.gbuffer.AddAndDec(domainUpdates...)
 
 	// applying updates
-	applied := s.vm.Update(ctx, domainUpdates...)
+	applied := s.vm.UpdateRemote(ctx, domainUpdates...)
 
 	for _, u := range applied {
 

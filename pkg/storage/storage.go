@@ -194,22 +194,21 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 
 	// increase sequence num
 
-	seqNum := s.vm.Advance(key)
-
-	update := types.Update{
+	updates := []types.Update{{
 		NodeID:       nodeID,
 		Type:         types.UpdateTypeSet,
 		TimeStamp:    ts,
 		SetTimeStamp: ts, // since its set update
-		Seq:          seqNum,
 		Key:          key,
 		Payload:      nilDelta, // since there is no data
-	}
+	}}
+
+	updates = s.vm.UpdateLocal(ctx, updates[0])
 
 	// Buffer operation is lightweight, trace externally
-	bufferPutWithTracing(ctx, s.buffer, update)
+	bufferPutWithTracing(ctx, s.buffer, updates[0])
 
-	if err = s.wal.Append(ctx, update); err != nil {
+	if err = s.wal.Append(ctx, updates[0]); err != nil {
 		slog.Error("storage.Put: cannot append update to wal", "err", err)
 		return ErrInternal
 	}
@@ -227,21 +226,20 @@ func (s *Storage) Delete(ctx context.Context, key string) (bool, error) {
 
 	if ok {
 
-		seqNum := s.vm.Advance(key)
-
-		update := types.Update{
+		updates := []types.Update{{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelete,
 			TimeStamp:    entry.SetTimeStamp,
 			SetTimeStamp: entry.SetTimeStamp, // delete action equal to set action for conflict resolving
-			Seq:          seqNum,
 			Key:          key,
 			Payload:      &crdt.PNCounterDelta{}, // since its delete update, no data specified
-		}
+		}}
 
-		bufferPutWithTracing(ctx, s.buffer, update)
+		updates = s.vm.UpdateLocal(ctx, updates[0])
 
-		if err := s.wal.Append(ctx, update); err != nil {
+		bufferPutWithTracing(ctx, s.buffer, updates[0])
+
+		if err := s.wal.Append(ctx, updates[0]); err != nil {
 			slog.Error("storage.Delete: cannot append update to wal", "err", err)
 			return false, ErrInternal
 		}
@@ -269,26 +267,24 @@ func (s *Storage) ApplyInc(ctx context.Context, key string, val int64) (bool, er
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
 
-		seqNum := s.vm.Advance(key)
-
 		delta := t.Increment(val)
 
-		upd := types.Update{
+		updates := []types.Update{{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Seq:          seqNum,
 			Key:          key,
-		}
+		}}
+		updates = s.vm.UpdateLocal(ctx, updates[0])
 
-		if err := s.wal.Append(ctx, upd); err != nil {
+		if err := s.wal.Append(ctx, updates[0]); err != nil {
 			slog.Error("storage.ApplyInc: cannot append update to wal", "err", err)
 			return false, err
 		}
 
-		bufferPutWithTracing(ctx, s.buffer, upd)
+		bufferPutWithTracing(ctx, s.buffer, updates[0])
 
 	default:
 		err := fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object)
@@ -314,25 +310,25 @@ func (s *Storage) ApplyDec(ctx context.Context, key string, val int64) (bool, er
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.PNCounter:
-		seqNum := s.vm.Advance(key)
 		delta := t.Decrement(val)
 
-		upd := types.Update{
+		updates := []types.Update{{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Seq:          seqNum,
 			Key:          key,
-		}
+		}}
 
-		if err := s.wal.Append(ctx, upd); err != nil {
+		updates = s.vm.UpdateLocal(ctx, updates[0])
+
+		if err := s.wal.Append(ctx, updates[0]); err != nil {
 			slog.Error("storage.ApplySetRegister: cannot append update to wal", "err", err) // TODO в этом случае нужно делать декремент seq_num, но такой ситуации не должно быть
 			return false, ErrInternal
 		}
 
-		bufferPutWithTracing(ctx, s.buffer, upd)
+		bufferPutWithTracing(ctx, s.buffer, updates[0])
 
 	default:
 		err := fmt.Errorf("unexpected type for increment, expected: crdt.PNCounter, got: %T", entry.Object)
@@ -359,26 +355,24 @@ func (s *Storage) ApplySetRegister(ctx context.Context, key string, val []byte) 
 	}
 	switch t := entry.Object.(type) {
 	case *crdt.LWWHLCRegister:
-		seqNum := s.vm.Advance(key)
-
 		delta := t.Write(val)
 
-		upd := types.Update{
+		updates := []types.Update{{
 			NodeID:       s.config.Node.ID,
 			Type:         types.UpdateTypeDelta,
 			TimeStamp:    s.engine.Clock().Now(),
 			SetTimeStamp: entry.SetTimeStamp,
 			Payload:      delta,
-			Seq:          seqNum,
 			Key:          key,
-		}
+		}}
+		updates = s.vm.UpdateLocal(ctx, updates[0])
 
-		if err := s.wal.Append(ctx, upd); err != nil {
+		if err := s.wal.Append(ctx, updates[0]); err != nil {
 			slog.Error("storage.ApplySetRegister: cannot append update to wal", "err", err)
 			return false, ErrInternal
 		}
 
-		bufferPutWithTracing(ctx, s.buffer, upd)
+		bufferPutWithTracing(ctx, s.buffer, updates[0])
 
 	default:
 		err := fmt.Errorf("unexpected type for set register, expected: crdt.LWWHLCRegister, got: %T", entry.Object)

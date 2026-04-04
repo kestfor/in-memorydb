@@ -128,7 +128,7 @@ func run(_ *cobra.Command, _ []string) error {
 
 	// Pre-populate
 	if cfg.reqType == "get" || cfg.reqType == "mixed" {
-		if err := prepopulate(ccs[0], pool); err != nil {
+		if err := prepopulate(ccs, pool); err != nil {
 			return fmt.Errorf("pre-populate: %w", err)
 		}
 	}
@@ -224,31 +224,33 @@ func closeAll(ccs []*grpc.ClientConn) {
 	}
 }
 
-func prepopulate(cc *grpc.ClientConn, pool *keyPool) error {
-	fmt.Printf(blue+"Pre-populating"+reset+" %d keys...\n", cfg.poolSize)
-	client := lumepb.NewLumeClient(cc)
-	for i, key := range pool.keys {
-		if _, err := client.Set(context.Background(), &lumepb.SetRequest{
-			Key:      key,
-			CrdtType: lumepb.Type_TYPE_LWW_REGISTER,
-		}); err != nil {
-			return fmt.Errorf("set %s: %w", key, err)
-		}
-		if _, err := client.Apply(context.Background(), &lumepb.ApplyRequest{
-			Key: key,
-			Operation: &lumepb.ApplyRequest_RegisterOperation{
-				RegisterOperation: &lumepb.ApplyRequest_Register{
-					Value: make([]byte, cfg.reqSize),
+func prepopulate(ccs []*grpc.ClientConn, pool *keyPool) error {
+	for i := range cfg.ports {
+		fmt.Printf(blue+"Pre-populating"+reset+" %d keys for %d port...\n", cfg.poolSize, i+1)
+		client := lumepb.NewLumeClient(ccs[i])
+		for i, key := range pool.keys {
+			if _, err := client.Set(context.Background(), &lumepb.SetRequest{
+				Key:      key,
+				CrdtType: lumepb.Type_TYPE_LWW_REGISTER,
+			}); err != nil {
+				return fmt.Errorf("set %s: %w", key, err)
+			}
+			if _, err := client.Apply(context.Background(), &lumepb.ApplyRequest{
+				Key: key,
+				Operation: &lumepb.ApplyRequest_RegisterOperation{
+					RegisterOperation: &lumepb.ApplyRequest_Register{
+						Value: make([]byte, cfg.reqSize),
+					},
 				},
-			},
-		}); err != nil {
-			return fmt.Errorf("apply %s: %w", key, err)
+			}); err != nil {
+				return fmt.Errorf("apply %s: %w", key, err)
+			}
+			if (i+1)%2000 == 0 {
+				fmt.Printf("\r\033[K  "+dim+"%d/%d keys"+reset, i+1, len(pool.keys))
+			}
 		}
-		if (i+1)%2000 == 0 {
-			fmt.Printf("\r\033[K  "+dim+"%d/%d keys"+reset, i+1, len(pool.keys))
-		}
+		fmt.Printf("\r\033[K  %d/%d keys — "+green+"done"+reset+"\n", len(pool.keys), len(pool.keys))
 	}
-	fmt.Printf("\r\033[K  %d/%d keys — "+green+"done"+reset+"\n", len(pool.keys), len(pool.keys))
 	return nil
 }
 

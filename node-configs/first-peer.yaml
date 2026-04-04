@@ -18,8 +18,10 @@ engine:
 persistence:
   enabled: false
   wal:
+    flush_interval: 1s
+    sync_mode: false
     path: ./wal_data_1
-    batch_size: 5000
+    batch_size: 1000
     segment_threshold: 10000
 
 security:

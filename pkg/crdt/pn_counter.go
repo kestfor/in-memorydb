@@ -42,6 +42,10 @@ func (d *PNCounterDelta) Merge(other Delta) error {
 	return nil
 }
 
+func (d *PNCounterDelta) Hash() uint64 {
+	return getHash(d.P, d.N)
+}
+
 func (d *PNCounterDelta) CreateCRDT() (CRDT, error) {
 	return &PNCounter{ // TODO возможно тут нужен ID
 		P: d.P,
@@ -201,30 +205,34 @@ func (c *PNCounter) MarshalJSON() ([]byte, error) {
 func (c *PNCounter) Hash() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	return getHash(c.P, c.N)
+}
+
+func getHash(p map[string]int64, n map[string]int64) uint64 {
 	h := fnv.New64a()
 	buf := make([]byte, 8)
 	// hash P
-	keys := make([]string, 0, len(c.P))
-	for k := range c.P {
+	keys := make([]string, 0, len(p))
+	for k := range p {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
 		h.Write([]byte(k))
-		binary.LittleEndian.PutUint64(buf, uint64(c.P[k]))
+		binary.LittleEndian.PutUint64(buf, uint64(p[k]))
 		h.Write(buf)
 	}
 	// separator
 	h.Write([]byte{0xFF})
 	// hash N
 	keys = keys[:0]
-	for k := range c.N {
+	for k := range n {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
 		h.Write([]byte(k))
-		binary.LittleEndian.PutUint64(buf, uint64(c.N[k]))
+		binary.LittleEndian.PutUint64(buf, uint64(n[k]))
 		h.Write(buf)
 	}
 	return h.Sum64()

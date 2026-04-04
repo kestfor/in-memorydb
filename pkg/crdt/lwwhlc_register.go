@@ -1,7 +1,6 @@
 package crdt
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -27,6 +26,12 @@ func (d *LWWHLCRegisterDelta) Merge(other Delta) error {
 	}
 
 	return nil
+}
+
+func (d *LWWHLCRegisterDelta) Hash() uint64 {
+	h := fnv.New64a()
+	h.Write(d.Value)
+	return h.Sum64()
 }
 
 func (d *LWWHLCRegisterDelta) CreateCRDT() (CRDT, error) {
@@ -219,11 +224,5 @@ func (r *LWWHLCRegister) Hash() uint64 {
 	defer r.mu.RUnlock()
 	h := fnv.New64a()
 	h.Write(r.value)
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, r.ts.WallTime)
-	h.Write(buf)
-	binary.LittleEndian.PutUint64(buf, r.ts.Lamport)
-	h.Write(buf)
-	h.Write([]byte(r.ts.ID))
 	return h.Sum64()
 }

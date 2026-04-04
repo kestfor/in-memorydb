@@ -54,6 +54,8 @@ type Delta interface {
 	Merge(other Delta) error
 
 	CreateCRDT() (CRDT, error)
+
+	Hash() uint64
 }
 
 type CRDTConstructor func(id string) CRDT

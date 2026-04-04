@@ -72,13 +72,17 @@ func keyBucket(key string, numBuckets uint32) uint32 {
 // Advance увеличивает локальный sequence number на 1
 // Полностью lock-free: seq атомарен, история для локальной ноды не хранится
 // (локальный seq всегда contiguous: 1, 2, 3, ...)
-func (vm *VersionManager) Advance(key string) uint64 {
-	return vm.seq.Add(1)
+func (vm *VersionManager) UpdateLocal(ctx context.Context, updates ...types.Update) []types.Update {
+	for i := range updates {
+		vm.updateKeyStateHash(updates[i].Key, stateDigest(updates[i].Payload.Hash(), updates[i].Type == types.UpdateTypeDelete))
+		updates[i].Seq = vm.seq.Add(1)
+	}
+	return updates
 }
 
 // Update применяет набор updates от remote нод
 // Возвращает slice успешно применённых updates
-func (vm *VersionManager) Update(ctx context.Context, updates ...types.Update) []types.Update {
+func (vm *VersionManager) UpdateRemote(ctx context.Context, updates ...types.Update) []types.Update {
 	if len(updates) == 0 {
 		return nil
 	}
