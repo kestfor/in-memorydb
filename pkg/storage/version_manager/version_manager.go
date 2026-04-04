@@ -20,6 +20,5 @@ type VersionManager interface {
 
 	// Key-based anti-entropy methods
 	KeyDigests(bucket uint32) map[string]uint64
-	KeyVersionClock(key string) map[string]uint64
 	MergeKeyState(ctx context.Context, state *types.KeyState) error
 }

@@ -26,10 +26,9 @@ const (
 	DefaultNumBuckets = 4
 )
 
-// keyMeta holds per-key version clock and precomputed hash
+// keyMeta holds precomputed hash for anti-entropy digest comparison
 type keyMeta struct {
 	mu     sync.RWMutex
-	vc     map[string]uint64
 	hash   uint64 // stateDigest(CRDT.Hash(), tombstone) — updated on every mutation
 	bucket uint32
 }
@@ -70,13 +69,11 @@ func keyBucket(key string, numBuckets uint32) uint32 {
 	return h.Sum32() % numBuckets
 }
 
-// Advance увеличивает локальный sequence number на 1 и обновляет per-key VC
+// Advance увеличивает локальный sequence number на 1
 // Полностью lock-free: seq атомарен, история для локальной ноды не хранится
 // (локальный seq всегда contiguous: 1, 2, 3, ...)
 func (vm *VersionManager) Advance(key string) uint64 {
-	newSeq := vm.seq.Add(1)
-	vm.updateKeyVC(key, vm.nodeID, newSeq)
-	return newSeq
+	return vm.seq.Add(1)
 }
 
 // Update применяет набор updates от remote нод
@@ -200,9 +197,6 @@ func (vm *VersionManager) handleUpdate(ctx context.Context, update *types.Update
 	} else {
 		vm.updateKeyStateHash(update.Key, newHash)
 	}
-
-	// Update per-key VC after successful apply
-	vm.updateKeyVC(update.Key, update.NodeID, update.Seq)
 
 	return true
 }
@@ -331,7 +325,6 @@ func (vm *VersionManager) applyUpdateDuringRestore(ctx context.Context, update *
 		vm.updateKeyStateHash(update.Key, newHash)
 	}
 
-	vm.updateKeyVC(update.Key, update.NodeID, update.Seq)
 }
 
 // RestoreSeq очищает историю для ноды (для перезапуска синхронизации)
@@ -352,22 +345,7 @@ func (vm *VersionManager) Stats() Stats {
 	}
 }
 
-// updateKeyVC updates the per-key version clock for the given key and node
-func (vm *VersionManager) updateKeyVC(key, nodeID string, seq uint64) {
-	val, _ := vm.keyVersions.LoadOrStore(key, &keyMeta{
-		vc:     make(map[string]uint64),
-		bucket: keyBucket(key, vm.numBuckets),
-	})
-	km := val.(*keyMeta)
-
-	km.mu.Lock()
-	if seq > km.vc[nodeID] {
-		km.vc[nodeID] = seq
-	}
-	km.mu.Unlock()
-}
-
-// KeyDigests returns a map of key → hash(VC) for keys in the specified bucket
+// KeyDigests returns a map of key → hash for keys in the specified bucket
 func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
 	result := make(map[string]uint64)
 	vm.keyVersions.Range(func(k, v any) bool {
@@ -386,23 +364,6 @@ func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
 // NumBuckets returns the number of hash buckets used for partitioned anti-entropy
 func (vm *VersionManager) NumBuckets() uint32 {
 	return vm.numBuckets
-}
-
-// KeyVersionClock returns the version clock for a specific key
-func (vm *VersionManager) KeyVersionClock(key string) map[string]uint64 {
-	val, ok := vm.keyVersions.Load(key)
-	if !ok {
-		return nil
-	}
-	km := val.(*keyMeta)
-	km.mu.RLock()
-	defer km.mu.RUnlock()
-
-	result := make(map[string]uint64, len(km.vc))
-	for k, v := range km.vc {
-		result[k] = v
-	}
-	return result
 }
 
 // MergeKeyState merges a remote key state into the local engine
@@ -492,22 +453,6 @@ func (vm *VersionManager) MergeKeyState(ctx context.Context, state *types.KeySta
 
 	vm.updateKeyStateHash(state.Key, newHash)
 
-	// Merge per-key VC (element-wise max)
-	if state.VC != nil {
-		val, _ := vm.keyVersions.LoadOrStore(state.Key, &keyMeta{
-			vc:     make(map[string]uint64),
-			bucket: keyBucket(state.Key, vm.numBuckets),
-		})
-		km := val.(*keyMeta)
-		km.mu.Lock()
-		for nodeID, seq := range state.VC {
-			if seq > km.vc[nodeID] {
-				km.vc[nodeID] = seq
-			}
-		}
-		km.mu.Unlock()
-	}
-
 	return nil
 }
 
@@ -529,7 +474,6 @@ func stateDigest(crdtHash uint64, tombstone bool) uint64 {
 // updateKeyStateHash updates the precomputed state hash for a key
 func (vm *VersionManager) updateKeyStateHash(key string, hash uint64) {
 	val, _ := vm.keyVersions.LoadOrStore(key, &keyMeta{
-		vc:     make(map[string]uint64),
 		bucket: keyBucket(key, vm.numBuckets),
 	})
 	km := val.(*keyMeta)

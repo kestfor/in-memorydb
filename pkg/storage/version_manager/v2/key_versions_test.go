@@ -13,49 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAdvanceUpdatesKeyVC(t *testing.T) {
-	eng := enginev1.NewEngine(enginev1.WithInitialShards(4), enginev1.WithNodeID("node-a"))
-	vm := NewVersionManager("node-a", eng)
-
-	vm.Advance("key1")
-	vm.Advance("key1")
-	vm.Advance("key2")
-
-	vc1 := vm.KeyVersionClock("key1")
-	require.NotNil(t, vc1)
-	assert.Equal(t, uint64(2), vc1["node-a"])
-
-	vc2 := vm.KeyVersionClock("key2")
-	require.NotNil(t, vc2)
-	assert.Equal(t, uint64(3), vc2["node-a"])
-}
-
-func TestHandleUpdateUpdatesKeyVC(t *testing.T) {
-	eng := enginev1.NewEngine(enginev1.WithInitialShards(4), enginev1.WithNodeID("local"))
-	vm := NewVersionManager("local", eng)
-	ctx := context.Background()
-
-	counter := crdt.NewPNCounter("remote")
-	delta := counter.Increment(5)
-
-	update := types.Update{
-		NodeID:       "remote",
-		Seq:          1,
-		Key:          "counter:1",
-		Type:         types.UpdateTypeSet,
-		TimeStamp:    hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
-		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
-		Payload:      delta,
-	}
-
-	applied := vm.Update(ctx, update)
-	require.Len(t, applied, 1)
-
-	vc := vm.KeyVersionClock("counter:1")
-	require.NotNil(t, vc)
-	assert.Equal(t, uint64(1), vc["remote"])
-}
-
 func TestKeyDigests(t *testing.T) {
 	eng := enginev1.NewEngine(enginev1.WithInitialShards(4), enginev1.WithNodeID("node-a"))
 	vm := NewVersionManager("node-a", eng)
@@ -101,21 +58,6 @@ func TestKeyDigestsEmpty(t *testing.T) {
 	assert.Len(t, digests, 0)
 }
 
-func TestKeyVersionClock(t *testing.T) {
-	eng := enginev1.NewEngine(enginev1.WithInitialShards(4), enginev1.WithNodeID("node-a"))
-	vm := NewVersionManager("node-a", eng)
-
-	vm.Advance("mykey")
-
-	vc := vm.KeyVersionClock("mykey")
-	require.NotNil(t, vc)
-	assert.Equal(t, uint64(1), vc["node-a"])
-
-	// Non-existent key
-	vc2 := vm.KeyVersionClock("nonexistent")
-	assert.Nil(t, vc2)
-}
-
 func TestMergeKeyState_NewKey(t *testing.T) {
 	eng := enginev1.NewEngine(enginev1.WithInitialShards(4), enginev1.WithNodeID("local"))
 	vm := NewVersionManager("local", eng)
@@ -132,7 +74,6 @@ func TestMergeKeyState_NewKey(t *testing.T) {
 		State:        stateBytes,
 		Tombstone:    false,
 		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
-		VC:           map[string]uint64{"remote": 5},
 	}
 
 	err = vm.MergeKeyState(ctx, ks)
@@ -142,10 +83,6 @@ func TestMergeKeyState_NewKey(t *testing.T) {
 	require.True(t, ok)
 	assert.NotNil(t, entry)
 	assert.Equal(t, int64(42), entry.Object.Value())
-
-	// Check VC was merged
-	vc := vm.KeyVersionClock("new-key")
-	assert.Equal(t, uint64(5), vc["remote"])
 }
 
 func TestMergeKeyState_ExistingKey_MergeCRDT(t *testing.T) {
@@ -171,7 +108,6 @@ func TestMergeKeyState_ExistingKey_MergeCRDT(t *testing.T) {
 		State:        remoteState,
 		Tombstone:    false,
 		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
-		VC:           map[string]uint64{"remote": 3},
 	}
 
 	err = vm.MergeKeyState(ctx, ks)
@@ -201,7 +137,6 @@ func TestMergeKeyState_Tombstone_RemoteNewer(t *testing.T) {
 		State:        remoteState,
 		Tombstone:    true,
 		SetTimeStamp: hlc.Timestamp{WallTime: 200, Lamport: 0, ID: "remote"},
-		VC:           map[string]uint64{"remote": 2},
 	}
 
 	err := vm.MergeKeyState(ctx, ks)
@@ -210,38 +145,6 @@ func TestMergeKeyState_Tombstone_RemoteNewer(t *testing.T) {
 	// Entry should be deleted (tombstoned)
 	_, ok := eng.Get(ctx, "key1")
 	assert.False(t, ok)
-}
-
-func TestMergeKeyState_VCMerge(t *testing.T) {
-	eng := enginev1.NewEngine(enginev1.WithInitialShards(4), enginev1.WithNodeID("local"))
-	vm := NewVersionManager("local", eng)
-	ctx := context.Background()
-
-	// Set local key VC
-	vm.Advance("key1") // local -> 1
-
-	// Create entry in engine
-	counter := crdt.NewPNCounter("local")
-	eng.PutWithTimeStamp(ctx, hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "local"}, "key1", counter, nil)
-
-	// Remote state with different VC
-	remoteState, _ := crdt.NewPNCounter("remote").MarshalJSON()
-	ks := &types.KeyState{
-		Key:          "key1",
-		CRDTType:     crdt.CRDTTypePNCounter,
-		State:        remoteState,
-		Tombstone:    false,
-		SetTimeStamp: hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "remote"},
-		VC:           map[string]uint64{"remote": 5, "local": 0},
-	}
-
-	err := vm.MergeKeyState(ctx, ks)
-	require.NoError(t, err)
-
-	vc := vm.KeyVersionClock("key1")
-	// Element-wise max: local=max(1,0)=1, remote=max(0,5)=5
-	assert.Equal(t, uint64(1), vc["local"])
-	assert.Equal(t, uint64(5), vc["remote"])
 }
 
 func TestStateDigestDeterministic(t *testing.T) {
@@ -287,13 +190,11 @@ func TestConcurrentAdvanceAndDigests(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < 100; j++ {
 				vm.KeyDigests(uint32(j) % vm.NumBuckets())
-				vm.KeyVersionClock("key")
 			}
 		}()
 	}
 
 	wg.Wait()
 
-	vc := vm.KeyVersionClock("key")
-	assert.Equal(t, uint64(numGoroutines*opsPerGoroutine), vc["node-a"])
+	assert.Equal(t, uint64(numGoroutines*opsPerGoroutine), vm.GetCurrentSequence())
 }

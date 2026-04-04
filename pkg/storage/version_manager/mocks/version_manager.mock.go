@@ -11,11 +11,11 @@ package mock_version_manager
 
 import (
 	context "context"
+	reflect "reflect"
+
 	wal "github.com/kestfor/in-memorydb/pkg/storage/wal"
 	structs "github.com/kestfor/in-memorydb/pkg/structs"
 	types "github.com/kestfor/in-memorydb/pkg/types"
-	reflect "reflect"
-
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -71,20 +71,6 @@ func (mr *MockVersionManagerMockRecorder) KeyDigests(bucket any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyDigests", reflect.TypeOf((*MockVersionManager)(nil).KeyDigests), bucket)
 }
 
-// KeyVersionClock mocks base method.
-func (m *MockVersionManager) KeyVersionClock(key string) map[string]uint64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KeyVersionClock", key)
-	ret0, _ := ret[0].(map[string]uint64)
-	return ret0
-}
-
-// KeyVersionClock indicates an expected call of KeyVersionClock.
-func (mr *MockVersionManagerMockRecorder) KeyVersionClock(key any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyVersionClock", reflect.TypeOf((*MockVersionManager)(nil).KeyVersionClock), key)
-}
-
 // MergeKeyState mocks base method.
 func (m *MockVersionManager) MergeKeyState(ctx context.Context, state *types.KeyState) error {
 	m.ctrl.T.Helper()
@@ -114,14 +100,14 @@ func (mr *MockVersionManagerMockRecorder) RestoreFromWal(ctx, arg1 any) *gomock.
 }
 
 // Update mocks base method.
-func (m *MockVersionManager) Update(ctx context.Context, updates ...*types.Update) []*types.Update {
+func (m *MockVersionManager) Update(ctx context.Context, updates ...types.Update) []types.Update {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range updates {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Update", varargs...)
-	ret0, _ := ret[0].([]*types.Update)
+	ret0, _ := ret[0].([]types.Update)
 	return ret0
 }
 

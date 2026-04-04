@@ -315,11 +315,6 @@ func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
 	return make(map[string]uint64)
 }
 
-// KeyVersionClock is not supported in v1 — returns nil
-func (vm *VersionManager) KeyVersionClock(key string) map[string]uint64 {
-	return nil
-}
-
 // MergeKeyState is not supported in v1 — returns error
 func (vm *VersionManager) MergeKeyState(ctx context.Context, state *types.KeyState) error {
 	return fmt.Errorf("MergeKeyState not supported in v1 VersionManager")
