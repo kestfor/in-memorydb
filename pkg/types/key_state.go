@@ -6,10 +6,9 @@ import (
 )
 
 type KeyState struct {
-	Key          string            `json:"key"`
-	CRDTType     crdt.CRDTType     `json:"crdt_type"`
-	State        []byte            `json:"state"`
-	Tombstone    bool              `json:"tombstone"`
-	SetTimeStamp hlc.Timestamp     `json:"set_time_stamp"`
-	VC           map[string]uint64 `json:"vc"`
+	Key          string        `json:"key"`
+	CRDTType     crdt.CRDTType `json:"crdt_type"`
+	State        []byte        `json:"state"`
+	Tombstone    bool          `json:"tombstone"`
+	SetTimeStamp hlc.Timestamp `json:"set_time_stamp"`
 }

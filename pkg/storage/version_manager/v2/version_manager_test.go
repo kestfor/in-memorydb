@@ -298,14 +298,9 @@ func TestVersionManager_VectorClockContiguous(t *testing.T) {
 		vm.Update(ctx, update)
 	}
 
-	vc := vm.KeyVersionClock("key")
-	assert.Equal(t, map[string]uint64{
-		"test-node":   3,
-		"remote-node": 5,
-	}, vc)
-
-	//assert.Equal(t, uint64(3), vc["test-node"])
-	//assert.Equal(t, uint64(5), vc["remote-node"])
+	vcContiguous := vm.VectorClockContiguous()
+	assert.Equal(t, uint64(3), vcContiguous["test-node"])
+	assert.Equal(t, uint64(5), vcContiguous["remote-node"])
 }
 
 func TestVersionManager_VectorClockMax(t *testing.T) {

@@ -49,7 +49,6 @@ func (s *Service) CollectKeyStates(ctx context.Context, keys []string) []*types.
 			State:        stateBytes,
 			Tombstone:    entry.Tombstone,
 			SetTimeStamp: entry.SetTimeStamp,
-			VC:           s.vm.KeyVersionClock(key),
 		}
 		entry.Mu.RUnlock()
 
