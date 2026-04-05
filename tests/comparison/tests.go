@@ -60,7 +60,7 @@ func runClientSet(ctx context.Context, dbClient client.Client, keyPool *KeyPool)
 	}
 }
 
-func runTest(cfg Test, m *monitoring.Metrics) {
+func runTest(cfg Test, m *monitoring.Metrics, csv *monitoring.CSVExporter) {
 
 	testName := fmt.Sprintf("%s-%s", cfg.DB.Name, cfg.Name)
 
@@ -80,6 +80,7 @@ func runTest(cfg Test, m *monitoring.Metrics) {
 		ctx, cancel := context.WithCancel(ctx)
 		m.SetStage(currentClients)
 
+		stageStart := time.Now()
 		go func() {
 			time.Sleep(time.Duration(cfg.StageIntervalS) * time.Second)
 			cancel()
@@ -92,8 +93,14 @@ func runTest(cfg Test, m *monitoring.Metrics) {
 		}
 
 		wgGroup.Wait()
+		stageDuration := time.Since(stageStart).Seconds()
 
 		slog.Info("Stage completed", "stage", testStage, "totalStages", totalStages, "clients", currentClients)
+
+		if err := csv.RecordStage(cfg.DB.Name, currentClients, stageDuration); err != nil {
+			slog.Warn("csv export failed", "err", err)
+		}
+
 		testStage++
 
 		if currentClients == cfg.MaxClients {

@@ -48,51 +48,27 @@ type Config struct {
 }
 
 type walWrapper struct {
-	w *gowal.Wal
-
+	w      *gowal.Wal
 	keyGen *KeyGen
 
-	// flushTimestamp is the last time a batch was flushed to the WAL
-	// if flush was performed between ticks, the batch will not be flushed again
-	// it is used to prevent flushing the batch multiple times in case of high load.
+	// flushTimestamp is the last time a batch was flushed to the WAL.
+	// Used by backgroundFlush to skip ticks when a flush already happened.
 	flushTimestamp atomic.Time
 
-	// flushInterval guarantees that the batch will be flushed at least once every flushInterval
 	flushInterval time.Duration
 
-	mu        sync.Mutex
+	// appendMu guards the active batch slice and batchSize.
+	// Held only for slice append + possible swap — never during disk I/O.
+	appendMu sync.Mutex
+
+	// flushMu serialises disk writes so that concurrent flush triggers
+	// (when two goroutines both fill a batch simultaneously) do not interleave
+	// writes to the underlying WAL file.
+	flushMu sync.Mutex
+
 	batch     []gowal.Record
 	batchSize int
 	batchCap  int
-}
-
-func (ww *walWrapper) backgroundFlush() {
-	slog.Info("running flush WAL in background")
-	ticker := time.NewTicker(ww.flushInterval)
-	for _ = range ticker.C {
-
-		ww.mu.Lock()
-		if time.Since(ww.flushTimestamp.Load()) < ww.flushInterval || ww.batchSize == 0 {
-			ww.mu.Unlock()
-			continue
-		}
-
-		_ = ww.flushLocked()
-		ww.mu.Unlock()
-		slog.Debug("flush performed")
-	}
-}
-
-func (ww *walWrapper) flushLocked() error {
-	if ww.batchSize > 0 {
-		if err := ww.w.WriteBatch(ww.batch); err != nil {
-			return err
-		}
-		ww.batchSize = 0
-		ww.batch = ww.batch[:0]
-		ww.flushTimestamp.Store(time.Now())
-	}
-	return nil
 }
 
 func New(config Config) (WAL, error) {
@@ -118,12 +94,57 @@ func New(config Config) (WAL, error) {
 		keyGen:         NewKeyGen(),
 	}
 
-	// if flush interval is set, start background flush
 	if config.FlushInterval > 0 {
 		go res.backgroundFlush()
 	}
 
 	return res, nil
+}
+
+// takeBatch atomically swaps the active batch for a fresh one and returns the
+// old batch. Returns nil when the batch is empty.
+// Must be called with appendMu held.
+func (ww *walWrapper) takeBatch() []gowal.Record {
+	if ww.batchSize == 0 {
+		return nil
+	}
+	old := ww.batch
+	ww.batch = make([]gowal.Record, 0, ww.batchCap)
+	ww.batchSize = 0
+	return old
+}
+
+// writeBatch writes the given batch to disk under flushMu.
+func (ww *walWrapper) writeBatch(batch []gowal.Record) error {
+	ww.flushMu.Lock()
+	err := ww.w.WriteBatch(batch)
+	ww.flushMu.Unlock()
+	if err == nil {
+		ww.flushTimestamp.Store(time.Now())
+	}
+	return err
+}
+
+func (ww *walWrapper) backgroundFlush() {
+	slog.Info("running flush WAL in background")
+	ticker := time.NewTicker(ww.flushInterval)
+	for range ticker.C {
+		if time.Since(ww.flushTimestamp.Load()) < ww.flushInterval {
+			continue
+		}
+
+		ww.appendMu.Lock()
+		batch := ww.takeBatch()
+		ww.appendMu.Unlock()
+
+		if batch != nil {
+			if err := ww.writeBatch(batch); err != nil {
+				slog.Error("WAL backgroundFlush: write failed", "err", err)
+			} else {
+				slog.Debug("WAL backgroundFlush: flushed")
+			}
+		}
+	}
 }
 
 func (ww *walWrapper) Append(ctx context.Context, u types.Update) error {
@@ -138,27 +159,31 @@ func (ww *walWrapper) Append(ctx context.Context, u types.Update) error {
 	marshSpan.End()
 
 	_, writeSpan := tracing.StartSpan(ctx, spans.SpanWALAppendWrite)
+	defer writeSpan.End()
 
-	ww.mu.Lock()
-	walIndex := ww.keyGen.Key(u.NodeID, u.Seq)
 	record := gowal.Record{
 		Key:   u.NodeID,
-		Index: walIndex,
+		Index: ww.keyGen.Key(u.NodeID, u.Seq),
 		Value: bytes,
 	}
 
+	// Critical section: append to in-memory batch only.
+	// If the batch is now full, swap it out atomically and release the lock
+	// before touching the disk — other goroutines can keep appending immediately.
+	ww.appendMu.Lock()
 	ww.batch = append(ww.batch, record)
 	ww.batchSize++
+	var toFlush []gowal.Record
+	if ww.batchSize >= ww.batchCap {
+		toFlush = ww.takeBatch()
+	}
+	ww.appendMu.Unlock()
 
-	if ww.batchSize == ww.batchCap {
-		if err := ww.flushLocked(); err != nil {
-			ww.mu.Unlock()
+	if toFlush != nil {
+		if err = ww.writeBatch(toFlush); err != nil {
 			return tracing.RecordError(ctx, err)
 		}
 	}
-
-	ww.mu.Unlock()
-	writeSpan.End()
 
 	span.SetStatus(codes.Ok, "")
 	return nil
@@ -167,19 +192,19 @@ func (ww *walWrapper) Append(ctx context.Context, u types.Update) error {
 func (ww *walWrapper) Get(nodeID string, seq uint64) (types.Update, error) {
 	walIndex := ww.keyGen.Key(nodeID, seq)
 
-	ww.mu.Lock()
-	for ind := 0; ind < ww.batchSize; ind++ {
-		if ww.batch[ind].Index == walIndex {
-			defer ww.mu.Unlock()
+	ww.appendMu.Lock()
+	for i := 0; i < ww.batchSize; i++ {
+		if ww.batch[i].Index == walIndex {
+			val := ww.batch[i].Value // copy slice header before unlock
+			ww.appendMu.Unlock()
 			var u types.Update
-			err := json.Unmarshal(ww.batch[ind].Value, &u)
-			if err != nil {
+			if err := json.Unmarshal(val, &u); err != nil {
 				return types.Update{}, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
 			}
 			return u, nil
 		}
 	}
-	ww.mu.Unlock()
+	ww.appendMu.Unlock()
 
 	_, val, err := ww.w.Get(walIndex)
 	if err != nil {
@@ -187,8 +212,7 @@ func (ww *walWrapper) Get(nodeID string, seq uint64) (types.Update, error) {
 	}
 
 	var u types.Update
-	err = json.Unmarshal(val, &u)
-	if err != nil {
+	if err = json.Unmarshal(val, &u); err != nil {
 		return types.Update{}, fmt.Errorf("WAL.Get(node: '%s', seq: '%d'): %w", nodeID, seq, err)
 	}
 
@@ -241,8 +265,15 @@ func (ww *walWrapper) ReplayAll(ctx context.Context, fn func(update types.Update
 }
 
 func (ww *walWrapper) Close() error {
-	if ww.batchSize > 0 {
-		if err := ww.w.WriteBatch(ww.batch); err != nil {
+	ww.appendMu.Lock()
+	batch := ww.takeBatch()
+	ww.appendMu.Unlock()
+
+	if batch != nil {
+		ww.flushMu.Lock()
+		err := ww.w.WriteBatch(batch)
+		ww.flushMu.Unlock()
+		if err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 ---
 metrics:
   port: 8082
+  csv_path: results.csv
 
 databases:
   #  name: memcache
