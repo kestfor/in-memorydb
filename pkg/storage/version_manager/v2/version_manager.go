@@ -26,13 +26,6 @@ const (
 	DefaultNumBuckets = 4
 )
 
-// keyMeta holds precomputed hash for anti-entropy digest comparison
-type keyMeta struct {
-	mu     sync.RWMutex
-	hash   uint64 // stateDigest(CRDT.Hash(), tombstone) — updated on every mutation
-	bucket uint32
-}
-
 // VersionManager v2 - оптимизированная версия без глобального лока
 // Ключевые отличия от v1:
 // - Advance() полностью lock-free (seq атомарен, history для локальной ноды не используется)
@@ -46,19 +39,20 @@ type VersionManager struct {
 	engine      engine.Engine
 	fabric      crdt.CRDTFabric
 	updater     *entry_updater.EntryUpdater
-	keyVersions sync.Map // key string → *keyMeta
-	numBuckets  uint32   // number of hash buckets for partitioned anti-entropy
+	keyVersions *keyVersionShards
+	numBuckets  uint32 // number of hash buckets for partitioned anti-entropy
 }
 
 // NewVersionManager создаёт новый VersionManager v2
 func NewVersionManager(nodeID string, engine engine.Engine) *VersionManager {
 	return &VersionManager{
-		nodeID:     nodeID,
-		history:    history.NewShardedHistory(),
-		engine:     engine,
-		fabric:     crdt.NewFabric(),
-		updater:    entry_updater.NewEntryUpdater(crdt.NewFabric(), nodeID),
-		numBuckets: DefaultNumBuckets,
+		nodeID:      nodeID,
+		history:     history.NewShardedHistory(),
+		engine:      engine,
+		fabric:      crdt.NewFabric(),
+		updater:     entry_updater.NewEntryUpdater(crdt.NewFabric(), nodeID),
+		keyVersions: newKeyVersionShards(),
+		numBuckets:  DefaultNumBuckets,
 	}
 }
 
@@ -352,14 +346,11 @@ func (vm *VersionManager) Stats() Stats {
 // KeyDigests returns a map of key → hash for keys in the specified bucket
 func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
 	result := make(map[string]uint64)
-	vm.keyVersions.Range(func(k, v any) bool {
-		km := v.(*keyMeta)
+	vm.keyVersions.Range(func(key string, km *keyMeta) bool {
 		if km.bucket != bucket {
 			return true
 		}
-		km.mu.RLock()
-		result[k.(string)] = km.hash
-		km.mu.RUnlock()
+		result[key] = km.hash.Load()
 		return true
 	})
 	return result
@@ -477,11 +468,6 @@ func stateDigest(crdtHash uint64, tombstone bool) uint64 {
 
 // updateKeyStateHash updates the precomputed state hash for a key
 func (vm *VersionManager) updateKeyStateHash(key string, hash uint64) {
-	val, _ := vm.keyVersions.LoadOrStore(key, &keyMeta{
-		bucket: keyBucket(key, vm.numBuckets),
-	})
-	km := val.(*keyMeta)
-	km.mu.Lock()
-	km.hash = hash
-	km.mu.Unlock()
+	km := vm.keyVersions.LoadOrStore(key, keyBucket(key, vm.numBuckets))
+	km.hash.Store(hash)
 }
