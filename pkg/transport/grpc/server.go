@@ -129,7 +129,7 @@ func (s *updatesServer) Publish(ctx context.Context, request *transportpb.Publis
 		}
 	}
 
-	slog.DebugContext(ctx, "grpc.Publish: Successfully publish updates", "count", len(applied))
+	slog.DebugContext(ctx, "grpc.Publish: Successfully received updates", "applied", len(applied))
 	return &emptypb.Empty{}, nil
 }
 

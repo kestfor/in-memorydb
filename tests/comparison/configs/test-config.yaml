@@ -10,7 +10,7 @@ databases:
     host: localhost:6379
 
   - name: lume
-    host: localhost:50053
+    host: localhost:8080
 
 test:
   name: test

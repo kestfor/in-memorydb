@@ -33,7 +33,7 @@ func main() {
 		testCfg := cfg.Test
 		testCfg.DB = db
 		runTest(testCfg, m)
-		time.Sleep(30 * time.Second)
+		time.Sleep(1 * time.Minute)
 	}
 
 }

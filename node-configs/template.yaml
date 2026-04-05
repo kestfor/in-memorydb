@@ -23,9 +23,7 @@ persistence:
 
 security:
   mode: disabled
-  ca_cert: ./node-configs/certs/ca.crt
-  cert: ./node-configs/certs/first/first.crt
-  key: ./node-configs/certs/first/first.key
+
 trace:
   enabled: false
   endpoint: 192.168.0.14:4318

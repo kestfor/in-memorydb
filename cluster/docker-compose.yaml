@@ -15,7 +15,6 @@ services:
       - ../node-configs/template.yaml:/lume-config/config.yaml
     environment:
       - LOG_LEVEL=DEBUG
-      - SECURITY_ENABLED=true
     healthcheck: *grpc-healthcheck
     networks:
       - cluster_network

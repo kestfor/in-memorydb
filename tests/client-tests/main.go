@@ -196,5 +196,6 @@ func testClientsPull(clientsNum int, setForClient int, keysPerClient int) {
 }
 
 func main() {
-	testClientsPull(3, 1, 10000)
+	//testClientsPull(3, 1, 10000)
+	testSetPerClientsConvergence(3, 10000)
 }
