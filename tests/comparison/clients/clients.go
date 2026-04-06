@@ -13,6 +13,7 @@ const (
 	Redis     = "redis"
 	Memcached = "memcached"
 	Lume      = "lume"
+	Riak      = "riak"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -30,6 +31,8 @@ func GetClient(db string, url string, m *monitoring.Metrics) Client {
 		return NewMemcachedClient(url, m)
 	case Lume:
 		return NewLumeClient(url, m)
+	case Riak:
+		return NewRiakClient(url, m)
 	default:
 		slog.Error("unknown db", slog.String("db", db))
 		return nil

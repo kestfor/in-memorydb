@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"flag"
+
 	"github.com/kestfor/in-memorydb/cmd/grpc/app"
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {

@@ -1,15 +1,11 @@
 services:
   lume:
     container_name: lume
-    cpus: "1.0"
-    deploy:
-      resources:
-        limits:
-          cpus: "1.00"
+    cpus: "4.0"
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
     build:
       context: ../../
-      dockerfile: ./local_tests/Dockerfile
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
@@ -17,7 +13,8 @@ services:
       - NODE_ID=main
       - SECURITY_MODE=disabled
     volumes:
-      - ../../node-configs/template.yaml:/lume-config/config.yaml
+      - ./configs/db/lume.yaml:/lume-config/config.yaml
+    network_mode: host
 
   redis:
     image: redis:8
@@ -27,12 +24,9 @@ services:
       - ./configs/db/redis.conf:/usr/local/etc/redis/redis.conf:ro
     ports:
       - "6379:6379"
-    deploy:
-      resources:
-        limits:
-          cpus: "1.00"
-    cpus: 1.0
+    cpus: "4.0"
     restart: unless-stopped
+    network_mode: host
 
   memcached:
     image: memcached:1.6
@@ -42,12 +36,9 @@ services:
       - ./configs/db/memcached.conf:/etc/memcached.conf:ro
     ports:
       - "11211:11211"
-    deploy:
-      resources:
-        limits:
-          cpus: "1.00"
-    cpus: 1.0
+    cpus: "4.0"
     restart: unless-stopped
+    network_mode: host
 
 #  cadvisor:
 #    image: gcr.io/cadvisor/cadvisor:latest
@@ -62,6 +53,7 @@ services:
 
 
   prometheus:
+    cpus: "1.0"
     image: prom/prometheus
     container_name: prometheus
     volumes:
@@ -71,6 +63,7 @@ services:
     restart: unless-stopped
 
   grafana:
+    cpus: "1.0"
     image: grafana/grafana
     container_name: grafana
     ports:

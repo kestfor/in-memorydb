@@ -148,16 +148,16 @@ func (s *Storage) bufferReadRound() error {
 
 // нужно извлекать значение из crdt типа под мьютексом, отдавать crdt дальше не стоит, хоть они и потоко-безопасны, но от этого наверное нужно избавиться
 func (s *Storage) Get(ctx context.Context, key string) (val any, t crdt.CRDTType, ok bool) {
-	ctx, span := tracing.StartSpan(ctx, spans.SpanGetKey, trace.WithAttributes(attribute.String("key", key)))
-	defer span.End()
+	//ctx, span := tracing.StartSpan(ctx, spans.SpanGetKey, trace.WithAttributes(attribute.String("key", key)))
+	//defer span.End()
 
 	entry, ok := s.engine.Get(ctx, key)
 	if !ok {
 		return nil, "", false
 	}
 
-	entry.Mu.Lock()
-	defer entry.Mu.Unlock()
+	entry.Mu.RLock()
+	defer entry.Mu.RUnlock()
 
 	// mark as deleted
 	if entry.Tombstone {
@@ -165,16 +165,16 @@ func (s *Storage) Get(ctx context.Context, key string) (val any, t crdt.CRDTType
 	}
 
 	val = entry.Object.Value()
-	span.SetAttributes(attribute.String("type", entry.Object.Type().String()))
-	span.SetStatus(codes.Ok, "")
+	//span.SetAttributes(attribute.String("type", entry.Object.Type().String()))
+	//span.SetStatus(codes.Ok, "")
 	return val, entry.Object.Type(), true
 }
 
 // TODO выбрать в зависимости от политики когда возвращать результат, и что делать асинхронно
 // сейчас для тестов ответ приходит после всех операций
 func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
-	ctx, span := tracing.StartSpan(ctx, spans.SpanSetKey, trace.WithAttributes(attribute.String("key", key), attribute.String("type", t.String())))
-	defer span.End()
+	//ctx, span := tracing.StartSpan(ctx, spans.SpanSetKey, trace.WithAttributes(attribute.String("key", key), attribute.String("type", t.String())))
+	//defer span.End()
 
 	nodeID := s.config.Node.ID
 	val, err := crdt.DefaultFabric().New(t, nodeID)
@@ -206,14 +206,15 @@ func (s *Storage) Put(ctx context.Context, key string, t crdt.CRDTType) error {
 	updates = s.vm.UpdateLocal(ctx, updates[0])
 
 	// Buffer operation is lightweight, trace externally
-	bufferPutWithTracing(ctx, s.buffer, updates[0])
+	//bufferPutWithTracing(ctx, s.buffer, updates[0])
+	s.buffer.Put(updates[0])
 
 	if err = s.wal.Append(ctx, updates[0]); err != nil {
 		slog.Error("storage.Put: cannot append update to wal", "err", err)
 		return ErrInternal
 	}
 
-	span.SetStatus(codes.Ok, "")
+	//span.SetStatus(codes.Ok, "")
 
 	return nil
 }

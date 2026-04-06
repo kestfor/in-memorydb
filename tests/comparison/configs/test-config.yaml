@@ -4,20 +4,21 @@ metrics:
   csv_path: results.csv
 
 databases:
-  #  name: memcache
-  #  host: localhost:11211
+  - name: lume
+    host: localhost:8080
+
+  - name: memcached
+    host: localhost:11211
 
   - name: redis
     host: localhost:6379
 
-  - name: lume
-    host: localhost:8080
-
 test:
   name: test
+  type: get
   minClients: 50
   clientsStep: 5
-  maxClients: 100
+  maxClients: 200
   stageIntervalS: 60
   requestDelayMs: 1
   maxKeysNum: 100000

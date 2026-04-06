@@ -10,7 +10,7 @@ gossip:
   interval: 10s
   retries: 2
 membership:
-  port: 8082
+  port: 8089
 engine:
   shards_num: 256
 persistence:

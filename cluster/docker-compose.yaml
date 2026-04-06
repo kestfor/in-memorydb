@@ -22,15 +22,15 @@ services:
 
   first:
     container_name: first
-    cpus: "1.0"
+    cpus: "4.0"
     build:
       context: ../
       dockerfile: ./Dockerfile
     ports:
       - "8081:8080"
     environment:
-      - LOG_LEVEL=DEBUG
-      - SECURITY_ENABLED=true
+      - LOG_LEVEL=ERROR
+      - SECURITY_MODE=disabled
       - SECURITY_CA_CERT=/etc/lume/security/ca.crt
       - SECURITY_CERT=/etc/lume/security/tls.crt
       - SECURITY_KEY=/etc/lume/security/tls.key
@@ -45,45 +45,45 @@ services:
     networks:
       - cluster_network
 
-  second:
-    container_name: second
-    cpus: "1.0"
-    build:
-      context: ../
-      dockerfile: ./Dockerfile
-    ports:
-      - "8082:8080"
-    environment:
-      - LOG_LEVEL=DEBUG
-      - SECURITY_ENABLED=true
-      - SECURITY_CA_CERT=/etc/lume/security/ca.crt
-      - SECURITY_CERT=/etc/lume/security/tls.crt
-      - SECURITY_KEY=/etc/lume/security/tls.key
-    volumes:
-      - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
-      - ../node-configs/certs/second/second.crt:/etc/lume/security/tls.crt
-      - ../node-configs/certs/second/second.key:/etc/lume/security/tls.key
-      - ./data/second-node-wal:/wal_data_2
-      - ../node-configs/second-peer.yaml:/lume-config/config.yaml
-    command: [ "./lume", "--config", "/lume-config/config.yaml" ]
-    depends_on:
-      first:
-        condition: service_healthy
-    healthcheck: *grpc-healthcheck
-    networks:
-      - cluster_network
-
-  third:
-    container_name: third
-    extends:
-      service: base
-    environment:
-      NODE_ID: third
-      SEEDS: first,second
-    depends_on:
-      - second
-    ports:
-      - "8083:8080"
+#  second:
+#    container_name: second
+#    cpus: "1.0"
+#    build:
+#      context: ../
+#      dockerfile: ./Dockerfile
+#    ports:
+#      - "8082:8080"
+#    environment:
+#      - LOG_LEVEL=DEBUG
+#      - SECURITY_ENABLED=true
+#      - SECURITY_CA_CERT=/etc/lume/security/ca.crt
+#      - SECURITY_CERT=/etc/lume/security/tls.crt
+#      - SECURITY_KEY=/etc/lume/security/tls.key
+#    volumes:
+#      - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
+#      - ../node-configs/certs/second/second.crt:/etc/lume/security/tls.crt
+#      - ../node-configs/certs/second/second.key:/etc/lume/security/tls.key
+#      - ./data/second-node-wal:/wal_data_2
+#      - ../node-configs/second-peer.yaml:/lume-config/config.yaml
+#    command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+#    depends_on:
+#      first:
+#        condition: service_healthy
+#    healthcheck: *grpc-healthcheck
+#    networks:
+#      - cluster_network
+#
+#  third:
+#    container_name: third
+#    extends:
+#      service: base
+#    environment:
+#      NODE_ID: third
+#      SEEDS: first,second
+#    depends_on:
+#      - second
+#    ports:
+#      - "8083:8080"
 #
 #  fourth:
 #    container_name: fourth

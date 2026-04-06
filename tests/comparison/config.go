@@ -21,6 +21,7 @@ type DBConfig struct {
 type Test struct {
 	DB             DBConfig `yaml:"-"`
 	Name           string   `yaml:"name"`
+	Type           string   `yaml:"type"`
 	MinClients     int      `yaml:"minClients"`
 	ClientsStep    int      `yaml:"clientsStep"`
 	MaxClients     int      `yaml:"maxClients"`

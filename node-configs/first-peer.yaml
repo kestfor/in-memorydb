@@ -14,7 +14,9 @@ membership:
   # advertise_addr: "192.168.0.1"
   port: 8082
 engine:
-  shards_num: 512
+  shards_num: 256
+buffer:
+  size: 1000
 persistence:
   enabled: false
   wal:
