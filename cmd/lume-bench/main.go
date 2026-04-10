@@ -166,7 +166,11 @@ func run(_ *cobra.Command, _ []string) error {
 
 	var limiter *rate.Limiter
 	if cfg.maxRPS > 0 {
-		limiter = rate.NewLimiter(rate.Limit(cfg.maxRPS), cfg.maxRPS)
+		// burst = totalWorkers: позволяет всем воркерам стартовать без ожидания,
+		// после чего rate limiter выравнивает нагрузку до maxRPS.
+		// burst = maxRPS создаёт thundering herd: воркеры синхронизируются
+		// и бьют сервер пачками вместо равномерного потока.
+		limiter = rate.NewLimiter(rate.Limit(cfg.maxRPS), totalWorkers)
 	}
 
 	var wg sync.WaitGroup
