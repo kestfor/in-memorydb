@@ -42,31 +42,35 @@ func NewClientPool(maxMessageSize int, dialOpts ...grpc.DialOption) *ClientPool 
 func (p *ClientPool) GetClient(peer string, addr string) (transportpb2.UpdatesClient, error) {
 	p.mu.Lock()
 	conn, ok := p.clients[peer]
-	p.mu.Unlock()
-
 	if ok {
-		if conn.GetState() == connectivity.Ready {
+		state := conn.GetState()
+		if state == connectivity.Ready || state == connectivity.Idle || state == connectivity.Connecting {
+			p.mu.Unlock()
 			return transportpb2.NewUpdatesClient(conn), nil
 		}
-
-		if err := conn.Close(); err != nil {
-			slog.Error("grpc.Transport: Failed to close client connection", "peer", peer, "addr", addr, "err", err)
-		}
+		delete(p.clients, peer)
 	}
+	p.mu.Unlock()
 
 	opts := make([]grpc.DialOption, len(p.dialOpts))
 	copy(opts, p.dialOpts)
 	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(p.maxMessageSize)))
-	conn, err := grpc.NewClient(addr, opts...)
+	newConn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	p.mu.Lock()
-	p.clients[peer] = conn
+	// Check again in case another goroutine already created a new connection.
+	if existing, ok := p.clients[peer]; ok {
+		p.mu.Unlock()
+		_ = newConn.Close()
+		return transportpb2.NewUpdatesClient(existing), nil
+	}
+	p.clients[peer] = newConn
 	p.mu.Unlock()
 
-	return transportpb2.NewUpdatesClient(conn), nil
+	return transportpb2.NewUpdatesClient(newConn), nil
 }
 
 func (p *ClientPool) CloseAll() {
