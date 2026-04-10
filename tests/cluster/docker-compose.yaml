@@ -1,0 +1,81 @@
+# Профили:
+#   1-node  — 1 узел  (baseline):  docker compose --profile 1-node up
+#   2-node  — 2 узла:              docker compose --profile 2-node up
+#   3-node  — 3 узла:              docker compose --profile 3-node up
+#   5-node  — 5 узлов:             docker compose --profile 5-node up
+
+services:
+  node1:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node1
+    profiles: [1-node, 2-node, 3-node, 5-node]
+    ports:
+      - "8081:8080"
+    environment:
+      NODE_ID: node1
+
+  node2:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node2
+    profiles: [2-node, 3-node, 5-node]
+    ports:
+      - "8082:8080"
+    environment:
+      NODE_ID: node2
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node3:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node3
+    profiles: [3-node, 5-node]
+    ports:
+      - "8083:8080"
+    environment:
+      NODE_ID: node3
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node4:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node4
+    profiles: [5-node]
+    ports:
+      - "8084:8080"
+    environment:
+      NODE_ID: node4
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node5:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node5
+    profiles: [5-node]
+    ports:
+      - "8085:8080"
+    environment:
+      NODE_ID: node5
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+networks:
+  cluster_network:
+    driver: bridge
