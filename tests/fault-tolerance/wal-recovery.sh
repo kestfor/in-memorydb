@@ -13,9 +13,16 @@ CONN="${2:-10}"
 RPC="${3:-4}"
 CLUSTER_DIR="$(dirname "$0")/../cluster"
 LUME_CLI="${LUME_CLI:-lume-cli}"
-LUME_BENCH="${LUME_BENCH:-../../lume-bench}"
+LUME_BENCH="${LUME_BENCH:-lume-bench}"
 RESULTS_DIR="$(dirname "$0")/../bench/results"
 mkdir -p "$RESULTS_DIR"
+
+now_ms() {
+    python3 - <<'PY'
+import time
+print(int(time.time() * 1000))
+PY
+}
 
 COMPOSE="$CLUSTER_DIR/docker-compose.yaml"
 PROFILE="1-node"
@@ -53,14 +60,14 @@ docker kill lume-node1
 echo "    killed"
 
 echo "[4] Measuring restart + WAL replay time..."
-START=$(date +%s%3N)
+START=$(now_ms)
 docker start lume-node1
 
 # Ждём health check
 for i in $(seq 1 60); do
     status=$(docker inspect --format='{{.State.Health.Status}}' lume-node1 2>/dev/null || echo "unknown")
     if [ "$status" = "healthy" ]; then
-        END=$(date +%s%3N)
+        END=$(now_ms)
         RECOVERY_MS=$(( END - START ))
         echo "    node healthy after ${RECOVERY_MS}ms"
         break

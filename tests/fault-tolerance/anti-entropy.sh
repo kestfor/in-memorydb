@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # anti-entropy.sh — тест 2.3: стоп узла → накопить обновления → старт → ждать sync.
 # Запуск: ./anti-entropy.sh [keys] [conn] [rpc] [poll_interval_s] [sample_size]
-# Пример: ./anti-entropy.sh 5000 10 4 2 200
+# Пример: ./anti-entropy.sh 10000 1 50 2 400
 #
 # Топология: 3 узла (docker-compose.yaml --profile 3-node, WAL off).
 # 1. Стартуем кластер.
@@ -11,11 +11,18 @@
 # 5. Поллим lume-cli на node3 (порт 8083) — считаем видимые ключи (по выборке).
 # 6. Фиксируем время до 100% конвергенции.
 
+now_ms() {
+    python3 - <<'PY'
+import time
+print(int(time.time() * 1000))
+PY
+}
+
 set -euo pipefail
 
 KEYS="${1:-5000}"
-CONN="${2:-10}"
-RPC="${3:-4}"
+CONN="${2:-1}"
+RPC="${3:-50}"
 POLL_S="${4:-2}"
 # Размер выборки для проверки — опрашиваем не все KEYS, а SAMPLE ключей.
 # Для небольших KEYS (<= SAMPLE) проверяем все; для больших — равномерную выборку.
@@ -54,7 +61,7 @@ for i in $(seq 1 30); do
     [ "$status" = "healthy" ] && break
     sleep 1
 done
-SYNC_START=$(date +%s%3N)
+SYNC_START=$(now_ms)
 echo "    node3 healthy, measuring sync..."
 
 # Строим список индексов для проверки: равномерная выборка из [0, KEYS-1]
@@ -81,7 +88,7 @@ while true; do
         checked=$(( checked + 1 ))
     done
 
-    NOW=$(date +%s%3N)
+    NOW=$(now_ms)
     ELAPSED=$(( NOW - SYNC_START ))
     # Экстраполируем на весь пул
     ESTIMATED=$(awk -v f="$FOUND" -v s="$CHECK_COUNT" -v t="$KEYS" \

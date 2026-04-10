@@ -15,7 +15,7 @@ DUR_PRE="${3:-30}"   # секунды нагрузки до остановки �
 DUR_POST="${4:-30}"  # секунды нагрузки после рестарта узла
 WARMUP=5
 CLUSTER_DIR="$(dirname "$0")/../cluster"
-LUME_BENCH="${LUME_BENCH:-../../lume-bench}"
+LUME_BENCH="${LUME_BENCH:-lume-bench}"
 RESULTS_DIR="$(dirname "$0")/../bench/results"
 mkdir -p "$RESULTS_DIR"
 
