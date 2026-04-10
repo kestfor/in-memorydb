@@ -3,7 +3,7 @@
 # Запуск: ./gossip-overhead.sh <conn> <rpc> [duration]
 # Пример: ./gossip-overhead.sh 10 4 60
 #
-# Прогоняет lume-bench для конфигураций: 1-node, 2-node, 3-node.
+# Прогоняет lume-bench для конфигураций: 1-node, 2-node, 3-node, 5-node.
 # Типы: set и get.
 
 set -euo pipefail
@@ -26,13 +26,13 @@ CSV="$RESULTS_DIR/gossip_overhead_$(date +%Y%m%d_%H%M%S).csv"
 echo "nodes,type,qps,p50,p90,p99" > "$CSV"
 echo "=== gossip-overhead sweep: c=$CONN r=$RPC duration=${DURATION}s ==="
 
-trap 'docker compose -f "$COMPOSE" -p "$PROJECT" down -v 2>/dev/null || true' EXIT
+trap 'docker-compose -f "$COMPOSE" -p "$PROJECT" down -v 2>/dev/null || true' EXIT
 
-for nodes in 1 2 3; do
+for nodes in 1 2 3 5; do
     profile="${nodes}-node"
     printf "\n--- %d-node cluster ---\n" "$nodes"
 
-    docker compose -f "$COMPOSE" --profile "$profile" -p "$PROJECT" up -d --build --wait 2>/dev/null
+    docker compose -f "$COMPOSE" --profile "$profile" -p "$PROJECT" up -d --build --wait
     echo "    cluster ready"
 
     for op in set get; do
@@ -49,7 +49,7 @@ for nodes in 1 2 3; do
         printf "qps=%-8s p50=%s p90=%s p99=%s\n" "$qps" "$p50" "$p90" "$p99"
     done
 
-    docker compose -f "$COMPOSE" --profile "$profile" -p "$PROJECT" down -v 2>/dev/null
+    docker-compose -f "$COMPOSE" --profile "$profile" -p "$PROJECT" down -v 2>/dev/null
     echo "    cluster stopped"
 done
 

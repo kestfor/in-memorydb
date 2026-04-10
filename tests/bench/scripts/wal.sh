@@ -35,21 +35,34 @@ trap 'rm -rf "$TMPDIR_WAL"; docker compose -f "$COMPOSE" --profile "$PROFILE" -p
 run_mode() {
     local mode="$1"
     shift
-    local extra_flags=("$@")  # дополнительные -f флаги для override
+
+    local extra_flags=()
+    if (($# > 0)); then
+        extra_flags=("$@")
+    fi
 
     printf "\n--- mode=%s ---\n" "$mode"
 
-    docker compose -f "$COMPOSE" "${extra_flags[@]}" --profile "$PROFILE" \
-        -p "$PROJECT" up -d --build --wait 2>/dev/null
+    local compose_cmd=(
+        docker compose
+        -f "$COMPOSE"
+        --profile "$PROFILE"
+        -p "$PROJECT"
+    )
 
+    if ((${#extra_flags[@]} > 0)); then
+        compose_cmd+=("${extra_flags[@]}")
+    fi
+
+    "${compose_cmd[@]}" up -d --build --wait
     sleep 2
 
     local out
-    out=$("$LUME_BENCH" -p "$PORT" -c "$CONN" -r "$RPC" -d "$DURATION" -w "$WARMUP" \
-        -t set 2>/dev/null)
+    out=$("$LUME_BENCH" -p "$PORT" -c "$CONN" -r "$RPC" \
+        -d "$DURATION" -w "$WARMUP" -t set 2>/dev/null)
 
     local qps p50 p90 p99
-    qps=$(echo "$out" | grep 'QPS:'     | sed "$STRIP_ANSI" | awk '{print $NF}')
+    qps=$(echo "$out" | grep 'QPS:' | sed "$STRIP_ANSI" | awk '{print $NF}')
     p50=$(echo "$out" | grep 'Latency:' | sed "$STRIP_ANSI" | sed 's/.*p50=\([^ ]*\).*/\1/')
     p90=$(echo "$out" | grep 'Latency:' | sed "$STRIP_ANSI" | sed 's/.*p90=\([^ ]*\).*/\1/')
     p99=$(echo "$out" | grep 'Latency:' | sed "$STRIP_ANSI" | sed 's/.*p99=\([^ ]*\).*/\1/')
@@ -57,8 +70,7 @@ run_mode() {
     echo "$mode,$qps,$p50,$p90,$p99" >> "$CSV"
     printf "  [%s] qps=%-8s p50=%s p90=%s p99=%s\n" "$mode" "$qps" "$p50" "$p90" "$p99"
 
-    docker compose -f "$COMPOSE" "${extra_flags[@]}" --profile "$PROFILE" \
-        -p "$PROJECT" down -v 2>/dev/null
+    "${compose_cmd[@]}" down -v 2>/dev/null
 }
 
 # wal-off: base.yaml (persistence.enabled=false)

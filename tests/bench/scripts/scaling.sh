@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scaling.sh — горизонтальное масштабирование: N параллельных lume-bench на N узлов.
 # Запуск: ./scaling.sh <nodes> <conn_per_node> <rpc_per_conn> [duration]
-# Пример: ./scaling.sh 3 10 4 30
+# Пример: ./scaling.sh 3 1 50 30
 #   nodes         — число узлов (порты 8081..808N)
 #   conn_per_node — -c для каждого lume-bench
 #   rpc_per_conn  — -r для каждого lume-bench
@@ -14,7 +14,7 @@ CONN="${2:?}"
 RPC="${3:?}"
 DURATION="${4:-30}"
 WARMUP=5
-LUME_BENCH="${LUME_BENCH:-../../lume-bench}"
+LUME_BENCH="${LUME_BENCH:-lume-bench}"
 RESULTS_DIR="$(dirname "$0")/../results"
 mkdir -p "$RESULTS_DIR"
 

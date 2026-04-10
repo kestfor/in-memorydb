@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# grid.sh — c×r решётка: c ∈ {1,5,10,25,50,100}, r ∈ {1,2,4,8,16}
+# grid.sh — c×r решётка: c ∈ {1,2,5,10}, r ∈ {50,100,200,400,700,1000}
 # Запуск: ./grid.sh [port] [duration]
 # Пример: ./grid.sh 8081 30
 # Требует запущенного узла Lume и собранного lume-bench в PATH или ../../lume-bench
@@ -37,8 +37,8 @@ for type in set get; do
     CSV="$RESULTS_DIR/grid_${type}_$(date +%Y%m%d_%H%M%S).csv"
     echo "c,r,workers,qps,p50,p90,p99" > "$CSV"
     echo "=== grid sweep: type=$type port=$PORT duration=${DURATION}s ==="
-    for c in 1 5 10 25 50 100; do
-        for r in 1 2 4 8 16; do
+    for c in 1 2 5 10; do
+        for r in 50 100 200 400 700 1000; do
             printf "  c=%-3s r=%-2s ... " "$c" "$r"
             row=$(run_bench "$c" "$r" "$type")
             echo "$row" >> "$CSV"

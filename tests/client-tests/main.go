@@ -74,20 +74,31 @@ func getKey(clNum int, keyN int) string {
 
 func (c *Client) checkAllKeys(ctx context.Context, from, to, keysNum int) (bool, error) {
 	wg, ctx := errgroup.WithContext(ctx)
+	//start := time.Now()
+	//defer func() {
+	//	log.Printf("check done in %s", time.Since(start))
+	//}()
 	for i := from; i <= to; i++ {
 		func(i int) {
 			wg.Go(func() error {
+				wg2, ctx := errgroup.WithContext(ctx)
+				sem := make(chan struct{}, 100)
 				for kN := 1; kN <= keysNum; kN++ {
-					k := getKey(i, kN)
-					res, err := c.cl.Get(ctx, &lume.GetRequest{Key: k})
-					if err != nil {
-						return err
-					}
-					if !res.Ok {
-						return fmt.Errorf("key: '%s' is not set", k)
-					}
+					sem <- struct{}{}
+					wg2.Go(func() error {
+						defer func() { <-sem }()
+						k := getKey(i, kN)
+						res, err := c.cl.Get(ctx, &lume.GetRequest{Key: k})
+						if err != nil {
+							return err
+						}
+						if !res.Ok {
+							return fmt.Errorf("key: '%s' is not set", k)
+						}
+						return nil
+					})
 				}
-				return nil
+				return wg2.Wait()
 			})
 		}(i)
 	}
@@ -161,7 +172,9 @@ func testClientsPull(clientsNum int, setForClient int, keysPerClient int) {
 		log.Print(err)
 		return
 	}
-	log.Printf("setting keys for client %d done, waiting for consistency...", client.clientNum)
+	log.Printf("setting keys for client %d done, waiting 10 seconds", client.clientNum)
+	time.Sleep(time.Second * 10)
+	log.Printf("waiting for consistency...")
 
 	for i := 1; i <= clientsNum; i++ {
 		if i == setForClient {
@@ -173,7 +186,7 @@ func testClientsPull(clientsNum int, setForClient int, keysPerClient int) {
 
 		go func() {
 			defer wg.Done()
-			ticker := time.NewTicker(time.Second * 10)
+			ticker := time.NewTicker(time.Second * 1)
 			start := time.Now()
 
 			for {
@@ -196,6 +209,6 @@ func testClientsPull(clientsNum int, setForClient int, keysPerClient int) {
 }
 
 func main() {
-	//testClientsPull(3, 1, 10000)
-	testSetPerClientsConvergence(3, 10000)
+	testClientsPull(5, 1, 10000)
+	//testSetPerClientsConvergence(5, 10000)
 }

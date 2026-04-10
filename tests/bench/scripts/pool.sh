@@ -10,7 +10,7 @@ CONN="${2:-10}"
 RPC="${3:-4}"
 DURATION="${4:-30}"
 WARMUP=5
-LUME_BENCH="${LUME_BENCH:-../../lume-bench}"
+LUME_BENCH="${LUME_BENCH:-lume-bench}"
 RESULTS_DIR="$(dirname "$0")/../results"
 mkdir -p "$RESULTS_DIR"
 
