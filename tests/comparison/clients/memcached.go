@@ -20,7 +20,7 @@ type MemcachedClient struct {
 
 func NewMemcachedClient(url string, m *monitoring.Metrics) *MemcachedClient {
 	client := memcache.New(url)
-	client.MaxIdleConns = 500
+	client.MaxIdleConns = 10000
 	client.Timeout = time.Second * 5
 	return &MemcachedClient{client: client, m: m}
 }

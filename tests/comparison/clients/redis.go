@@ -21,13 +21,14 @@ type RedisClient struct {
 
 func NewRedisClient(url string, m *monitoring.Metrics) *RedisClient {
 	client := redis.NewClient(&redis.Options{
-		Addr:         url,
-		Password:     "",
-		DB:           0,
-		PoolSize:     500,
-		DialTimeout:  time.Second * 5,
-		ReadTimeout:  time.Second * 5,
-		WriteTimeout: time.Second * 5,
+		Addr:               url,
+		Password:           "",
+		DB:                 0,
+		PoolSize:           10000,
+		MaxConcurrentDials: 10000,
+		DialTimeout:        time.Second * 5,
+		ReadTimeout:        time.Second * 5,
+		WriteTimeout:       time.Second * 5,
 	})
 
 	return &RedisClient{client: client, m: m}

@@ -9,12 +9,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - LOG_LEVEL=ERROR
+      - LOG_LEVEL=INFO
       - NODE_ID=main
       - SECURITY_MODE=disabled
     volumes:
       - ./configs/db/lume.yaml:/lume-config/config.yaml
-    network_mode: host
 
   redis:
     image: redis:8
@@ -26,7 +25,6 @@ services:
       - "6379:6379"
     cpus: "4.0"
     restart: unless-stopped
-    network_mode: host
 
   memcached:
     image: memcached:1.6
@@ -38,7 +36,6 @@ services:
       - "11211:11211"
     cpus: "4.0"
     restart: unless-stopped
-    network_mode: host
 
 #  cadvisor:
 #    image: gcr.io/cadvisor/cadvisor:latest
@@ -60,6 +57,8 @@ services:
       - ./configs/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   grafana:

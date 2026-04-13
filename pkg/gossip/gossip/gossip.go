@@ -54,7 +54,7 @@ type Config struct {
 	// The WorkerPoolSize parameter determines how many parallel communication goroutines can exist.
 	WorkerPoolSize int `yaml:"worker_pool_size" env:"GOSSIP_WORKER_POOL_SIZE" default:"5"`
 
-	RequestTimeout time.Duration `yaml:"-" env:"GOSSIP_REQUEST_TIMEOUT" default:"60s"`
+	RequestTimeout time.Duration `yaml:"-" env:"GOSSIP_REQUEST_TIMEOUT" default:"5s"`
 }
 
 var ErrNoPeers = errors.New("no peers available")
@@ -294,7 +294,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	// Step 1: Get remote key digests for this bucket
 	remoteDigests, err := g.transport.GetKeyDigests(withTimeOut, peer.GossipAddr().String(), bucket)
 	if err != nil {
-		slog.Error("gossip.antiEntropyRound: failed to get key digests", "err", err, "peer", peer.ID(), "bucket", bucket)
+		slog.Warn("gossip.antiEntropyRound: failed to get key digests", "err", err, "peer", peer.ID(), "bucket", bucket)
 		return
 	}
 

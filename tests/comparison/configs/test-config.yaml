@@ -7,15 +7,15 @@ databases:
   - name: lume
     host: localhost:8080
 
-  - name: memcached
-    host: localhost:11211
-
   - name: redis
     host: localhost:6379
 
+  - name: memcached
+    host: localhost:11211
+
 test:
   name: test
-  type: get
+  type: set
   minClients: 50
   clientsStep: 5
   maxClients: 200
