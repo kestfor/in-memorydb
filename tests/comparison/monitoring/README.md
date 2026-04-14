@@ -11,7 +11,7 @@ timestamp,db,op,clients,stage_duration_s,requests,throughput_rps,mean_ms,p50_ms,
 | Column | Description |
 |---|---|
 | `timestamp` | RFC3339 UTC time of stage end |
-| `db` | Database name (`redis`, `lume`, `memcached`) |
+| `db` | Database name (`lume`, `redis`, `dragonfly`, `keydb`, `aerospike`, `memcached`) |
 | `op` | Operation (`set` / `get`) |
 | `clients` | Concurrent clients during this stage |
 | `stage_duration_s` | Actual wall-clock stage duration (seconds) |

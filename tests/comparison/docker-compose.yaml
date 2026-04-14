@@ -26,6 +26,36 @@ services:
     cpus: "4.0"
     restart: unless-stopped
 
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: dragonfly
+    command: [ "dragonfly", "--logtostderr", "--port=6379" ]
+    ports:
+      - "6380:6379"
+    cpus: "4.0"
+    restart: unless-stopped
+
+  keydb:
+    image: eqalpha/keydb:latest
+    container_name: keydb
+    command: [ "keydb-server", "/etc/keydb/keydb.conf" ]
+    ports:
+      - "6381:6379"
+    cpus: "4.0"
+    volumes:
+      - ./configs/db/keydb.conf:/etc/keydb/keydb.conf:ro
+    restart: unless-stopped
+
+  aerospike:
+    image: aerospike/aerospike-server:latest
+    container_name: aerospike
+    ports:
+      - "3005:3000"
+    cpus: "4.0"
+    volumes:
+      - ./configs/db/aerospike.conf:/etc/aerospike/aerospike.conf:ro
+    restart: unless-stopped
+
   memcached:
     image: memcached:1.6
     container_name: memcached

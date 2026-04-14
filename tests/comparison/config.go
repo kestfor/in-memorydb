@@ -25,6 +25,9 @@ type Test struct {
 	MinClients     int      `yaml:"minClients"`
 	ClientsStep    int      `yaml:"clientsStep"`
 	MaxClients     int      `yaml:"maxClients"`
+	ClientStages   []int    `yaml:"clientStages"`
+	GrowthMode     string   `yaml:"growthMode"`
+	GrowthFactor   float64  `yaml:"growthFactor"`
 	StageIntervalS int      `yaml:"stageIntervalS"`
 	RequestDelayMs int      `yaml:"requestDelayMs"`
 	MaxKeysNum     int      `yaml:"maxKeysNum"`

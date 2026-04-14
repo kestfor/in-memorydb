@@ -39,7 +39,7 @@
   "id": null,
   "uid": "db-comparison",
   "title": "DB Comparison Benchmark",
-  "description": "Compare Redis, Memcached, Lume latencies and throughput under increasing client load",
+  "description": "Compare Lume and high-throughput in-memory key-value databases under increasing client load",
   "tags": [
     "benchmark",
     "comparison"
@@ -955,7 +955,7 @@
       },
       "targets": [
         {
-          "expr": "rate(container_cpu_usage_seconds_total{name=~\"redis|memcached|lume.*\"}[1m])",
+          "expr": "rate(container_cpu_usage_seconds_total{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}[1m])",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -1041,7 +1041,7 @@
       },
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{name=~\"redis|memcached|lume.*\"}",
+          "expr": "container_memory_usage_bytes{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -1127,7 +1127,7 @@
       },
       "targets": [
         {
-          "expr": "rate(container_network_receive_bytes_total{name=~\"redis|memcached|lume.*\"}[1m])",
+          "expr": "rate(container_network_receive_bytes_total{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}[1m])",
           "legendFormat": "{{name}} RX",
           "refId": "A"
         }
@@ -1213,7 +1213,7 @@
       },
       "targets": [
         {
-          "expr": "rate(container_network_transmit_bytes_total{name=~\"redis|memcached|lume.*\"}[1m])",
+          "expr": "rate(container_network_transmit_bytes_total{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}[1m])",
           "legendFormat": "{{name}} TX",
           "refId": "A"
         }
