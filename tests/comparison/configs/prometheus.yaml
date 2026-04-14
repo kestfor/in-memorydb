@@ -10,7 +10,8 @@ scrape_configs:
           - "host.docker.internal:8082"
           - "host.docker.internal:8083"
 
-#  - job_name: "cadvisor"
-#    static_configs:
-#      - targets: [ "cadvisor:8080" ]
+  - job_name: "telegraf-docker"
+    metrics_path: /metrics
+    static_configs:
+      - targets: [ "telegraf:9273" ]
 

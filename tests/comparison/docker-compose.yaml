@@ -67,16 +67,16 @@ services:
     cpus: "4.0"
     restart: unless-stopped
 
-#  cadvisor:
-#    image: gcr.io/cadvisor/cadvisor:latest
-#    container_name: cadvisor
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock:ro
-#      - /sys:/sys:ro
-#      - /var/lib/docker/:/var/lib/docker:ro
-#    ports:
-#      - "8080:8080"
-#    restart: unless-stopped
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./configs/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    ports:
+      - "9273:9273"
+    restart: unless-stopped
 
 
   prometheus:
@@ -87,8 +87,6 @@ services:
       - ./configs/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   grafana:

@@ -39,7 +39,7 @@
   "id": null,
   "uid": "db-comparison",
   "title": "DB Comparison Benchmark",
-  "description": "Compare Lume and high-throughput in-memory key-value databases under increasing client load",
+  "description": "Compare Redis, Memcached, and Lume latencies, throughput, and Docker Desktop container metrics under increasing client load",
   "tags": [
     "benchmark",
     "comparison"
@@ -874,7 +874,7 @@
     {
       "type": "timeseries",
       "title": "Container CPU Usage",
-      "description": "CPU usage per container (requires cAdvisor)",
+      "description": "CPU usage per container gathered by Telegraf from the Docker Engine API",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -921,7 +921,7 @@
               "mode": "off"
             }
           },
-          "unit": "short",
+          "unit": "percentunit",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -955,8 +955,8 @@
       },
       "targets": [
         {
-          "expr": "rate(container_cpu_usage_seconds_total{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}[1m])",
-          "legendFormat": "{{name}}",
+          "expr": "docker_container_cpu_usage_percent{container_name=~\"redis|memcached|lume\"}",
+          "legendFormat": "{{container_name}}",
           "refId": "A"
         }
       ]
@@ -964,7 +964,7 @@
     {
       "type": "timeseries",
       "title": "Container Memory Usage",
-      "description": "Memory usage per container (requires cAdvisor)",
+      "description": "Memory usage per container gathered by Telegraf from the Docker Engine API",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -1041,8 +1041,8 @@
       },
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}",
-          "legendFormat": "{{name}}",
+          "expr": "docker_container_mem_usage{container_name=~\"redis|memcached|lume\"}",
+          "legendFormat": "{{container_name}}",
           "refId": "A"
         }
       ]
@@ -1050,7 +1050,7 @@
     {
       "type": "timeseries",
       "title": "Container Network RX (Receive)",
-      "description": "Network bytes received per container (requires cAdvisor)",
+      "description": "Network bytes received per container gathered by Telegraf from the Docker Engine API",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -1127,8 +1127,8 @@
       },
       "targets": [
         {
-          "expr": "rate(container_network_receive_bytes_total{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}[1m])",
-          "legendFormat": "{{name}} RX",
+          "expr": "rate(docker_container_net_rx_bytes{container_name=~\"redis|memcached|lume\"}[1m])",
+          "legendFormat": "{{container_name}} RX",
           "refId": "A"
         }
       ]
@@ -1136,7 +1136,7 @@
     {
       "type": "timeseries",
       "title": "Container Network TX (Transmit)",
-      "description": "Network bytes transmitted per container (requires cAdvisor)",
+      "description": "Network bytes transmitted per container gathered by Telegraf from the Docker Engine API",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -1213,8 +1213,8 @@
       },
       "targets": [
         {
-          "expr": "rate(container_network_transmit_bytes_total{name=~\"redis|memcached|lume.*|dragonfly|keydb|aerospike\"}[1m])",
-          "legendFormat": "{{name}} TX",
+          "expr": "rate(docker_container_net_tx_bytes{container_name=~\"redis|memcached|lume\"}[1m])",
+          "legendFormat": "{{container_name}} TX",
           "refId": "A"
         }
       ]
