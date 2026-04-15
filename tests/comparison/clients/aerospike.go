@@ -41,6 +41,7 @@ func NewAerospikeClient(addr string, m *monitoring.Metrics) *AerospikeClient {
 	policy := aerospike.NewClientPolicy()
 	policy.Timeout = 5 * time.Second
 	policy.IdleTimeout = 5 * time.Second
+	policy.ConnectionQueueSize = 10000
 
 	client, err := aerospike.NewClientWithPolicy(policy, host, portNum)
 	if err != nil {

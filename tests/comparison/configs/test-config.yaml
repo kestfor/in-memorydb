@@ -7,30 +7,30 @@ databases:
   - name: lume
     host: localhost:8080
 
-  - name: redis
-    host: localhost:6379
+  - name: aerospike
+    host: localhost:3005
 
   - name: dragonfly
     host: localhost:6380
 
+  - name: redis
+    host: localhost:6379
+
   - name: keydb
     host: localhost:6381
-
-  - name: aerospike
-    host: localhost:3005
 
   - name: memcached
     host: localhost:11211
 
 test:
   name: test
-  type: set
-  minClients: 1
+  type: get
+  minClients: 50
   clientsStep: 50
   maxClients: 10000
   growthMode: exponential
   growthFactor: 1.6
-  clientStages: [1, 2, 5, 10, 20, 50, 100, 200, 350, 500, 750, 1000, 1500, 2500, 4000, 6000, 8000, 10000]
-  stageIntervalS: 60
+  clientStages: [25, 50, 100, 200, 350, 500, 750, 1000, 1500, 2500, 4000, 6000, 8000, 10000]
+  stageIntervalS: 90
   requestDelayMs: 2
   maxKeysNum: 100000

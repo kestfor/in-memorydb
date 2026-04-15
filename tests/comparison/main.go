@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"time"
 
 	"log/slog"
@@ -20,6 +21,7 @@ func main() {
 		Formatter:       log.TextFormatter,
 	}
 
+	runtime.GOMAXPROCS(3)
 	h := log.NewWithOptions(os.Stderr, options)
 	slog.SetDefault(slog.New(h))
 

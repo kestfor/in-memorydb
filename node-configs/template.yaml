@@ -13,13 +13,10 @@ membership:
   port: 8089
 engine:
   shards_num: 256
+buffer:
+  size: 1000
 persistence:
   enabled: false
-  wal:
-    path: ./wal_data_1
-    flush_interval: 1s
-    batch_size: 5000
-    segment_threshold: 10000
 
 security:
   mode: disabled

@@ -88,18 +88,19 @@ type DefaultGossip struct {
 
 func NewDefaultGossip(config *Config, transportConfig *grpc.TransportConfig, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, engine engine.Engine, serverOpts ...grpcserver.ServerOption) *DefaultGossip {
 	return &DefaultGossip{
-		config:          config,
-		transportConfig: transportConfig,
-		transport:       transport,
-		memberlist:      list,
-		versionManager:  manager,
-		wal:             wal,
-		buffer:          buffer,
-		engine:          engine,
-		serverOpts:      serverOpts,
-		gbuffer:         gossip_buffer.NewGossipBuffer(config.BufferSize),
-		updatesChannel:  make(chan []types.Update, 100),
-		numBuckets:      versionmanagerv2.DefaultNumBuckets,
+		config:            config,
+		transportConfig:   transportConfig,
+		transport:         transport,
+		memberlist:        list,
+		versionManager:    manager,
+		wal:               wal,
+		buffer:            buffer,
+		engine:            engine,
+		serverOpts:        serverOpts,
+		gbuffer:           gossip_buffer.NewGossipBuffer(config.BufferSize),
+		updatesChannel:    make(chan []types.Update, 100),
+		numBuckets:        versionmanagerv2.DefaultNumBuckets,
+		antiEntropyBucket: rand.Uint32() % versionmanagerv2.DefaultNumBuckets,
 	}
 }
 

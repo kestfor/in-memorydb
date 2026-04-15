@@ -9,7 +9,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - LOG_LEVEL=INFO
+      - LOG_LEVEL=ERROR
       - NODE_ID=main
       - SECURITY_MODE=disabled
     volumes:
@@ -53,7 +53,7 @@ services:
       - "3005:3000"
     cpus: "4.0"
     volumes:
-      - ./configs/db/aerospike.conf:/etc/aerospike/aerospike.conf:ro
+      - ./configs/db/aerospike.conf:/etc/aerospike/aerospike.conf
     restart: unless-stopped
 
   memcached:
@@ -70,9 +70,10 @@ services:
   telegraf:
     image: telegraf:latest
     container_name: telegraf
-    user: root
+    user: "0:0"
+    entrypoint: "telegraf --config /etc/telegraf/telegraf.conf"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ~/.orbstack/run/docker.sock:/var/run/docker.sock:ro
       - ./configs/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     ports:
       - "9273:9273"
