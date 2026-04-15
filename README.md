@@ -1,447 +1,208 @@
 <p align="center">
-  <h1 align="center">🗄️ Lume</h1>
+  <h1 align="center">Lume</h1>
   <p align="center">
-    <strong>Распределенная in-memory база данных на основе CRDT</strong>
+    <strong>Distributed in-memory CRDT store in Go</strong>
   </p>
 </p>
 
 <p align="center">
-  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go&logoColor=white" alt="Go Version"></a>
-  <a href="https://github.com/kestfor/in-memorydb/actions"><img src="https://img.shields.io/github/actions/workflow/status/kestfor/in-memorydb/go.yml?branch=main&style=flat&logo=github" alt="Build Status"></a>
-  <a href="https://goreportcard.com/report/github.com/kestfor/in-memorydb"><img src="https://goreportcard.com/badge/github.com/kestfor/in-memorydb" alt="Go Report Card"></a>
-  <a href="https://deepwiki.com/kestfor/in-memorydb"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.26.1-00ADD8?style=flat&logo=go&logoColor=white" alt="Go Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat" alt="License"></a>
 </p>
 
-<p align="center">
-  <a href="#-ключевые-особенности">Особенности</a> •
-  <a href="#-быстрый-старт">Быстрый старт</a> •
-  <a href="#-архитектура">Архитектура</a> •
-  <a href="#-документация">Документация</a>
-</p>
+Lume is an experimental distributed in-memory database built around CRDTs, HLC timestamps, gossip replication, and WAL-backed durability. The repository contains the server, CLI client, benchmark client, TLS certificate utility, cluster/docker configs, and comparison tooling used for performance experiments.
 
----
+## What is in this branch
 
-**Lume** — это высокопроизводительная распределенная база данных в памяти, использующая CRDT (Conflict-free Replicated Data Types) для обеспечения eventual consistency без конфликтов в распределенной среде.
+- gRPC server in [`cmd/grpc`](./cmd/grpc)
+- CLI client in [`cmd/lume-cli`](./cmd/lume-cli)
+- benchmark client in [`cmd/lume-bench`](./cmd/lume-bench)
+- TLS certificate helper in [`cmd/lume-ca`](./cmd/lume-ca)
+- CRDT implementations in [`pkg/crdt`](./pkg/crdt)
+- storage engine, version managers, WAL, update buffers, and anti-entropy logic in [`pkg/storage`](./pkg/storage)
+- gossip and membership layers in [`pkg/gossip`](./pkg/gossip) and [`pkg/membership`](./pkg/membership)
+- docker setups for a single node and multi-node cluster in [`docker-compose.yaml`](./docker-compose.yaml) and [`cluster/docker-compose.yaml`](./cluster/docker-compose.yaml)
+- comparison and fault-tolerance test tooling in [`tests/comparison`](./tests/comparison), [`tests/cluster`](./tests/cluster), and [`tests/fault-tolerance`](./tests/fault-tolerance)
+- observability stack in [`observability`](./observability)
 
-## 📋 Содержание
+## Core capabilities
 
-- [Ключевые особенности](#-ключевые-особенности)
-- [Быстрый старт](#-быстрый-старт)
-- [Установка](#-установка)
-- [Использование](#-использование)
-- [Архитектура](#-архитектура)
-- [API](#-api)
-- [Конфигурация](#-конфигурация)
-- [Тестирование](#-тестирование)
-- [Бенчмаркинг](#-бенчмаркинг)
-- [Документация](#-документация)
-- [Участие в разработке](#-участие-в-разработке)
-- [Лицензия](#-лицензия)
+- CRDT data model with `PN-Counter` and `LWW-Register`
+- Hybrid Logical Clock timestamps for conflict resolution
+- sharded in-memory engine
+- gossip-based replication
+- anti-entropy synchronization for state repair
+- WAL-backed persistence with configurable flush and sync behavior
+- node membership based on `memberlist`
+- optional TLS modes and certificate generation via `lume-ca`
+- OpenTelemetry tracing hooks
 
-## 🚀 Ключевые особенности
+## Repository layout
 
-| Особенность | Описание |
-|-------------|----------|
-| **CRDT-архитектура** | Eventual consistency без конфликтов — PN-Counter и LWW-Register |
-| **Статическое шардирование** | 256 шардов с независимыми блокировками для высокой конкурентности |
-| **Gossip протокол** | Эпидемическое распространение обновлений между узлами |
-| **Hybrid Logical Clock** | Монотонные временные метки для версионирования |
-| **Write-Ahead Log** | Устойчивость к сбоям с сегментированным WAL |
-| **gRPC API** | Высокопроизводительное API с поддержкой protobuf |
-| **Observability** | Интеграция с OpenTelemetry, Prometheus и Grafana |
-| **Tombstone + GC** | Безопасное удаление данных с garbage collection |
+```text
+.
+├── api/lume                    # protobuf definitions and generated gRPC code
+├── cmd/grpc                    # main Lume server
+├── cmd/lume-cli                # CLI client
+├── cmd/lume-bench              # load generator / benchmark client
+├── cmd/lume-ca                 # CA and node certificate tool
+├── cluster                     # docker-compose for multi-node cluster
+├── docs                        # design notes, config template, plans
+├── node-configs                # sample node configs for docker runs
+├── observability               # Prometheus / Grafana / Tempo setup
+├── pkg/crdt                    # CRDT implementations
+├── pkg/gossip                  # gossip transport and buffering
+├── pkg/membership              # cluster membership
+├── pkg/storage                 # engine, WAL, version managers, anti-entropy
+└── tests                       # comparison, cluster, convergence and fault tests
+```
 
-## 🏁 Быстрый старт
+## Requirements
 
-### Требования
+- Go `1.26.1`
+- Docker and Docker Compose for container-based runs
+- `buf` if you need to regenerate protobuf code
 
-- Go 1.24+
-- protoc (для генерации gRPC кода)
-- Docker & Docker Compose (опционально)
-
-### Запуск одного узла
+## Build
 
 ```bash
-# Клонирование репозитория
-git clone https://github.com/kestfor/in-memorydb.git
-cd in-memorydb
-
-# Установка зависимостей
-go mod tidy
-
-# Сборка
-go build -o bin/lume-server ./cmd/grpc
+go build -o bin/lume ./cmd/grpc
 go build -o bin/lume-cli ./cmd/lume-cli
-
-# Запуск сервера
-./bin/lume-server --config templates/node-template.yaml
-```
-
-### Запуск кластера через Docker
-
-```bash
-cd local_tests
-docker-compose up -d
-```
-
-## 📦 Установка
-
-### Из исходников
-
-```bash
-go install github.com/kestfor/in-memorydb/cmd/grpc@latest
-go install github.com/kestfor/in-memorydb/cmd/lume-cli@latest
-```
-
-### Сборка с помощью Makefile
-
-```bash
-# Запуск тестов
-make test
-
-# Линтинг
-make lint
-
-# Форматирование кода
-make format
-
-# Генерация protobuf
-make proto-gen-win
-```
-
-## 💻 Использование
-
-### CLI клиент (lume-cli)
-
-```bash
-# Подключение к серверу (по умолчанию localhost:9090)
-lume-cli -s localhost:9090
-
-# Создание счетчика и установка значения
-lume-cli set myCounter 100
-
-# Создание регистра со строковым значением
-lume-cli set myRegister "Hello, World!"
-
-# Создание пустого CRDT объекта
-lume-cli set myKey --type counter
-lume-cli set myKey --type register
-
-# Получение значения
-lume-cli get myKey
-
-# Удаление ключа
-lume-cli delete myKey
-
-# Операции с счетчиком
-lume-cli apply inc myCounter 10   # Инкремент
-lume-cli apply dec myCounter 5    # Декремент
-
-# Операции с регистром
-lume-cli apply set myRegister "New Value"
-```
-
-### gRPC API (программный доступ)
-
-```go
-package main
-
-import (
-    "context"
-    "log"
-    
-    "google.golang.org/grpc"
-    "google.golang.org/grpc/credentials/insecure"
-    pb "in-memorydb/api/lumepb"
-)
-
-func main() {
-    conn, err := grpc.Dial("localhost:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer conn.Close()
-    
-    client := pb.NewLumeClient(conn)
-    
-    // Создание счетчика
-    _, err = client.Set(context.Background(), &pb.SetRequest{
-        Key:      "visits",
-        CrdtType: pb.Type_TYPE_PN_COUNTER,
-    })
-    
-    // Инкремент счетчика
-    _, err = client.Apply(context.Background(), &pb.ApplyRequest{
-        Key: "visits",
-        Operation: &pb.ApplyRequest_CounterOperationInc{
-            CounterOperationInc: &pb.ApplyRequest_CounterInc{Val: 1},
-        },
-    })
-    
-    // Получение значения
-    resp, err := client.Get(context.Background(), &pb.GetRequest{Key: "visits"})
-    log.Printf("Visits: %d", resp.GetCounterData().GetVal())
-}
-```
-
-## 🏗️ Архитектура
-
-```mermaid
-graph TB
-    subgraph Clients
-        CLI[lume-cli]
-        APP[Application]
-    end
-    
-    subgraph "Lume Node"
-        GRPC[gRPC Server]
-        STORAGE[Storage Layer]
-        ENGINE[Storage Engine]
-        VM[Version Manager]
-        BUFFER[Updates Buffer]
-        WAL[Write-Ahead Log]
-    end
-    
-    subgraph Cluster
-        GOSSIP[Gossip Protocol]
-        MEMBERSHIP[Membership]
-        TRANSPORT[Transport Layer]
-    end
-    
-    subgraph "Other Nodes"
-        PEER1[Node 2]
-        PEER2[Node 3]
-        PEERN[Node N]
-    end
-    
-    CLI --> GRPC
-    APP --> GRPC
-    GRPC --> STORAGE
-    STORAGE --> ENGINE
-    STORAGE --> VM
-    STORAGE --> BUFFER
-    STORAGE --> WAL
-    STORAGE --> GOSSIP
-    GOSSIP --> TRANSPORT
-    TRANSPORT --> MEMBERSHIP
-    TRANSPORT --> PEER1
-    TRANSPORT --> PEER2
-    TRANSPORT --> PEERN
-```
-
-### Основные компоненты
-
-| Компонент | Описание |
-|-----------|----------|
-| **Storage Engine** | Шардированное хранилище с 256 независимыми шардами |
-| **Version Manager** | Управление версиями и разрешение конфликтов |
-| **Updates Buffer** | Буферизация обновлений для эффективной передачи |
-| **WAL** | Сегментированный Write-Ahead Log для durability |
-| **Gossip** | Эпидемический протокол распространения обновлений |
-| **Membership** | Управление членством в кластере (SWIM протокол) |
-
-### Типы данных CRDT
-
-#### PN-Counter (Positive-Negative Counter)
-Распределенный счетчик с поддержкой инкремента и декремента.
-
-```
-Node A: +5         Node B: +3, -1
-        ↓                  ↓
-    Merge → Итоговое значение: 7
-```
-
-#### LWW-Register (Last-Writer-Wins Register)
-Регистр с разрешением конфликтов по временной метке HLC.
-
-```
-Node A: "value1" @ T=10    Node B: "value2" @ T=15
-                 ↓
-         Победитель: "value2" (T=15 > T=10)
-```
-
-## 📡 API
-
-### gRPC Endpoints
-
-| Метод | Описание |
-|-------|----------|
-| `Set(SetRequest)` | Создание нового CRDT объекта |
-| `Get(GetRequest)` | Получение значения по ключу |
-| `Delete(DeleteRequest)` | Удаление ключа (tombstone) |
-| `Apply(ApplyRequest)` | Применение операции (inc/dec/set) |
-
-### Типы CRDT
-
-| Тип | Protobuf Enum | Описание |
-|-----|---------------|----------|
-| PN-Counter | `TYPE_PN_COUNTER` | Счетчик с инкрементом/декрементом |
-| LWW-Register | `TYPE_LWW_REGISTER` | Регистр с произвольными данными |
-
-## ⚙️ Конфигурация
-
-Пример конфигурационного файла (`node-template.yaml`):
-
-```yaml
-node:
-  id: "node1"                    # Уникальный идентификатор узла
-  bind_address: "127.0.0.1"      # Адрес привязки
-  port: 9090                     # Порт для клиентских запросов
-
-gossip:
-  port: 9091                     # Порт для gossip-протокола
-  protocol: "SWIM"               # Протокол обнаружения
-  interval: 500                  # Интервал anti-entropy (мс)
-  fanout: 3                      # Количество узлов для рассылки
-  retries: 3                     # Количество повторных попыток
-
-membership:
-  port: 9092                     # Порт для проверки членства
-
-seeds:                           # Начальные узлы кластера
-  - "192.168.1.10:9090"
-  - "192.168.1.11:9090"
-
-persistence:
-  wal:
-    path: "wal_data"             # Директория WAL
-    segment_threshold: 1000      # Записей на сегмент
-  snap_dir: "snapshots"          # Директория снапшотов
-  snapshot_interval: 10          # Интервал снапшотов
-
-security:                        # TLS конфигурация
-  enabled: false
-  ca_cert: "ca.crt"
-  cert: "node.crt"
-  key: "node.key"
-```
-
-## 🧪 Тестирование
-
-```bash
-# Запуск всех тестов
-make test
-
-# Тесты с race detector
-go test -race ./...
-
-# Тесты конкретного пакета
-go test ./pkg/crdt/...
-go test ./pkg/storage/...
-
-# Бенчмарки
-make bench
-```
-
-## 📊 Бенчмаркинг
-
-Проект включает инструмент `lume-bench` для нагрузочного тестирования:
-
-```bash
-# Сборка бенчмарка
 go build -o bin/lume-bench ./cmd/lume-bench
-
-# Простой тест (100k запросов, 50 клиентов)
-./bin/lume-bench -c 50 -n 100000
-
-# Тест на время (60 секунд)
-./bin/lume-bench -t set -c 100 -d 60s
-
-# Смешанная нагрузка
-./bin/lume-bench -t mixed -c 50 -d 30s
-
-# С конфигурационным файлом
-./bin/lume-bench --config benchmark.yaml
-
-# Экспорт результатов
-./bin/lume-bench -t all --json results.json --csv results.csv
+go build -o bin/lume-ca ./cmd/lume-ca
 ```
 
-Подробнее: [cmd/lume-bench/README.md](cmd/lume-bench/README.md)
+## Run a single node
 
-## 📁 Структура проекта
+Use the config template in [`docs/node-template.yaml`](./docs/node-template.yaml) or one of the ready configs in [`node-configs`](./node-configs).
 
-```
-in-memorydb/
-├── api/                          # Protobuf определения
-│   ├── lume.proto                # gRPC сервис
-│   └── lumepb/                   # Сгенерированный Go код
-├── cmd/
-│   ├── grpc/                     # gRPC сервер
-│   ├── lume-cli/                 # CLI клиент
-│   └── lume-bench/               # Инструмент бенчмаркинга
-├── pkg/
-│   ├── configx/                  # Конфигурация
-│   ├── crdt/                     # CRDT реализации
-│   │   ├── hlc/                  # Hybrid Logical Clock
-│   │   ├── pn_counter.go         # PN-Counter
-│   │   └── lwwhlc_register.go    # LWW-Register
-│   ├── gossip/                   # Gossip протокол
-│   ├── membership/               # Управление кластером
-│   ├── observability/            # Трейсинг и метрики
-│   ├── storage/                  # Storage layer
-│   │   ├── engine/               # Движок хранения
-│   │   ├── updates_buffer/       # Буфер обновлений
-│   │   ├── version_manager/      # Менеджер версий
-│   │   └── wal/                  # Write-Ahead Log
-│   ├── transport/                # Транспортный слой
-│   └── types/                    # Общие типы данных
-├── local_tests/                  # Docker конфигурации для тестов
-├── observability/                # Grafana, Prometheus, Tempo
-├── templates/                    # Шаблоны конфигураций
-└── docs/                         # Документация
-    ├── RFC.md                    # Техническая спецификация
-    └── ROADMAP.md                # План разработки
+```bash
+go build -o bin/lume ./cmd/grpc
+./bin/lume --config ./docs/node-template.yaml
 ```
 
-## 📚 Документация
+The current config template exposes:
 
-| Документ | Описание |
-|----------|----------|
-| [Engine v1](pkg/storage/engine/v1/Readme.md) | Документация движка хранения |
-| [Benchmark](cmd/lume-bench/README.md) | Руководство по бенчмаркингу |
+- client gRPC API on `node.port` (default `8080`)
+- gossip traffic on `gossip.port` (default `8081`)
+- membership traffic on `membership.port` (default `8082`)
 
-> 📝 **Примечание:** Полная техническая спецификация (RFC) и план развития (ROADMAP) будут добавлены в директорию `docs/`.
+## Run with Docker
 
-## 🔧 Observability
+Single node:
 
-Проект поддерживает полный стек observability:
+```bash
+make docker-up
+```
+
+This uses the root [`docker-compose.yaml`](./docker-compose.yaml) and mounts [`node-configs/first-peer.yaml`](./node-configs/first-peer.yaml).
+
+Multi-node cluster:
+
+```bash
+make docker-up-cluster
+```
+
+This uses [`cluster/docker-compose.yaml`](./cluster/docker-compose.yaml) together with configs from [`node-configs`](./node-configs).
+
+To stop containers:
+
+```bash
+make docker-down
+make docker-down-cluster
+```
+
+## CLI usage
+
+The CLI talks to the gRPC API directly.
+
+```bash
+./bin/lume-cli --server localhost:8080 set visits --type counter
+./bin/lume-cli --server localhost:8080 apply inc visits 1
+./bin/lume-cli --server localhost:8080 get visits
+
+./bin/lume-cli --server localhost:8080 set greeting "hello"
+./bin/lume-cli --server localhost:8080 apply register greeting "hello from lume"
+./bin/lume-cli --server localhost:8080 delete greeting
+```
+
+Available command groups are implemented in [`cmd/lume-cli/main.go`](./cmd/lume-cli/main.go):
+
+- `set`
+- `get`
+- `delete`
+- `apply inc`
+- `apply dec`
+- `apply register`
+
+## Benchmarking
+
+The benchmark client is in [`cmd/lume-bench`](./cmd/lume-bench). It supports `get`, `set`, and `mixed` workloads, configurable connection counts, RPC parallelism, warmup, duration, request size, key pool size, and optional rate limiting.
+
+Example:
+
+```bash
+./bin/lume-bench -p 8080 -c 8 -r 32 -t mixed -d 30 -w 5 -o ./bench-out
+```
+
+This writes CPU and heap profiles into the selected output directory.
+
+The repository also includes:
+
+- benchmark shell scripts in [`tests/bench/scripts`](./tests/bench/scripts)
+- published benchmark result files in [`tests/bench/results`](./tests/bench/results)
+- database comparison tooling in [`tests/comparison`](./tests/comparison)
+- exported comparison charts and CSV results in [`tests/comparison/test_results`](./tests/comparison/test_results)
+
+## Testing and quality checks
+
+The main developer targets are defined in [`Makefile`](./Makefile):
+
+```bash
+make test
+make lint
+make bench
+make format
+make protos
+```
+
+There are also package-level tests across storage, CRDT, membership, WAL, and anti-entropy modules.
+
+## TLS certificates
+
+[`cmd/lume-ca`](./cmd/lume-ca) generates a local CA and node certificates for TLS-enabled deployments.
+
+```bash
+./bin/lume-ca init-ca --out-dir ./certs
+./bin/lume-ca issue --name node1 --ca-cert ./certs/ca.crt --ca-key ./certs/ca.key --out-dir ./certs/node1
+```
+
+Certificate paths and security mode are configured through [`docs/node-template.yaml`](./docs/node-template.yaml).
+
+## Observability
+
+The repository contains a local observability stack in [`observability`](./observability):
 
 ```bash
 cd observability
-docker-compose up -d
+docker compose up -d
 ```
 
-- **Grafana**: http://localhost:3000 — визуализация метрик
-- **Prometheus**: http://localhost:9090 — сбор метрик
-- **Tempo**: http://localhost:3200 — распределенный трейсинг
+Included configs:
 
-## 🤝 Участие в разработке
+- Grafana datasource config in [`observability/grafana/grafana-datasources.yaml`](./observability/grafana/grafana-datasources.yaml)
+- Prometheus config in [`observability/prometheus/prometheus.yaml`](./observability/prometheus/prometheus.yaml)
+- Tempo config in [`observability/tempo/tempo.yaml`](./observability/tempo/tempo.yaml)
 
-Мы приветствуем вклад в проект! 
+## Useful documents
 
-1. Fork репозитория
-2. Создайте feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit изменения (`git commit -m 'Add amazing feature'`)
-4. Push в branch (`git push origin feature/amazing-feature`)
-5. Откройте Pull Request
+- [Node configuration template](./docs/node-template.yaml)
+- [Key-based anti-entropy design](./docs/key-based-anti-entropy-design.md)
+- [Version manager v2 optimization plan](./docs/version_manager_v2_optimization_plan.md)
+- [Performance analysis notes](./docs/future/performance_analysis.md)
+- [Engine v1 notes](./pkg/storage/engine/v1/Readme.md)
+- [Comparison monitoring README](./tests/comparison/monitoring/README.md)
 
-### Стиль кода
+## License
 
-```bash
-# Форматирование
-make format
-
-# Линтинг
-make lint
-
-# Тесты перед коммитом
-make test
-```
-
-## 📄 Лицензия
-
-Этот проект распространяется под лицензией MIT.
-
----
+MIT, see [LICENSE](./LICENSE).

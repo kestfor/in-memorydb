@@ -6,9 +6,18 @@ import (
 	"github.com/kestfor/in-memorydb/pkg/crdt/hlc"
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	"testing"
+	"time"
 )
 
 // === Engine Benchmarks ===
+
+func reportEntitiesPerSecond(b *testing.B, entities int, elapsed time.Duration) {
+	if entities <= 0 || elapsed <= 0 {
+		return
+	}
+
+	b.ReportMetric(float64(entities)/elapsed.Seconds(), "entities/s")
+}
 
 func BenchmarkEnginePut(b *testing.B) {
 	e := NewEngine(
@@ -22,11 +31,14 @@ func BenchmarkEnginePut(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		e.Put(ctx, key, obj, nil)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkEngineGet(b *testing.B) {
@@ -48,11 +60,14 @@ func BenchmarkEngineGet(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i%numKeys)
 		e.Get(ctx, key)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkEngineDelete(b *testing.B) {
@@ -73,11 +88,14 @@ func BenchmarkEngineDelete(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		e.Delete(ctx, key)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkEngineMixed(b *testing.B) {
@@ -98,6 +116,7 @@ func BenchmarkEngineMixed(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i%1000)
@@ -111,6 +130,8 @@ func BenchmarkEngineMixed(b *testing.B) {
 			e.Delete(ctx, key)
 		}
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 // === Concurrent Benchmarks ===
@@ -127,6 +148,7 @@ func BenchmarkEngineConcurrentPut(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -136,6 +158,8 @@ func BenchmarkEngineConcurrentPut(b *testing.B) {
 			i++
 		}
 	})
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkEngineConcurrentGet(b *testing.B) {
@@ -157,6 +181,7 @@ func BenchmarkEngineConcurrentGet(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -166,6 +191,8 @@ func BenchmarkEngineConcurrentGet(b *testing.B) {
 			i++
 		}
 	})
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkEngineConcurrentMixed(b *testing.B) {
@@ -186,6 +213,7 @@ func BenchmarkEngineConcurrentMixed(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -203,6 +231,8 @@ func BenchmarkEngineConcurrentMixed(b *testing.B) {
 			i++
 		}
 	})
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 // === Sharding Benchmarks ===
@@ -337,6 +367,7 @@ func BenchmarkGarbageCollection(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
@@ -345,6 +376,8 @@ func BenchmarkGarbageCollection(b *testing.B) {
 		e.Put(ctx, key, obj, nil)
 		e.Delete(ctx, key)
 	}
+
+	reportEntitiesPerSecond(b, b.N*2, time.Since(start))
 }
 
 // === Memory Benchmarks ===
@@ -365,12 +398,15 @@ func BenchmarkMemoryFootprint(b *testing.B) {
 				ctx := context.Background()
 
 				b.StartTimer()
+				start := time.Now()
 
 				for i := 0; i < size; i++ {
 					key := fmt.Sprintf("key-%d", i)
 					obj := &MockCRDT{value: fmt.Sprintf("value-%d", i)}
 					e.Put(ctx, key, obj, nil)
 				}
+
+				reportEntitiesPerSecond(b, size, time.Since(start))
 
 				b.StopTimer()
 				e.Stop()
@@ -396,12 +432,15 @@ func BenchmarkHighContention(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			e.Put(ctx, singleKey, obj, nil)
 		}
 	})
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkLowContention(b *testing.B) {
@@ -416,6 +455,7 @@ func BenchmarkLowContention(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -426,6 +466,8 @@ func BenchmarkLowContention(b *testing.B) {
 			i++
 		}
 	})
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 // === Callback Benchmarks ===
@@ -447,11 +489,14 @@ func BenchmarkPutWithCallback(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		e.Put(ctx, key, obj, callback)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkPutWithoutCallback(b *testing.B) {
@@ -466,11 +511,14 @@ func BenchmarkPutWithoutCallback(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		e.Put(ctx, key, obj, nil)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 // === Realistic Workload Benchmarks ===
@@ -493,6 +541,7 @@ func BenchmarkRealisticWorkload(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	start := time.Now()
 
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -512,6 +561,8 @@ func BenchmarkRealisticWorkload(b *testing.B) {
 			i++
 		}
 	})
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 // === Heap Benchmarks ===
@@ -557,11 +608,14 @@ func BenchmarkSmallShards(b *testing.B) {
 	obj := &MockCRDT{value: "value"}
 
 	b.ResetTimer()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		e.Put(ctx, key, obj, nil)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkMediumShards(b *testing.B) {
@@ -575,11 +629,14 @@ func BenchmarkMediumShards(b *testing.B) {
 	obj := &MockCRDT{value: "value"}
 
 	b.ResetTimer()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		e.Put(ctx, key, obj, nil)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
 
 func BenchmarkLargeShards(b *testing.B) {
@@ -593,9 +650,12 @@ func BenchmarkLargeShards(b *testing.B) {
 	obj := &MockCRDT{value: "value"}
 
 	b.ResetTimer()
+	start := time.Now()
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		e.Put(ctx, key, obj, nil)
 	}
+
+	reportEntitiesPerSecond(b, b.N, time.Since(start))
 }
