@@ -280,6 +280,68 @@ func (e *Engine) GetOrCreate(ctx context.Context, key string, createFunc engine.
 	return newEntry, true, nil
 }
 
+func (e *Engine) Snapshot(ctx context.Context, includeTombstones bool) []engine.SnapshotEntry {
+	_ = ctx
+
+	arr := *e.shards.Load()
+	snapshots := make([]engine.SnapshotEntry, 0)
+
+	for _, sh := range arr {
+		sh.mu.RLock()
+		for key, entry := range sh.data {
+			entry.Mu.RLock()
+			if entry.Tombstone && !includeTombstones {
+				entry.Mu.RUnlock()
+				continue
+			}
+
+			state, err := entry.Object.MarshalJSON()
+			if err != nil {
+				slog.Warn("engine.Snapshot: cannot marshal state", "key", key, "err", err)
+				entry.Mu.RUnlock()
+				continue
+			}
+
+			snapshots = append(snapshots, engine.SnapshotEntry{
+				Key:          key,
+				Object:       entry.Object,
+				Tombstone:    entry.Tombstone,
+				SetTimeStamp: entry.SetTimeStamp,
+				State:        state,
+				Hash:         entry.Object.Hash(),
+			})
+			entry.Mu.RUnlock()
+		}
+		sh.mu.RUnlock()
+	}
+
+	return snapshots
+}
+
+func (e *Engine) Stats(ctx context.Context) engine.Stats {
+	_ = ctx
+
+	arr := *e.shards.Load()
+	stats := engine.Stats{
+		Shards: len(arr),
+	}
+
+	for _, sh := range arr {
+		sh.mu.RLock()
+		stats.Keys += len(sh.data)
+		for _, entry := range sh.data {
+			entry.Mu.RLock()
+			if entry.Tombstone {
+				stats.Tombstones++
+			}
+			entry.Mu.RUnlock()
+		}
+		sh.mu.RUnlock()
+	}
+
+	return stats
+}
+
 func (e *Engine) runGC(ctx context.Context) {
 	heap := newExpiryHeap()
 	ticker := time.NewTicker(100 * time.Millisecond)

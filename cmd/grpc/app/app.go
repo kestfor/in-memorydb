@@ -94,6 +94,12 @@ func Run(ctx context.Context, configPath *string) {
 	lume.RegisterLumeServer(grpcServer, nodeServer)
 	wireHealthCheck(grpcServer)
 
+	httpServer, err := startUIServer(ctx, &cfg, nodeServer)
+	if err != nil {
+		slog.Error("app.Run: ui http server start error", "err", err)
+		os.Exit(1)
+	}
+
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
 			slog.Error("app.Run: grpc server start error", "err", err)
@@ -110,6 +116,9 @@ func Run(ctx context.Context, configPath *string) {
 	slog.Info("app.Run: shutting down node server")
 
 	grpcServer.GracefulStop()
+	if httpServer != nil {
+		_ = httpServer.Shutdown(context.Background())
+	}
 	_ = nodeServer.GracefulStopStorage()
 
 }

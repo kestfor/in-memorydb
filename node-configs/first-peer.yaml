@@ -2,6 +2,10 @@ node:
   id: "first"
   bind_address: "0.0.0.0"
   port: 8080
+ui:
+  enabled: true
+  bind_address: "0.0.0.0"
+  port: 8090
 gossip:
   bind_address: "0.0.0.0"
   port: 8081

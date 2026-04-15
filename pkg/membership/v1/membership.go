@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/binary"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/kestfor/in-memorydb/pkg/membership"
@@ -109,4 +110,39 @@ func (m *memImpl) Members() []types.Node {
 		converted[i] = &node{n}
 	}
 	return converted
+}
+
+func (m *memImpl) Snapshot() []membership.MemberSnapshot {
+	nodes := m.list.Members()
+	result := make([]membership.MemberSnapshot, 0, len(nodes))
+	localID := m.list.LocalNode().Name
+
+	for _, n := range nodes {
+		wrapped := &node{n}
+		result = append(result, membership.MemberSnapshot{
+			ID:             wrapped.ID(),
+			Status:         memberStatus(n.State),
+			IsLocal:        wrapped.ID() == localID,
+			MembershipAddr: wrapped.MembershipAddr().String(),
+			GossipAddr:     wrapped.GossipAddr().String(),
+			ExternalAddr:   wrapped.ExternalAddr().String(),
+		})
+	}
+
+	return result
+}
+
+func memberStatus(state memberlist.NodeStateType) string {
+	switch state {
+	case memberlist.StateAlive:
+		return "alive"
+	case memberlist.StateSuspect:
+		return "suspect"
+	case memberlist.StateDead:
+		return "dead"
+	case memberlist.StateLeft:
+		return "left"
+	default:
+		return "unknown:" + strconv.Itoa(int(state))
+	}
 }

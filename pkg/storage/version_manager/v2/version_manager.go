@@ -10,6 +10,7 @@ import (
 
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
+	vmiface "github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1/entry_updater"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v2/history"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
@@ -72,6 +73,16 @@ func (vm *VersionManager) UpdateLocal(ctx context.Context, updates ...types.Upda
 		updates[i].Seq = vm.seq.Add(1)
 	}
 	return updates
+}
+
+// Advance is kept for compatibility with existing tests and callers.
+func (vm *VersionManager) Advance(_ string) uint64 {
+	return vm.seq.Add(1)
+}
+
+// Update is kept for compatibility with existing tests and callers.
+func (vm *VersionManager) Update(ctx context.Context, updates ...types.Update) []types.Update {
+	return vm.UpdateRemote(ctx, updates...)
 }
 
 // Update применяет набор updates от remote нод
@@ -331,16 +342,20 @@ func (vm *VersionManager) RestoreSeq(nodeID string) {
 }
 
 // Stats возвращает статистику VersionManager
-type Stats struct {
-	CurrentSequence uint64
-	VectorClock     types.VectorClock
-}
-
-func (vm *VersionManager) Stats() Stats {
-	return Stats{
-		CurrentSequence: vm.seq.Load(),
-		VectorClock:     vm.VectorClockContiguous(),
+func (vm *VersionManager) Stats() vmiface.Stats {
+	stats := vmiface.Stats{
+		CurrentSequence:       vm.seq.Load(),
+		VectorClockContiguous: vm.VectorClockContiguous(),
+		VectorClockMax:        vm.VectorClockMax(),
+		NumBuckets:            vm.numBuckets,
 	}
+
+	vm.keyVersions.Range(func(_ string, _ *keyMeta) bool {
+		stats.TrackedKeys++
+		return true
+	})
+
+	return stats
 }
 
 // KeyDigests returns a map of key → hash for keys in the specified bucket

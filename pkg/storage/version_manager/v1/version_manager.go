@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
+	vmiface "github.com/kestfor/in-memorydb/pkg/storage/version_manager"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1/entry_updater"
 	"github.com/kestfor/in-memorydb/pkg/storage/version_manager/v1/history"
 	"github.com/kestfor/in-memorydb/pkg/storage/wal"
@@ -16,12 +17,6 @@ import (
 )
 
 // Stats возвращает статистику VersionManager
-type Stats struct {
-	CurrentSequence uint64
-	VectorClock     types.VectorClock
-	HistorySize     int
-}
-
 type VersionManager struct {
 	nodeID  string           // unique ID of current node
 	seq     atomic.Uint64    // global sequence number of updates for current node
@@ -360,13 +355,14 @@ func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error
 	return err
 }
 
-func (vm *VersionManager) Stats() Stats {
+func (vm *VersionManager) Stats() vmiface.Stats {
 	vm.mu.RLock()
 	defer vm.mu.RUnlock()
 
-	return Stats{
-		CurrentSequence: vm.seq.Load(),
-		VectorClock:     vm.VectorClockContiguous(),
+	return vmiface.Stats{
+		CurrentSequence:       vm.seq.Load(),
+		VectorClockContiguous: vm.VectorClockContiguous(),
+		VectorClockMax:        vm.VectorClockMax(),
 		// HistorySize можно добавить в history если нужно
 	}
 }

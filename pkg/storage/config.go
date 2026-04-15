@@ -12,6 +12,7 @@ import (
 
 type Config struct {
 	Node        NodeConfig                `yaml:"node"`
+	UI          UIConfig                  `yaml:"ui"`
 	Gossip      gossip.Config             `yaml:"gossip"`
 	Membership  MembershipConfig          `yaml:"membership"`
 	Seeds       []string                  `yaml:"seeds" env:"SEEDS"`
@@ -33,6 +34,12 @@ type NodeConfig struct {
 	BindAddress          string `yaml:"bind_address" env:"NODE_BIND_ADDRESS" required:"true" default:"0.0.0.0"`
 	Port                 uint16 `yaml:"port" env:"NODE_PORT" required:"true" default:"8080"`
 	MaxConcurrentStreams uint32 `yaml:"max_concurrent_streams" env:"NODE_MAX_CONCURRENT_STREAMS" default:"2048"`
+}
+
+type UIConfig struct {
+	Enabled     bool   `yaml:"enabled" env:"UI_ENABLED" default:"true"`
+	BindAddress string `yaml:"bind_address" env:"UI_BIND_ADDRESS" default:"0.0.0.0"`
+	Port        uint16 `yaml:"port" env:"UI_PORT" default:"8090"`
 }
 
 type MembershipConfig struct {
