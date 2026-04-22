@@ -2,7 +2,13 @@
 #   1-node  — 1 узел  (baseline):  docker compose --profile 1-node up
 #   2-node  — 2 узла:              docker compose --profile 2-node up
 #   3-node  — 3 узла:              docker compose --profile 3-node up
+#   4-node  — 4 узла:              docker compose --profile 4-node up
 #   5-node  — 5 узлов:             docker compose --profile 5-node up
+#   6-node  — 6 узлов:
+#  7-node  — 7 узлов:
+#  8-node  — 8 узлов:
+#  9-node  — 9 узлов:
+# 10-node — 10 узлов:
 
 services:
   node1:
@@ -10,7 +16,7 @@ services:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node1
-    profiles: [1-node, 2-node, 3-node, 5-node]
+    profiles: [ 1-node, 2-node, 3-node, 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
     ports:
       - "8081:8080"
     environment:
@@ -21,7 +27,7 @@ services:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node2
-    profiles: [2-node, 3-node, 5-node]
+    profiles: [ 2-node, 3-node, 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
     ports:
       - "8082:8080"
     environment:
@@ -36,7 +42,7 @@ services:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node3
-    profiles: [3-node, 5-node]
+    profiles: [ 3-node, 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
     ports:
       - "8083:8080"
     environment:
@@ -51,7 +57,7 @@ services:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node4
-    profiles: [5-node]
+    profiles: [ 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
     ports:
       - "8084:8080"
     environment:
@@ -66,11 +72,86 @@ services:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node5
-    profiles: [5-node]
+    profiles: [ 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
     ports:
       - "8085:8080"
     environment:
       NODE_ID: node5
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node6:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node6
+    profiles: [ 6-node, 7-node, 8-node, 9-node, 10-node ]
+    ports:
+      - "8086:8080"
+    environment:
+      NODE_ID: node6
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node7:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node7
+    profiles: [ 7-node, 8-node, 9-node, 10-node ]
+    ports:
+      - "8087:8080"
+    environment:
+      NODE_ID: node7
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node8:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node8
+    profiles: [ 8-node, 9-node, 10-node ]
+    ports:
+      - "8088:8080"
+    environment:
+      NODE_ID: node8
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node9:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node9
+    profiles: [ 9-node, 10-node ]
+    ports:
+      - "8089:8080"
+    environment:
+      NODE_ID: node9
+      SEEDS: node1
+    depends_on:
+      node1:
+        condition: service_healthy
+
+  node10:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node10
+    profiles: [ 10-node ]
+    ports:
+      - "8090:8080"
+    environment:
+      NODE_ID: node10
       SEEDS: node1
     depends_on:
       node1:

@@ -8,9 +8,9 @@
 
 set -euo pipefail
 
-CONN="${1:?Usage: $0 <conn> <rpc> [duration]}"
-RPC="${2:?}"
-DURATION="${3:-60}"
+CONN="${1:-1}"
+RPC="${2:-75}"
+DURATION="${3:-30}"
 WARMUP=10
 PORT=8081
 LUME_BENCH="${LUME_BENCH:-lume-bench}"
@@ -28,7 +28,7 @@ echo "=== gossip-overhead sweep: c=$CONN r=$RPC duration=${DURATION}s ==="
 
 trap 'docker-compose -f "$COMPOSE" -p "$PROJECT" down -v 2>/dev/null || true' EXIT
 
-for nodes in 1 2 3 5; do
+for nodes in 1 2 3 4 5 6 7 8 9 10; do
     profile="${nodes}-node"
     printf "\n--- %d-node cluster ---\n" "$nodes"
 
