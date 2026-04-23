@@ -1,14 +1,105 @@
+# Auto-generated for 100 node(s)
 # Профили:
-#   1-node  — 1 узел  (baseline):  docker compose --profile 1-node up
-#   2-node  — 2 узла:              docker compose --profile 2-node up
-#   3-node  — 3 узла:              docker compose --profile 3-node up
-#   4-node  — 4 узла:              docker compose --profile 4-node up
-#   5-node  — 5 узлов:             docker compose --profile 5-node up
-#   6-node  — 6 узлов:
-#  7-node  — 7 узлов:
-#  8-node  — 8 узлов:
-#  9-node  — 9 узлов:
-# 10-node — 10 узлов:
+#   1-node:  docker compose --profile 1-node up
+#   2-node:  docker compose --profile 2-node up
+#   3-node:  docker compose --profile 3-node up
+#   4-node:  docker compose --profile 4-node up
+#   5-node:  docker compose --profile 5-node up
+#   6-node:  docker compose --profile 6-node up
+#   7-node:  docker compose --profile 7-node up
+#   8-node:  docker compose --profile 8-node up
+#   9-node:  docker compose --profile 9-node up
+#   10-node:  docker compose --profile 10-node up
+#   11-node:  docker compose --profile 11-node up
+#   12-node:  docker compose --profile 12-node up
+#   13-node:  docker compose --profile 13-node up
+#   14-node:  docker compose --profile 14-node up
+#   15-node:  docker compose --profile 15-node up
+#   16-node:  docker compose --profile 16-node up
+#   17-node:  docker compose --profile 17-node up
+#   18-node:  docker compose --profile 18-node up
+#   19-node:  docker compose --profile 19-node up
+#   20-node:  docker compose --profile 20-node up
+#   21-node:  docker compose --profile 21-node up
+#   22-node:  docker compose --profile 22-node up
+#   23-node:  docker compose --profile 23-node up
+#   24-node:  docker compose --profile 24-node up
+#   25-node:  docker compose --profile 25-node up
+#   26-node:  docker compose --profile 26-node up
+#   27-node:  docker compose --profile 27-node up
+#   28-node:  docker compose --profile 28-node up
+#   29-node:  docker compose --profile 29-node up
+#   30-node:  docker compose --profile 30-node up
+#   31-node:  docker compose --profile 31-node up
+#   32-node:  docker compose --profile 32-node up
+#   33-node:  docker compose --profile 33-node up
+#   34-node:  docker compose --profile 34-node up
+#   35-node:  docker compose --profile 35-node up
+#   36-node:  docker compose --profile 36-node up
+#   37-node:  docker compose --profile 37-node up
+#   38-node:  docker compose --profile 38-node up
+#   39-node:  docker compose --profile 39-node up
+#   40-node:  docker compose --profile 40-node up
+#   41-node:  docker compose --profile 41-node up
+#   42-node:  docker compose --profile 42-node up
+#   43-node:  docker compose --profile 43-node up
+#   44-node:  docker compose --profile 44-node up
+#   45-node:  docker compose --profile 45-node up
+#   46-node:  docker compose --profile 46-node up
+#   47-node:  docker compose --profile 47-node up
+#   48-node:  docker compose --profile 48-node up
+#   49-node:  docker compose --profile 49-node up
+#   50-node:  docker compose --profile 50-node up
+#   51-node:  docker compose --profile 51-node up
+#   52-node:  docker compose --profile 52-node up
+#   53-node:  docker compose --profile 53-node up
+#   54-node:  docker compose --profile 54-node up
+#   55-node:  docker compose --profile 55-node up
+#   56-node:  docker compose --profile 56-node up
+#   57-node:  docker compose --profile 57-node up
+#   58-node:  docker compose --profile 58-node up
+#   59-node:  docker compose --profile 59-node up
+#   60-node:  docker compose --profile 60-node up
+#   61-node:  docker compose --profile 61-node up
+#   62-node:  docker compose --profile 62-node up
+#   63-node:  docker compose --profile 63-node up
+#   64-node:  docker compose --profile 64-node up
+#   65-node:  docker compose --profile 65-node up
+#   66-node:  docker compose --profile 66-node up
+#   67-node:  docker compose --profile 67-node up
+#   68-node:  docker compose --profile 68-node up
+#   69-node:  docker compose --profile 69-node up
+#   70-node:  docker compose --profile 70-node up
+#   71-node:  docker compose --profile 71-node up
+#   72-node:  docker compose --profile 72-node up
+#   73-node:  docker compose --profile 73-node up
+#   74-node:  docker compose --profile 74-node up
+#   75-node:  docker compose --profile 75-node up
+#   76-node:  docker compose --profile 76-node up
+#   77-node:  docker compose --profile 77-node up
+#   78-node:  docker compose --profile 78-node up
+#   79-node:  docker compose --profile 79-node up
+#   80-node:  docker compose --profile 80-node up
+#   81-node:  docker compose --profile 81-node up
+#   82-node:  docker compose --profile 82-node up
+#   83-node:  docker compose --profile 83-node up
+#   84-node:  docker compose --profile 84-node up
+#   85-node:  docker compose --profile 85-node up
+#   86-node:  docker compose --profile 86-node up
+#   87-node:  docker compose --profile 87-node up
+#   88-node:  docker compose --profile 88-node up
+#   89-node:  docker compose --profile 89-node up
+#   90-node:  docker compose --profile 90-node up
+#   91-node:  docker compose --profile 91-node up
+#   92-node:  docker compose --profile 92-node up
+#   93-node:  docker compose --profile 93-node up
+#   94-node:  docker compose --profile 94-node up
+#   95-node:  docker compose --profile 95-node up
+#   96-node:  docker compose --profile 96-node up
+#   97-node:  docker compose --profile 97-node up
+#   98-node:  docker compose --profile 98-node up
+#   99-node:  docker compose --profile 99-node up
+#   100-node:  docker compose --profile 100-node up
 
 services:
   node1:
@@ -16,143 +107,1494 @@ services:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node1
-    profiles: [ 1-node, 2-node, 3-node, 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
+    profiles: [ 1-node,  2-node,  3-node,  4-node,  5-node,  6-node,  7-node,  8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8081:8080"
     environment:
       NODE_ID: node1
-
+      LOG_LEVEL: "DEBUG"
   node2:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node2
-    profiles: [ 2-node, 3-node, 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
+    profiles: [ 2-node,  3-node,  4-node,  5-node,  6-node,  7-node,  8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8082:8080"
     environment:
       NODE_ID: node2
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node3:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node3
-    profiles: [ 3-node, 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
+    profiles: [ 3-node,  4-node,  5-node,  6-node,  7-node,  8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8083:8080"
     environment:
       NODE_ID: node3
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node4:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node4
-    profiles: [ 4-node, 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
+    profiles: [ 4-node,  5-node,  6-node,  7-node,  8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8084:8080"
     environment:
       NODE_ID: node4
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node5:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node5
-    profiles: [ 5-node, 6-node, 7-node, 8-node, 9-node, 10-node ]
+    profiles: [ 5-node,  6-node,  7-node,  8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8085:8080"
     environment:
       NODE_ID: node5
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node6:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node6
-    profiles: [ 6-node, 7-node, 8-node, 9-node, 10-node ]
+    profiles: [ 6-node,  7-node,  8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8086:8080"
     environment:
       NODE_ID: node6
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node7:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node7
-    profiles: [ 7-node, 8-node, 9-node, 10-node ]
+    profiles: [ 7-node,  8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8087:8080"
     environment:
       NODE_ID: node7
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node8:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node8
-    profiles: [ 8-node, 9-node, 10-node ]
+    profiles: [ 8-node,  9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8088:8080"
     environment:
       NODE_ID: node8
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node9:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node9
-    profiles: [ 9-node, 10-node ]
+    profiles: [ 9-node,  10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8089:8080"
     environment:
       NODE_ID: node9
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy
-
   node10:
     extends:
       file: docker-compose.base.yaml
       service: base-node
     container_name: lume-node10
-    profiles: [ 10-node ]
+    profiles: [ 10-node,  11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
     ports:
       - "8090:8080"
     environment:
       NODE_ID: node10
       SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node11:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node11
+    profiles: [ 11-node,  12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8091:8080"
+    environment:
+      NODE_ID: node11
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node12:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node12
+    profiles: [ 12-node,  13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8092:8080"
+    environment:
+      NODE_ID: node12
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node13:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node13
+    profiles: [ 13-node,  14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8093:8080"
+    environment:
+      NODE_ID: node13
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node14:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node14
+    profiles: [ 14-node,  15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8094:8080"
+    environment:
+      NODE_ID: node14
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node15:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node15
+    profiles: [ 15-node,  16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8095:8080"
+    environment:
+      NODE_ID: node15
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node16:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node16
+    profiles: [ 16-node,  17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8096:8080"
+    environment:
+      NODE_ID: node16
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node17:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node17
+    profiles: [ 17-node,  18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8097:8080"
+    environment:
+      NODE_ID: node17
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node18:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node18
+    profiles: [ 18-node,  19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8098:8080"
+    environment:
+      NODE_ID: node18
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node19:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node19
+    profiles: [ 19-node,  20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8099:8080"
+    environment:
+      NODE_ID: node19
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node20:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node20
+    profiles: [ 20-node,  21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8100:8080"
+    environment:
+      NODE_ID: node20
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node21:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node21
+    profiles: [ 21-node,  22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8101:8080"
+    environment:
+      NODE_ID: node21
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node22:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node22
+    profiles: [ 22-node,  23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8102:8080"
+    environment:
+      NODE_ID: node22
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node23:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node23
+    profiles: [ 23-node,  24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8103:8080"
+    environment:
+      NODE_ID: node23
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node24:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node24
+    profiles: [ 24-node,  25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8104:8080"
+    environment:
+      NODE_ID: node24
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node25:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node25
+    profiles: [ 25-node,  26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8105:8080"
+    environment:
+      NODE_ID: node25
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node26:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node26
+    profiles: [ 26-node,  27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8106:8080"
+    environment:
+      NODE_ID: node26
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node27:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node27
+    profiles: [ 27-node,  28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8107:8080"
+    environment:
+      NODE_ID: node27
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node28:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node28
+    profiles: [ 28-node,  29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8108:8080"
+    environment:
+      NODE_ID: node28
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node29:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node29
+    profiles: [ 29-node,  30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8109:8080"
+    environment:
+      NODE_ID: node29
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node30:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node30
+    profiles: [ 30-node,  31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8110:8080"
+    environment:
+      NODE_ID: node30
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node31:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node31
+    profiles: [ 31-node,  32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8111:8080"
+    environment:
+      NODE_ID: node31
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node32:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node32
+    profiles: [ 32-node,  33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8112:8080"
+    environment:
+      NODE_ID: node32
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node33:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node33
+    profiles: [ 33-node,  34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8113:8080"
+    environment:
+      NODE_ID: node33
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node34:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node34
+    profiles: [ 34-node,  35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8114:8080"
+    environment:
+      NODE_ID: node34
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node35:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node35
+    profiles: [ 35-node,  36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8115:8080"
+    environment:
+      NODE_ID: node35
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node36:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node36
+    profiles: [ 36-node,  37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8116:8080"
+    environment:
+      NODE_ID: node36
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node37:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node37
+    profiles: [ 37-node,  38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8117:8080"
+    environment:
+      NODE_ID: node37
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node38:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node38
+    profiles: [ 38-node,  39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8118:8080"
+    environment:
+      NODE_ID: node38
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node39:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node39
+    profiles: [ 39-node,  40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8119:8080"
+    environment:
+      NODE_ID: node39
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node40:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node40
+    profiles: [ 40-node,  41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8120:8080"
+    environment:
+      NODE_ID: node40
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node41:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node41
+    profiles: [ 41-node,  42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8121:8080"
+    environment:
+      NODE_ID: node41
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node42:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node42
+    profiles: [ 42-node,  43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8122:8080"
+    environment:
+      NODE_ID: node42
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node43:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node43
+    profiles: [ 43-node,  44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8123:8080"
+    environment:
+      NODE_ID: node43
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node44:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node44
+    profiles: [ 44-node,  45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8124:8080"
+    environment:
+      NODE_ID: node44
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node45:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node45
+    profiles: [ 45-node,  46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8125:8080"
+    environment:
+      NODE_ID: node45
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node46:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node46
+    profiles: [ 46-node,  47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8126:8080"
+    environment:
+      NODE_ID: node46
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node47:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node47
+    profiles: [ 47-node,  48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8127:8080"
+    environment:
+      NODE_ID: node47
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node48:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node48
+    profiles: [ 48-node,  49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8128:8080"
+    environment:
+      NODE_ID: node48
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node49:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node49
+    profiles: [ 49-node,  50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8129:8080"
+    environment:
+      NODE_ID: node49
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node50:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node50
+    profiles: [ 50-node,  51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8130:8080"
+    environment:
+      NODE_ID: node50
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node51:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node51
+    profiles: [ 51-node,  52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8131:8080"
+    environment:
+      NODE_ID: node51
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node52:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node52
+    profiles: [ 52-node,  53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8132:8080"
+    environment:
+      NODE_ID: node52
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node53:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node53
+    profiles: [ 53-node,  54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8133:8080"
+    environment:
+      NODE_ID: node53
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node54:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node54
+    profiles: [ 54-node,  55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8134:8080"
+    environment:
+      NODE_ID: node54
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node55:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node55
+    profiles: [ 55-node,  56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8135:8080"
+    environment:
+      NODE_ID: node55
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node56:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node56
+    profiles: [ 56-node,  57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8136:8080"
+    environment:
+      NODE_ID: node56
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node57:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node57
+    profiles: [ 57-node,  58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8137:8080"
+    environment:
+      NODE_ID: node57
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node58:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node58
+    profiles: [ 58-node,  59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8138:8080"
+    environment:
+      NODE_ID: node58
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node59:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node59
+    profiles: [ 59-node,  60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8139:8080"
+    environment:
+      NODE_ID: node59
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node60:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node60
+    profiles: [ 60-node,  61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8140:8080"
+    environment:
+      NODE_ID: node60
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node61:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node61
+    profiles: [ 61-node,  62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8141:8080"
+    environment:
+      NODE_ID: node61
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node62:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node62
+    profiles: [ 62-node,  63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8142:8080"
+    environment:
+      NODE_ID: node62
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node63:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node63
+    profiles: [ 63-node,  64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8143:8080"
+    environment:
+      NODE_ID: node63
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node64:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node64
+    profiles: [ 64-node,  65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8144:8080"
+    environment:
+      NODE_ID: node64
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node65:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node65
+    profiles: [ 65-node,  66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8145:8080"
+    environment:
+      NODE_ID: node65
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node66:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node66
+    profiles: [ 66-node,  67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8146:8080"
+    environment:
+      NODE_ID: node66
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node67:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node67
+    profiles: [ 67-node,  68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8147:8080"
+    environment:
+      NODE_ID: node67
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node68:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node68
+    profiles: [ 68-node,  69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8148:8080"
+    environment:
+      NODE_ID: node68
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node69:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node69
+    profiles: [ 69-node,  70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8149:8080"
+    environment:
+      NODE_ID: node69
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node70:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node70
+    profiles: [ 70-node,  71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8150:8080"
+    environment:
+      NODE_ID: node70
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node71:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node71
+    profiles: [ 71-node,  72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8151:8080"
+    environment:
+      NODE_ID: node71
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node72:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node72
+    profiles: [ 72-node,  73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8152:8080"
+    environment:
+      NODE_ID: node72
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node73:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node73
+    profiles: [ 73-node,  74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8153:8080"
+    environment:
+      NODE_ID: node73
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node74:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node74
+    profiles: [ 74-node,  75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8154:8080"
+    environment:
+      NODE_ID: node74
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node75:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node75
+    profiles: [ 75-node,  76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8155:8080"
+    environment:
+      NODE_ID: node75
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node76:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node76
+    profiles: [ 76-node,  77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8156:8080"
+    environment:
+      NODE_ID: node76
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node77:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node77
+    profiles: [ 77-node,  78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8157:8080"
+    environment:
+      NODE_ID: node77
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node78:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node78
+    profiles: [ 78-node,  79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8158:8080"
+    environment:
+      NODE_ID: node78
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node79:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node79
+    profiles: [ 79-node,  80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8159:8080"
+    environment:
+      NODE_ID: node79
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node80:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node80
+    profiles: [ 80-node,  81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8160:8080"
+    environment:
+      NODE_ID: node80
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node81:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node81
+    profiles: [ 81-node,  82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8161:8080"
+    environment:
+      NODE_ID: node81
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node82:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node82
+    profiles: [ 82-node,  83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8162:8080"
+    environment:
+      NODE_ID: node82
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node83:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node83
+    profiles: [ 83-node,  84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8163:8080"
+    environment:
+      NODE_ID: node83
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node84:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node84
+    profiles: [ 84-node,  85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8164:8080"
+    environment:
+      NODE_ID: node84
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node85:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node85
+    profiles: [ 85-node,  86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8165:8080"
+    environment:
+      NODE_ID: node85
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node86:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node86
+    profiles: [ 86-node,  87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8166:8080"
+    environment:
+      NODE_ID: node86
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node87:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node87
+    profiles: [ 87-node,  88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8167:8080"
+    environment:
+      NODE_ID: node87
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node88:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node88
+    profiles: [ 88-node,  89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8168:8080"
+    environment:
+      NODE_ID: node88
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node89:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node89
+    profiles: [ 89-node,  90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8169:8080"
+    environment:
+      NODE_ID: node89
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node90:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node90
+    profiles: [ 90-node,  91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8170:8080"
+    environment:
+      NODE_ID: node90
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node91:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node91
+    profiles: [ 91-node,  92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8171:8080"
+    environment:
+      NODE_ID: node91
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node92:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node92
+    profiles: [ 92-node,  93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8172:8080"
+    environment:
+      NODE_ID: node92
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node93:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node93
+    profiles: [ 93-node,  94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8173:8080"
+    environment:
+      NODE_ID: node93
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node94:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node94
+    profiles: [ 94-node,  95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8174:8080"
+    environment:
+      NODE_ID: node94
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node95:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node95
+    profiles: [ 95-node,  96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8175:8080"
+    environment:
+      NODE_ID: node95
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node96:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node96
+    profiles: [ 96-node,  97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8176:8080"
+    environment:
+      NODE_ID: node96
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node97:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node97
+    profiles: [ 97-node,  98-node,  99-node,  100-node ]
+    ports:
+      - "8177:8080"
+    environment:
+      NODE_ID: node97
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node98:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node98
+    profiles: [ 98-node,  99-node,  100-node ]
+    ports:
+      - "8178:8080"
+    environment:
+      NODE_ID: node98
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node99:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node99
+    profiles: [ 99-node,  100-node ]
+    ports:
+      - "8179:8080"
+    environment:
+      NODE_ID: node99
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      node1:
+        condition: service_healthy
+  node100:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node100
+    profiles: [ 100-node ]
+    ports:
+      - "8180:8080"
+    environment:
+      NODE_ID: node100
+      SEEDS: node1
+      LOG_LEVEL: "DEBUG"
     depends_on:
       node1:
         condition: service_healthy

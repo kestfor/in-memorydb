@@ -21,18 +21,16 @@ import "math"
 //}
 
 func getTTLNumForAsync(clusterSize int, fanout int, antiEntropyIntervalSec int) uint8 {
+	if clusterSize <= 1 {
+		return 1
+	}
 	n := float64(clusterSize)
 	f := float64(fanout)
 
-	// Базовое число хопов (как в синхронной модели)
+	// Минимальное число хопов для покрытия кластера
 	baseHops := math.Ceil(math.Log(n) / math.Log(f))
 
-	// Коррекция на асинхронность: +50% для safety
-	asyncMultiplier := 1.5
+	ttl := uint8(baseHops * 1.5)
 
-	// Коррекция на длинный интервал anti-entropy
-	// Если интервал > 1 сек, увеличиваем TTL
-	intervalPenalty := math.Max(1.0, float64(antiEntropyIntervalSec)/2.0)
-	ttl := uint16(math.Ceil(baseHops * asyncMultiplier * intervalPenalty))
-	return uint8(min(math.MaxUint8, ttl))
+	return ttl
 }

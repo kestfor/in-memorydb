@@ -18,8 +18,8 @@ now_ms() {
 set -euo pipefail
 
 KEYS="${1:-100}"
-REPEATS="${2:-5}"
-POLL_S="${3:-1}"
+REPEATS="${2:-10}"
+POLL_S="${3:-0.3}"
 TIMEOUT_S="${4:-120}"
 TIMEOUT_MS=$(( TIMEOUT_S * 1000 ))
 
@@ -38,13 +38,14 @@ echo "=== convergence test: keys=$KEYS repeats=$REPEATS poll=${POLL_S}s timeout=
 
 trap 'docker compose -f "$COMPOSE" -p "$PROJECT" down -v 2>/dev/null || true' EXIT
 
-for nodes in 2 3 4 5 6 7 8 9 10; do
+for nodes in 5 7 10 15 20 25; do
     profile="${nodes}-node"
     printf "\n--- %d-node cluster ---\n" "$nodes"
 
     # Поднимаем кластер один раз для всех повторов
     docker compose -f "$COMPOSE" --profile "$profile" -p "$PROJECT" up -d --build --wait
     echo "    cluster ready"
+    sleep 3
 
     for run in $(seq 1 "$REPEATS"); do
         # Уникальный префикс ключей для каждого прогона,
@@ -53,7 +54,7 @@ for nodes in 2 3 4 5 6 7 8 9 10; do
 
         printf "    [run %d/%d] writing %d keys... " "$run" "$REPEATS" "$KEYS"
         for i in $(seq 0 $(( KEYS - 1 ))); do
-            "$LUME_CLI" -s "localhost:8081" set "${KEY_PREFIX}${i}" "value_${i}" > /dev/null 2>&1
+            "$LUME_CLI" -s "localhost:8081" set "${KEY_PREFIX}${i}" ${i} > /dev/null 2>&1
         done
         WRITE_DONE=$(now_ms)
         echo "done. polling..."
