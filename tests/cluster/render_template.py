@@ -1,89 +1,117 @@
-#!/usr/bin/env python3
-"""
-render_compose.py — рендерит docker-compose.yaml из Jinja2-шаблона.
+#!/usr/bin/env bash
+# convergence.sh — тест: время конвергенции кластера от 2 до 10 нод.
+# Запуск: ./convergence.sh [keys] [repeats] [poll_interval_s] [timeout_s]
+# Пример: ./convergence.sh 100 5 1 120
+#
+# Для каждого размера кластера (2..10) повторяет замер REPEATS раз:
+# 1. Поднимаем кластер через docker-compose.
+# 2. Пишем KEYS ключей на node1 (порт 8081) через lume-cli.
+# 3. Опрашиваем все остальные ноды (node2..nodeN) через lume-cli get.
+# 4. Фиксируем время, когда все ноды видят все ключи (100% конвергенция).
+# 5. Повторяем шаги 2-4 ещё REPEATS-1 раз (кластер остаётся поднятым).
+# 6. Останавливаем кластер.
 
-Использование:
-  python3 render_compose.py --nodes 10
-  python3 render_compose.py --nodes 5 --env "WAL_ENABLED=false" "SYNC_INTERVAL=5s"
-  python3 render_compose.py --nodes 3 --env "ANTI_ENTROPY_INTERVAL=10s" --output my-compose.yaml
-"""
+now_ms() {
+    python3 -c 'import time; print(int(time.time() * 1000))'
+}
 
-import argparse
-import sys
-from pathlib import Path
+set -euo pipefail
 
-try:
-    from jinja2 import Environment, FileSystemLoader
-except ImportError:
-    print("jinja2 не установлен. Установите: pip install jinja2", file=sys.stderr)
-    sys.exit(1)
+KEYS="${1:-100}"
+REPEATS="${2:-5}"
+POLL_S="${3:-1}"
+TIMEOUT_S="${4:-120}"
+TIMEOUT_MS=$(( TIMEOUT_S * 1000 ))
 
+LUME_CLI="${LUME_CLI:-lume-cli}"
+CLUSTER_DIR="$(dirname "$0")/../../cluster"
+RESULTS_DIR="$(dirname "$0")/../results"
+mkdir -p "$RESULTS_DIR"
 
-def parse_env(env_args: list[str]) -> dict[str, str]:
-    """Парсит список 'KEY=VALUE' в dict."""
-    result = {}
-    for item in env_args:
-        for pair in item.split(","):
-            pair = pair.strip()
-            if not pair:
-                continue
-            if "=" not in pair:
-                print(f"Ошибка: некорректный формат '{pair}', ожидается KEY=VALUE", file=sys.stderr)
-                sys.exit(1)
-            key, value = pair.split("=", 1)
-            result[key.strip()] = value.strip()
-    return result
+COMPOSE="$CLUSTER_DIR/docker-compose.yaml"
+PROJECT="lume_convergence"
 
+CSV="$RESULTS_DIR/convergence_$(date +%Y%m%d_%H%M%S).csv"
+echo "nodes,keys,run,convergence_ms" > "$CSV"
 
-def main():
-    parser = argparse.ArgumentParser(description="Рендер docker-compose.yaml из Jinja2-шаблона")
-    parser.add_argument("-n", "--nodes", type=int, required=True, help="Количество нод (1..N)")
-    parser.add_argument(
-        "-e", "--env", nargs="*", default=[],
-        help='Доп. переменные окружения для всех нод: KEY=VALUE (через пробел или запятую)'
-    )
-    parser.add_argument(
-        "-t", "--template", type=str, default=None,
-        help="Путь к шаблону (по умолчанию: docker-compose.yaml.j2 рядом со скриптом)"
-    )
-    parser.add_argument(
-        "-o", "--output", type=str, default="docker-compose.yaml",
-        help="Путь для выходного файла (по умолчанию: docker-compose.yaml)"
-    )
-    args = parser.parse_args()
+echo "=== convergence test: keys=$KEYS repeats=$REPEATS poll=${POLL_S}s timeout=${TIMEOUT_S}s ==="
 
-    if args.nodes < 1:
-        print("Ошибка: --nodes должно быть >= 1", file=sys.stderr)
-        sys.exit(1)
+trap 'docker compose -f "$COMPOSE" -p "$PROJECT" down -v 2>/dev/null || true' EXIT
 
-    extra_env = parse_env(args.env)
+for nodes in 2 3 4 5 6 7 8 9 10; do
+    profile="${nodes}-node"
+    printf "\n--- %d-node cluster ---\n" "$nodes"
 
-    # Определяем путь к шаблону
-    if args.template:
-        template_path = Path(args.template)
-    else:
-        template_path = Path(__file__).parent / "docker-compose.yaml.j2"
+    # Поднимаем кластер один раз для всех повторов
+    docker compose -f "$COMPOSE" --profile "$profile" -p "$PROJECT" up -d --build --wait
+    echo "    cluster ready"
 
-    if not template_path.exists():
-        print(f"Ошибка: шаблон не найден: {template_path}", file=sys.stderr)
-        sys.exit(1)
+    for run in $(seq 1 "$REPEATS"); do
+        # Уникальный префикс ключей для каждого прогона,
+        # чтобы предыдущие ключи не влияли на результат.
+        KEY_PREFIX="r${run}_key_"
 
-    env = Environment(
-        loader=FileSystemLoader(str(template_path.parent)),
-        keep_trailing_newline=True,
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-    template = env.get_template(template_path.name)
+        printf "    [run %d/%d] writing %d keys... " "$run" "$REPEATS" "$KEYS"
+        for i in $(seq 0 $(( KEYS - 1 ))); do
+            "$LUME_CLI" -s "localhost:8081" set "${KEY_PREFIX}${i}" "value_${i}" > /dev/null 2>&1
+        done
+        WRITE_DONE=$(now_ms)
+        echo "done. polling..."
 
-    rendered = template.render(nodes=args.nodes, extra_env=extra_env)
+        # Опрашиваем node2..nodeN, ждём 100% конвергенцию на всех
+        while true; do
+            ALL_OK="true"
 
-    output_path = Path(args.output)
-    output_path.write_text(rendered, encoding="utf-8")
-    print(f"Сгенерирован {output_path} ({args.nodes} нод)", file=sys.stderr)
-    if extra_env:
-        print(f"  доп. env: {extra_env}", file=sys.stderr)
+            for n in $(seq 2 "$nodes"); do
+                port=$(( 8080 + n ))
+                FOUND=0
+                for i in $(seq 0 $(( KEYS - 1 ))); do
+                    result=$("$LUME_CLI" -s "localhost:${port}" get "${KEY_PREFIX}${i}" 2>/dev/null || echo "")
+                    echo "$result" | grep -q 'Key:' && FOUND=$(( FOUND + 1 ))
+                done
 
+                if [ "$FOUND" -lt "$KEYS" ]; then
+                    ALL_OK="false"
+                fi
+            done
 
-if __name__ == "__main__":
-    main()
+            NOW=$(now_ms)
+            ELAPSED=$(( NOW - WRITE_DONE ))
+
+            if [ "$ALL_OK" = "true" ]; then
+                SYNC_MS="$ELAPSED"
+                printf "    [run %d/%d] 100%% convergence in %sms\n" "$run" "$REPEATS" "$SYNC_MS"
+                break
+            fi
+
+            if [ "$ELAPSED" -gt "$TIMEOUT_MS" ]; then
+                SYNC_MS="TIMEOUT"
+                printf "    [run %d/%d] TIMEOUT: convergence not reached in %ss\n" "$run" "$REPEATS" "$TIMEOUT_S"
+                break
+            fi
+
+            # Промежуточный статус — последняя нода
+            SAMPLE_PORT=$(( 8080 + nodes ))
+            SAMPLE_FOUND=0
+            for i in $(seq 0 $(( KEYS - 1 ))); do
+                result=$("$LUME_CLI" -s "localhost:${SAMPLE_PORT}" get "${KEY_PREFIX}${i}" 2>/dev/null || echo "")
+                echo "$result" | grep -q 'Key:' && SAMPLE_FOUND=$(( SAMPLE_FOUND + 1 ))
+            done
+            PCT=$(awk -v f="$SAMPLE_FOUND" -v t="$KEYS" 'BEGIN{printf "%.1f", f*100/t}')
+            printf "              %sms: node%d has %d/%d (%s%%)\n" "$ELAPSED" "$nodes" "$SAMPLE_FOUND" "$KEYS" "$PCT"
+
+            sleep "$POLL_S"
+        done
+
+        echo "$nodes,$KEYS,$run,${SYNC_MS}" >> "$CSV"
+    done
+
+    docker compose -f "$COMPOSE" --profile "$profile" -p "$PROJECT" down -v 2>/dev/null
+    echo "    cluster stopped"
+done
+
+echo ""
+echo "=== Results ==="
+column -t -s',' "$CSV"
+echo ""
+echo "Saved: $CSV"
