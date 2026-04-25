@@ -537,6 +537,63 @@ func TestVersionManager_ComplexConflictResolution2(t *testing.T) {
 	assert.False(t, entry.Tombstone)
 }
 
+// TestVersionManager_DeltaBeforeSet проверяет race condition:
+// lume-cli set key value генерирует два независимых update — Set (seq=1) и Delta (seq=2).
+// Если Delta прилетает первой, handleNewEntry создаёт entry с применённым инкрементом.
+// Когда следом приходит Set с тем же SetTimeStamp, он НЕ должен затирать счётчик.
+func TestVersionManager_DeltaBeforeSet(t *testing.T) {
+	eng := enginev1.NewEngine(
+		enginev1.WithInitialShards(4),
+		enginev1.WithNodeID("test-node"),
+	)
+
+	vm := NewVersionManager("test-node", eng)
+	ctx := context.Background()
+
+	ts := hlc.Timestamp{WallTime: 100, Lamport: 0, ID: "writer"}
+
+	// Delta прилетает первой (seq=2, SetTimeStamp=ts — берётся из entry.SetTimeStamp после Put)
+	counter := crdt.NewPNCounter("writer")
+	deltaPayload := counter.Increment(42)
+
+	deltaUpdate := types.Update{
+		NodeID:       "writer",
+		Seq:          2,
+		Key:          "key:x",
+		Type:         types.UpdateTypeDelta,
+		TimeStamp:    hlc.Timestamp{WallTime: 101, Lamport: 0, ID: "writer"},
+		SetTimeStamp: ts,
+		Payload:      deltaPayload,
+	}
+
+	applied := vm.UpdateRemote(ctx, deltaUpdate)
+	require.Len(t, applied, 1)
+
+	// Убеждаемся, что key создан через handleNewEntry с правильным значением
+	entry, ok := eng.Get(ctx, "key:x")
+	require.True(t, ok)
+	assert.Equal(t, int64(42), entry.Object.Value())
+
+	// Теперь приходит Set с тем же SetTimeStamp (seq=1)
+	setUpdate := types.Update{
+		NodeID:       "writer",
+		Seq:          1,
+		Key:          "key:x",
+		Type:         types.UpdateTypeSet,
+		TimeStamp:    ts,
+		SetTimeStamp: ts,
+		Payload:      &crdt.PNCounterDelta{},
+	}
+
+	applied = vm.UpdateRemote(ctx, setUpdate)
+	require.Len(t, applied, 1)
+
+	// Значение должно остаться 42, а не сброситься в 0
+	entry, ok = eng.Get(ctx, "key:x")
+	require.True(t, ok)
+	assert.Equal(t, int64(42), entry.Object.Value(), "Set с тем же SetTimeStamp не должен затирать Delta")
+}
+
 // Benchmarks
 
 func BenchmarkVersionManager_Advance(b *testing.B) {

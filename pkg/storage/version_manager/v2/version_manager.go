@@ -343,6 +343,18 @@ func (vm *VersionManager) Stats() Stats {
 	}
 }
 
+// Advance увеличивает локальный seq и возвращает новое значение.
+// Алиас для обратной совместимости с тестами.
+func (vm *VersionManager) Advance(_ string) uint64 {
+	return vm.seq.Add(1)
+}
+
+// Update применяет updates от remote нод.
+// Алиас для UpdateRemote для обратной совместимости с тестами.
+func (vm *VersionManager) Update(ctx context.Context, updates ...types.Update) []types.Update {
+	return vm.UpdateRemote(ctx, updates...)
+}
+
 // KeyDigests returns a map of key → hash for keys in the specified bucket
 func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
 	result := make(map[string]uint64)
