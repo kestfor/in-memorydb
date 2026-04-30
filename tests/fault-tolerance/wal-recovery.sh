@@ -69,30 +69,18 @@ write_duration_for() {
 }
 
 # Извлекает elapsed (sec) из ПОСЛЕДНЕГО сообщения "data restored successfully"
-# в логах контейнера, СТРОГО позже отметки $1 (RFC3339, например результат
-# `date -u +%Y-%m-%dT%H:%M:%S`). Это критично: docker logs не очищается между
-# kill+start, и в нём есть лог первого старта (пустой WAL → elapsed=0). Без
-# --since мы бы прочитали его и решили, что восстановление мгновенное.
+# в логах контейнера, СТРОГО позже отметки $1 (RFC3339). --since нужен,
+# потому что docker logs не очищается между kill+start и содержит лог
+# первого старта (пустой WAL → elapsed=0).
 #
-# Лог slog'а — pretty-printed JSON через несколько строк, поэтому awk
-# вырезает целый JSON-блок (от строки '^{' до '^}') после маркера, а jq
-# достаёт поле. Если сообщение ещё не появилось — функция вернёт пустую строку.
+# slog в проде пишет однострочный JSON, поэтому grep по строке + jq
+# достаточно. Берём ПОСЛЕДНЮЮ матчащую строку — на случай нескольких
+# повторных рестартов внутри окна --since.
 extract_elapsed() {
     local since="$1"
     docker logs --since "$since" lume-node1 2>&1 \
-        | sed -E 's/\x1b\[[0-9;]*m//g' \
-        | awk '
-            /data restored successfully/ { armed=1; next }
-            armed && /^\{/             { in_json=1; buf=$0; next }
-            in_json {
-                buf = buf "\n" $0
-                if ($0 ~ /^\}/) {
-                    last = buf
-                    in_json=0; armed=0; buf=""
-                }
-            }
-            END { if (last != "") print last }
-          ' \
+        | grep -F '"msg":"storage.restoreFromWAL: data restored successfully"' \
+        | tail -n 1 \
         | jq -r '."elapsed (sec)" // empty' 2>/dev/null
 }
 
