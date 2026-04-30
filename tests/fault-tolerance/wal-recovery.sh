@@ -11,20 +11,21 @@
 # Soft-limit: ~15 минут.
 #
 # Запуск:
-#   ./wal-recovery.sh [conn] [rpc] [repeats]
-#   ./wal-recovery.sh 10 4 5
+#   ./wal-recovery.sh [conn] [workers] [value_size] [repeats]
+#   ./wal-recovery.sh 4 8 16 5
 
 set -euo pipefail
 
-CONN="${1:-10}"
-RPC="${2:-4}"
-REPEATS="${3:-5}"
+CONN="${1:-4}"
+WORKERS="${2:-8}"
+VALUE_SIZE="${3:-16}"
+REPEATS="${4:-5}"
 
 # Размеры пула ключей. 6 точек в логарифмической шкале от 10k до 3M.
 KEY_SIZES=(10000 30000 100000 300000 1000000 3000000)
 
 CLUSTER_DIR="$(dirname "$0")/../cluster"
-LUME_BENCH="${LUME_BENCH:-lume-bench}"
+LUME_LOAD="${LUME_LOAD:-lume-load}"
 RESULTS_DIR="$(dirname "$0")/results"
 mkdir -p "$RESULTS_DIR"
 
@@ -56,18 +57,6 @@ start_node() {
     docker compose -f "$COMPOSE" -f "$OVERRIDE" --profile "$PROFILE" -p "$PROJECT" up -d --build --wait >/dev/null
 }
 
-# Длительность писательской фазы — масштабируется с числом ключей,
-# чтобы пул успел заполниться (lume-bench пишет в случайном порядке).
-write_duration_for() {
-    local n="$1"
-    if   [ "$n" -le 30000 ];   then echo 10
-    elif [ "$n" -le 100000 ];  then echo 15
-    elif [ "$n" -le 300000 ];  then echo 25
-    elif [ "$n" -le 1000000 ]; then echo 45
-    else                            echo 90
-    fi
-}
-
 # Извлекает elapsed (sec) из ПОСЛЕДНЕГО сообщения "data restored successfully"
 # в логах контейнера, СТРОГО позже отметки $1 (RFC3339). --since нужен,
 # потому что docker logs не очищается между kill+start и содержит лог
@@ -95,15 +84,14 @@ median() {
 }
 
 CSV="$RESULTS_DIR/wal_recovery_$(date +%Y%m%d_%H%M%S).csv"
-echo "keys,repeat,write_duration_s,recovery_sec_log" > "$CSV"
+echo "keys,repeat,write_sec,recovery_sec_log" > "$CSV"
 
 SUMMARY_CSV="$RESULTS_DIR/wal_recovery_summary_$(date +%Y%m%d_%H%M%S).csv"
 echo "keys,repeats,recovery_sec_median" > "$SUMMARY_CSV"
 
-echo "=== wal-recovery: sizes=[${KEY_SIZES[*]}], repeats=${REPEATS} ==="
+echo "=== wal-recovery: sizes=[${KEY_SIZES[*]}], repeats=${REPEATS}, conn=${CONN}, workers=${WORKERS}, value_size=${VALUE_SIZE} ==="
 
 for KEYS in "${KEY_SIZES[@]}"; do
-    WD=$(write_duration_for "$KEYS")
     REC_VALS=()
 
     for R in $(seq 1 "$REPEATS"); do
@@ -112,10 +100,16 @@ for KEYS in "${KEY_SIZES[@]}"; do
         teardown
         start_node
 
-        echo "    writing for ${WD}s..."
-        "$LUME_BENCH" -p 8081 -c "$CONN" -r "$RPC" \
-            -d "$WD" -w 0 -t set --pool-size "$KEYS" \
-            > /dev/null 2>&1 || true
+        echo "    inserting ${KEYS} keys via lume-load (conn=${CONN}, workers=${WORKERS})..."
+        WRITE_START=$(date +%s)
+        "$LUME_LOAD" -s localhost:8081 \
+            -n "$KEYS" -t register -c "$CONN" -w "$WORKERS" \
+            --value-size "$VALUE_SIZE" --quiet \
+            > /dev/null 2>&1 || {
+                echo "    WARN: lume-load returned non-zero exit code"
+            }
+        WRITE_SEC=$(( $(date +%s) - WRITE_START ))
+        echo "    write done in ${WRITE_SEC}s"
 
         # Дать WAL-flush'у успеть слить буфер на диск (async, 100ms interval).
         sleep 1
@@ -148,7 +142,7 @@ for KEYS in "${KEY_SIZES[@]}"; do
             REC_VALS+=("$ELAPSED")
         fi
 
-        echo "${KEYS},${R},${WD},${ELAPSED}" >> "$CSV"
+        echo "${KEYS},${R},${WRITE_SEC},${ELAPSED}" >> "$CSV"
     done
 
     if [ "${#REC_VALS[@]}" -gt 0 ]; then
