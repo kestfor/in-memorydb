@@ -67,10 +67,17 @@ start_node() {
 # повторных рестартов внутри окна --since.
 extract_elapsed() {
     local since="$1"
-    docker logs --since "$since" lume-node1 2>&1 \
-        | grep -F '"msg":"storage.restoreFromWAL: data restored successfully"' \
-        | tail -n 1 \
-        | jq -r '."elapsed (sec)" // empty' 2>/dev/null
+    # Пайплайн может корректно "не найти ничего" пока WAL ещё восстанавливается:
+    # grep -F вернёт 1 при отсутствии совпадений. Под `set -euo pipefail` это
+    # уносит скрипт через ELAPSED=$(extract_elapsed ...) → set -e → молчаливый
+    # exit после первой попытки. `|| true` нормализует код возврата к 0,
+    # пустой stdout сигнализирует "ещё не готово" внешнему циклу поллинга.
+    {
+        docker logs --since "$since" lume-node1 2>&1 \
+            | grep -F '"msg":"storage.restoreFromWAL: data restored successfully"' \
+            | tail -n 1 \
+            | jq -r '."elapsed (sec)" // empty' 2>/dev/null
+    } || true
 }
 
 median() {
