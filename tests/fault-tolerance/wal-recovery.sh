@@ -68,14 +68,32 @@ write_duration_for() {
     fi
 }
 
-# Извлекает elapsed (sec) из последнего сообщения "data restored successfully"
-# в логах контейнера. Возвращает float или пустую строку.
+# Извлекает elapsed (sec) из ПОСЛЕДНЕГО сообщения "data restored successfully"
+# в логах контейнера, СТРОГО позже отметки $1 (RFC3339, например результат
+# `date -u +%Y-%m-%dT%H:%M:%S`). Это критично: docker logs не очищается между
+# kill+start, и в нём есть лог первого старта (пустой WAL → elapsed=0). Без
+# --since мы бы прочитали его и решили, что восстановление мгновенное.
+#
+# Лог slog'а — pretty-printed JSON через несколько строк, поэтому awk
+# вырезает целый JSON-блок (от строки '^{' до '^}') после маркера, а jq
+# достаёт поле. Если сообщение ещё не появилось — функция вернёт пустую строку.
 extract_elapsed() {
-    docker logs lume-node1 2>&1 \
-        | grep -A 30 'data restored successfully' \
-        | grep -oE '"elapsed \(sec\)":[[:space:]]*[0-9]+(\.[0-9]+)?' \
-        | tail -n 1 \
-        | sed -E 's/.*:[[:space:]]*//'
+    local since="$1"
+    docker logs --since "$since" lume-node1 2>&1 \
+        | sed -E 's/\x1b\[[0-9;]*m//g' \
+        | awk '
+            /data restored successfully/ { armed=1; next }
+            armed && /^\{/             { in_json=1; buf=$0; next }
+            in_json {
+                buf = buf "\n" $0
+                if ($0 ~ /^\}/) {
+                    last = buf
+                    in_json=0; armed=0; buf=""
+                }
+            }
+            END { if (last != "") print last }
+          ' \
+        | jq -r '."elapsed (sec)" // empty' 2>/dev/null
 }
 
 median() {
@@ -117,13 +135,19 @@ for KEYS in "${KEY_SIZES[@]}"; do
         echo "    docker kill..."
         docker kill lume-node1 >/dev/null
 
-        echo "    docker start (lazy: ждём появления записи в логе)..."
+        # Маркер времени для --since: всё, что было в логах ДО рестарта (включая
+        # лог первого старта с пустым WAL), отсекается. Берём UTC RFC3339 за
+        # секунду до старта, чтобы не потерять запись из-за округления.
+        SINCE=$(date -u -d '-1 second' +%Y-%m-%dT%H:%M:%S 2>/dev/null \
+                || date -u -v-1S +%Y-%m-%dT%H:%M:%S)
+
+        echo "    docker start (lazy: ждём появления записи в логе с --since=${SINCE})..."
         docker start lume-node1 >/dev/null
 
-        # Поллим лог до появления "data restored successfully".
+        # Поллим лог до появления "data restored successfully" ПОСЛЕ рестарта.
         ELAPSED=""
         for i in $(seq 1 120); do
-            ELAPSED=$(extract_elapsed)
+            ELAPSED=$(extract_elapsed "$SINCE")
             [ -n "$ELAPSED" ] && break
             sleep 1
         done
