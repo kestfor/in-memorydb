@@ -1,37 +1,40 @@
 #!/usr/bin/env bash
-# wal-recovery.sh — тест 2.2: docker kill + restart, измеряем время WAL-восстановления.
-# Запуск: ./wal-recovery.sh [keys] [conn] [rpc]
-# Пример: ./wal-recovery.sh 10000 10 4
+# wal-recovery.sh — тест 4.7.2: время восстановления данных из WAL.
 #
-# Топология: 1 узел с WAL-async (docker-compose-1.yaml + wal-async.yaml override).
-# Записываем N ключей → docker kill → time docker start → health check → проверяем ключи.
+# Один узел, WAL-async. Записываем N ключей, kill процесс, перезапускаем,
+# и берём время восстановления НЕ по docker health (имеет накладные расходы
+# на старт контейнера / gRPC / membership), а из лога самой ноды:
+#
+#   storage.restoreFromWAL: data restored successfully  elapsed (sec): X.YYY
+#
+# REPEATS прогонов на каждый размер; в итоговую таблицу — медиана.
+# Soft-limit: ~15 минут.
+#
+# Запуск:
+#   ./wal-recovery.sh [conn] [rpc] [repeats]
+#   ./wal-recovery.sh 10 4 5
 
 set -euo pipefail
 
-KEYS="${1:-10000}"
-CONN="${2:-10}"
-RPC="${3:-4}"
-CLUSTER_DIR="$(dirname "$0")/../cluster"
-LUME_CLI="${LUME_CLI:-lume-cli}"
-LUME_BENCH="${LUME_BENCH:-lume-bench}"
-RESULTS_DIR="$(dirname "$0")/../bench/results"
-mkdir -p "$RESULTS_DIR"
+CONN="${1:-10}"
+RPC="${2:-4}"
+REPEATS="${3:-5}"
 
-now_ms() {
-    python3 - <<'PY'
-import time
-print(int(time.time() * 1000))
-PY
-}
+# Размеры пула ключей. 6 точек в логарифмической шкале от 10k до 3M.
+KEY_SIZES=(10000 30000 100000 300000 1000000 3000000)
+
+CLUSTER_DIR="$(dirname "$0")/../cluster"
+LUME_BENCH="${LUME_BENCH:-lume-bench}"
+RESULTS_DIR="$(dirname "$0")/results"
+mkdir -p "$RESULTS_DIR"
 
 COMPOSE="$CLUSTER_DIR/docker-compose.yaml"
 PROFILE="1-node"
 WAL_ASYNC_CFG="$(realpath "$CLUSTER_DIR/configs/wal/wal-async.yaml")"
 
 TMPDIR_REC=$(mktemp -d)
-trap 'rm -rf "$TMPDIR_REC"' EXIT
+trap 'rm -rf "$TMPDIR_REC"; teardown' EXIT
 
-# override: монтируем WAL-конфиг и volume для данных
 OVERRIDE="$TMPDIR_REC/override.yaml"
 cat > "$OVERRIDE" <<EOF
 services:
@@ -43,64 +46,112 @@ volumes:
   lume_wal_rec:
 EOF
 
-echo "=== WAL recovery test: $KEYS keys, wal-async ==="
+PROJECT="lume_wal_rec"
 
-echo "[1] Starting node with WAL-async..."
-docker compose -f "$COMPOSE" -f "$OVERRIDE" --profile "$PROFILE" -p lume_wal_rec up -d --build --wait
-echo "    node ready"
+teardown() {
+    docker compose -f "$COMPOSE" -f "$OVERRIDE" --profile "$PROFILE" -p "$PROJECT" down -v >/dev/null 2>&1 || true
+}
 
-echo "[2] Writing $KEYS keys via lume-bench..."
-"$LUME_BENCH" -p 8081 -c "$CONN" -r "$RPC" \
-    -d 60 -w 0 -t set --pool-size "$KEYS" \
-    -n "wal_recovery_write" -o "$TMPDIR_REC" > /dev/null 2>&1 || true
-echo "    write phase done"
+start_node() {
+    docker compose -f "$COMPOSE" -f "$OVERRIDE" --profile "$PROFILE" -p "$PROJECT" up -d --build --wait >/dev/null
+}
 
-echo "[3] docker kill lume-node1..."
-docker kill lume-node1
-echo "    killed"
-
-echo "[4] Measuring restart + WAL replay time..."
-START=$(now_ms)
-docker start lume-node1
-
-# Ждём health check
-for i in $(seq 1 60); do
-    status=$(docker inspect --format='{{.State.Health.Status}}' lume-node1 2>/dev/null || echo "unknown")
-    if [ "$status" = "healthy" ]; then
-        END=$(now_ms)
-        RECOVERY_MS=$(( END - START ))
-        echo "    node healthy after ${RECOVERY_MS}ms"
-        break
+# Длительность писательской фазы — масштабируется с числом ключей,
+# чтобы пул успел заполниться (lume-bench пишет в случайном порядке).
+write_duration_for() {
+    local n="$1"
+    if   [ "$n" -le 30000 ];   then echo 10
+    elif [ "$n" -le 100000 ];  then echo 15
+    elif [ "$n" -le 300000 ];  then echo 25
+    elif [ "$n" -le 1000000 ]; then echo 45
+    else                            echo 90
     fi
-    sleep 1
-done
+}
 
-echo "[5] Checking sample keys via lume-cli..."
-FOUND=0
-MISSING=0
-SAMPLE=100
-for i in $(seq 0 $(( SAMPLE - 1 ))); do
-    key="key_${i}"
-    result=$("$LUME_CLI" -s localhost:8081 get "$key" 2>/dev/null || echo "")
-    if echo "$result" | grep -q 'Key:'; then
-        FOUND=$(( FOUND + 1 ))
+# Извлекает elapsed (sec) из последнего сообщения "data restored successfully"
+# в логах контейнера. Возвращает float или пустую строку.
+extract_elapsed() {
+    docker logs lume-node1 2>&1 \
+        | grep -A 30 'data restored successfully' \
+        | grep -oE '"elapsed \(sec\)":[[:space:]]*[0-9]+(\.[0-9]+)?' \
+        | tail -n 1 \
+        | sed -E 's/.*:[[:space:]]*//'
+}
+
+median() {
+    printf '%s\n' "$@" | sort -n | awk '
+        { a[NR]=$1 }
+        END {
+            if (NR==0) { print "0"; exit }
+            if (NR%2==1) print a[(NR+1)/2]
+            else printf "%.4f\n", (a[NR/2]+a[NR/2+1])/2
+        }'
+}
+
+CSV="$RESULTS_DIR/wal_recovery_$(date +%Y%m%d_%H%M%S).csv"
+echo "keys,repeat,write_duration_s,recovery_sec_log" > "$CSV"
+
+SUMMARY_CSV="$RESULTS_DIR/wal_recovery_summary_$(date +%Y%m%d_%H%M%S).csv"
+echo "keys,repeats,recovery_sec_median" > "$SUMMARY_CSV"
+
+echo "=== wal-recovery: sizes=[${KEY_SIZES[*]}], repeats=${REPEATS} ==="
+
+for KEYS in "${KEY_SIZES[@]}"; do
+    WD=$(write_duration_for "$KEYS")
+    REC_VALS=()
+
+    for R in $(seq 1 "$REPEATS"); do
+        echo ""
+        echo "[keys=${KEYS}, repeat=${R}/${REPEATS}] starting node..."
+        teardown
+        start_node
+
+        echo "    writing for ${WD}s..."
+        "$LUME_BENCH" -p 8081 -c "$CONN" -r "$RPC" \
+            -d "$WD" -w 0 -t set --pool-size "$KEYS" \
+            > /dev/null 2>&1 || true
+
+        # Дать WAL-flush'у успеть слить буфер на диск (async, 100ms interval).
+        sleep 1
+
+        echo "    docker kill..."
+        docker kill lume-node1 >/dev/null
+
+        echo "    docker start (lazy: ждём появления записи в логе)..."
+        docker start lume-node1 >/dev/null
+
+        # Поллим лог до появления "data restored successfully".
+        ELAPSED=""
+        for i in $(seq 1 120); do
+            ELAPSED=$(extract_elapsed)
+            [ -n "$ELAPSED" ] && break
+            sleep 1
+        done
+
+        if [ -z "$ELAPSED" ]; then
+            echo "    WARN: лог восстановления не найден за 120s, пропускаю"
+            ELAPSED="NaN"
+        else
+            echo "    recovery_sec=${ELAPSED}"
+            REC_VALS+=("$ELAPSED")
+        fi
+
+        echo "${KEYS},${R},${WD},${ELAPSED}" >> "$CSV"
+    done
+
+    if [ "${#REC_VALS[@]}" -gt 0 ]; then
+        REC_MED=$(median "${REC_VALS[@]}")
     else
-        MISSING=$(( MISSING + 1 ))
+        REC_MED="NaN"
     fi
+    echo ""
+    echo ">>> keys=${KEYS}: recovery_median=${REC_MED}s (n=${#REC_VALS[@]})"
+    echo "${KEYS},${#REC_VALS[@]},${REC_MED}" >> "$SUMMARY_CSV"
 done
-echo "    sample $SAMPLE keys: found=$FOUND missing=$MISSING"
 
 echo ""
 echo "=== Summary ==="
-echo "  total_keys_written = $KEYS"
-echo "  recovery_time_ms   = ${RECOVERY_MS:-N/A}"
-echo "  sample_found       = $FOUND / $SAMPLE"
-
-CSV="$RESULTS_DIR/wal_recovery_$(date +%Y%m%d_%H%M%S).csv"
-echo "keys_written,recovery_ms,sample_found,sample_total" > "$CSV"
-echo "$KEYS,${RECOVERY_MS:-0},$FOUND,$SAMPLE" >> "$CSV"
-echo "Saved: $CSV"
-
+column -t -s, "$SUMMARY_CSV" 2>/dev/null || cat "$SUMMARY_CSV"
 echo ""
-echo "[6] Tearing down..."
-docker compose -f "$COMPOSE" -f "$OVERRIDE" --profile "$PROFILE" -p lume_wal_rec down -v
+echo "Raw:     $CSV"
+echo "Summary: $SUMMARY_CSV"
