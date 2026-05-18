@@ -10,7 +10,8 @@ import (
 )
 
 type Config struct {
-	Port int `yaml:"port" default:"9090" required:"true"`
+	Port    int    `yaml:"port" default:"9090" required:"true"`
+	CSVPath string `yaml:"csv_path" default:"results.csv"`
 }
 
 type Metrics struct {

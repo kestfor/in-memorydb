@@ -2,10 +2,11 @@ package entry_updater
 
 import (
 	"errors"
+	"log/slog"
+
 	"github.com/kestfor/in-memorydb/pkg/crdt"
 	"github.com/kestfor/in-memorydb/pkg/storage/engine"
 	"github.com/kestfor/in-memorydb/pkg/types"
-	"log/slog"
 )
 
 var (
@@ -77,7 +78,7 @@ func (eu *EntryUpdater) CreateFromUpdate(update *types.Update) (*engine.CRDTEntr
 
 	return &engine.CRDTEntry{
 		Object:       newCRDT,
-		SetTimeStamp: update.SetTimeStamp.Copy(),
+		SetTimeStamp: update.SetTimeStamp,
 		Tombstone:    false,
 	}, nil
 }
@@ -85,7 +86,7 @@ func (eu *EntryUpdater) CreateFromUpdate(update *types.Update) (*engine.CRDTEntr
 func (eu *EntryUpdater) applySet(entry *engine.CRDTEntry, update *types.Update) UpdateResult {
 
 	// этот set происходит до того, как была создана entry
-	if update.SetTimeStamp.Before(entry.SetTimeStamp) {
+	if !update.SetTimeStamp.After(entry.SetTimeStamp) {
 		return UpdateResult{Applied: true}
 	}
 
@@ -98,7 +99,7 @@ func (eu *EntryUpdater) applySet(entry *engine.CRDTEntry, update *types.Update) 
 
 	// Заменяем объект
 	entry.Object = newCRDT
-	entry.SetTimeStamp = update.SetTimeStamp.Copy()
+	entry.SetTimeStamp = update.SetTimeStamp
 	entry.Tombstone = false
 
 	return UpdateResult{Applied: true, Modified: true}
@@ -152,6 +153,6 @@ func (eu *EntryUpdater) applyDelta(entry *engine.CRDTEntry, update *types.Update
 
 func (eu *EntryUpdater) applyDelete(entry *engine.CRDTEntry, update *types.Update) UpdateResult {
 	entry.Tombstone = true
-	entry.SetTimeStamp = update.SetTimeStamp.Copy()
+	entry.SetTimeStamp = update.SetTimeStamp
 	return UpdateResult{Applied: true, Modified: true}
 }

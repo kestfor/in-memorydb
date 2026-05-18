@@ -11,16 +11,16 @@ import (
 
 type CRDTEntry struct {
 	Mu           sync.RWMutex
-	Object       crdt.CRDT      // сам CRDT-объект (интерфейс)
-	Tombstone    bool           // для удалений
-	SetTimeStamp *hlc.Timestamp // timestamp of last set action
+	Object       crdt.CRDT     // сам CRDT-объект (интерфейс)
+	Tombstone    bool          // для удалений
+	SetTimeStamp hlc.Timestamp // timestamp of last set action
 }
 
 func (e *CRDTEntry) Deleted() bool {
 	return e.Tombstone
 }
 
-func (e *CRDTEntry) DeletedAt() *hlc.Timestamp {
+func (e *CRDTEntry) DeletedAt() hlc.Timestamp {
 	return e.SetTimeStamp
 }
 
@@ -40,13 +40,18 @@ type Engine interface {
 	// Get returns entry with specified key, if entry was marked as deleted, but physically present, method should return nil.
 	// For modifying key that still present use Update instead
 	Get(ctx context.Context, key string) (*CRDTEntry, bool)
+
+	// GetRaw returns entry with specified key including tombstones.
+	// Used by anti-entropy to read and propagate tombstone states.
+	GetRaw(ctx context.Context, key string) (*CRDTEntry, bool)
+
 	Clock() *hlc.Time
 
-	Put(ctx context.Context, key string, obj crdt.CRDT, callback Callback) *hlc.Timestamp
-	PutWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string, obj crdt.CRDT, callback Callback) *hlc.Timestamp
+	Put(ctx context.Context, key string, obj crdt.CRDT, callback Callback) hlc.Timestamp
+	PutWithTimeStamp(ctx context.Context, ts hlc.Timestamp, key string, obj crdt.CRDT, callback Callback) hlc.Timestamp
 
 	Delete(ctx context.Context, key string) (*CRDTEntry, bool)
-	DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string) (*CRDTEntry, bool)
+	DeleteWithTimeStamp(ctx context.Context, ts hlc.Timestamp, key string) (*CRDTEntry, bool)
 
 	// Update выполняет atomic update entry через callback
 	// Возвращает true если entry был модифицирован

@@ -1,0 +1,19 @@
+services:
+  base-node:
+    cpus: "4.0"
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    command: ["/lume", "--config", "/lume-config/config.yaml"]
+    volumes:
+      - ./configs/base.yaml:/lume-config/config.yaml
+    environment:
+      LOG_LEVEL: ERROR
+      SECURITY_MODE: disabled
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:8080"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cluster_network

@@ -1,10 +1,14 @@
 package crdt
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/kestfor/in-memorydb/pkg/structs"
+	"hash/fnv"
+	"sort"
 	"sync"
+
+	"github.com/kestfor/in-memorydb/pkg/structs"
 )
 
 // PNCounter — распределённый счётчик с поддержкой инкремента/декремента, thread-safe но мб это оверхед
@@ -36,6 +40,10 @@ func (d *PNCounterDelta) Merge(other Delta) error {
 		d.N[node] += val
 	}
 	return nil
+}
+
+func (d *PNCounterDelta) Hash() uint64 {
+	return getHash(d.P, d.N)
 }
 
 func (d *PNCounterDelta) CreateCRDT() (CRDT, error) {
@@ -192,6 +200,42 @@ func (c *PNCounter) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(data)
+}
+
+func (c *PNCounter) Hash() uint64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return getHash(c.P, c.N)
+}
+
+func getHash(p map[string]int64, n map[string]int64) uint64 {
+	h := fnv.New64a()
+	buf := make([]byte, 8)
+	// hash P
+	keys := make([]string, 0, len(p))
+	for k := range p {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		h.Write([]byte(k))
+		binary.LittleEndian.PutUint64(buf, uint64(p[k]))
+		h.Write(buf)
+	}
+	// separator
+	h.Write([]byte{0xFF})
+	// hash N
+	keys = keys[:0]
+	for k := range n {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		h.Write([]byte(k))
+		binary.LittleEndian.PutUint64(buf, uint64(n[k]))
+		h.Write(buf)
+	}
+	return h.Sum64()
 }
 
 // IDs возвращает список всех известных узлов

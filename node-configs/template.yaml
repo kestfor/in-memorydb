@@ -1,0 +1,26 @@
+# этот конфиг можно использовать к примеру как шаблон для докер сервисов, добавляя уникальные для ноды данные через ENV
+
+node:
+  bind_address: "0.0.0.0"
+  port: 8080
+gossip:
+  bind_address: "0.0.0.0"
+  port: 8081
+  fanout: 3
+  interval: 10s
+  retries: 2
+membership:
+  port: 8089
+engine:
+  shards_num: 256
+buffer:
+  size: 1000
+persistence:
+  enabled: false
+
+security:
+  mode: disabled
+
+trace:
+  enabled: false
+  endpoint: 192.168.0.14:4318

@@ -73,7 +73,7 @@ func (mr *MockEngineMockRecorder) Delete(ctx, key any) *gomock.Call {
 }
 
 // DeleteWithTimeStamp mocks base method.
-func (m *MockEngine) DeleteWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string) (*engine.CRDTEntry, bool) {
+func (m *MockEngine) DeleteWithTimeStamp(ctx context.Context, ts hlc.Timestamp, key string) (*engine.CRDTEntry, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteWithTimeStamp", ctx, ts, key)
 	ret0, _ := ret[0].(*engine.CRDTEntry)
@@ -102,6 +102,21 @@ func (mr *MockEngineMockRecorder) Get(ctx, key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockEngine)(nil).Get), ctx, key)
 }
 
+// GetRaw mocks base method.
+func (m *MockEngine) GetRaw(ctx context.Context, key string) (*engine.CRDTEntry, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRaw", ctx, key)
+	ret0, _ := ret[0].(*engine.CRDTEntry)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetRaw indicates an expected call of GetRaw.
+func (mr *MockEngineMockRecorder) GetRaw(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRaw", reflect.TypeOf((*MockEngine)(nil).GetRaw), ctx, key)
+}
+
 // GetOrCreate mocks base method.
 func (m *MockEngine) GetOrCreate(ctx context.Context, key string, createFunc engine.CreateFunc) (*engine.CRDTEntry, bool, error) {
 	m.ctrl.T.Helper()
@@ -119,10 +134,10 @@ func (mr *MockEngineMockRecorder) GetOrCreate(ctx, key, createFunc any) *gomock.
 }
 
 // Put mocks base method.
-func (m *MockEngine) Put(ctx context.Context, key string, obj crdt.CRDT, callback engine.Callback) *hlc.Timestamp {
+func (m *MockEngine) Put(ctx context.Context, key string, obj crdt.CRDT, callback engine.Callback) hlc.Timestamp {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Put", ctx, key, obj, callback)
-	ret0, _ := ret[0].(*hlc.Timestamp)
+	ret0, _ := ret[0].(hlc.Timestamp)
 	return ret0
 }
 
@@ -133,10 +148,10 @@ func (mr *MockEngineMockRecorder) Put(ctx, key, obj, callback any) *gomock.Call 
 }
 
 // PutWithTimeStamp mocks base method.
-func (m *MockEngine) PutWithTimeStamp(ctx context.Context, ts *hlc.Timestamp, key string, obj crdt.CRDT, callback engine.Callback) *hlc.Timestamp {
+func (m *MockEngine) PutWithTimeStamp(ctx context.Context, ts hlc.Timestamp, key string, obj crdt.CRDT, callback engine.Callback) hlc.Timestamp {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutWithTimeStamp", ctx, ts, key, obj, callback)
-	ret0, _ := ret[0].(*hlc.Timestamp)
+	ret0, _ := ret[0].(hlc.Timestamp)
 	return ret0
 }
 

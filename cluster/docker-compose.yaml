@@ -1,62 +1,152 @@
 x-grpc-healthcheck: &grpc-healthcheck
-  test: ["CMD", "grpc_health_probe", "-addr=:8080"]
+  test: [ "CMD", "grpc_health_probe", "-addr=:8080" ]
   interval: 10s
   timeout: 5s
   retries: 3
 
 services:
-  first:
-    container_name: first
-    cpus: "1.0"
+  base:
+    cpus: "4.0"
     build:
       context: ../
       dockerfile: ./Dockerfile
-    ports:
-      - "8081:8080"
-    environment:
-      - LOG_LEVEL=DEBUG
-      - SECURITY_ENABLED=true
-      - SECURITY_CA_CERT=/etc/lume/security/ca.crt
-      - SECURITY_CERT=/etc/lume/security/tls.crt
-      - SECURITY_KEY=/etc/lume/security/tls.key
-    volumes:
-      - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
-      - ../node-configs/certs/first/first.crt:/etc/lume/security/tls.crt
-      - ../node-configs/certs/first/first.key:/etc/lume/security/tls.key
-      - ./data/first-node-wal:/wal_data
-      - ../node-configs/first-peer.yaml:/lume-config/config.yaml
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
+    volumes:
+      - ../node-configs/template.yaml:/lume-config/config.yaml
+    environment:
+      - GOSSIP_ANT_ENTROPY_INTERVAL=5s
+      - TRANSPORT_MAX_BATCH_SIZE=10000
+      - LOG_LEVEL=DEBUG
     healthcheck: *grpc-healthcheck
     networks:
       - cluster_network
 
+  first:
+    container_name: first
+    extends:
+      service: base
+    environment:
+      NODE_ID: first
+    ports:
+      - "8081:8080"
+
   second:
-    container_name: second
-    cpus: "1.0"
+    cpus: "4.0"
     build:
       context: ../
       dockerfile: ./Dockerfile
-    ports:
-      - "8082:8080"
-    environment:
-      - LOG_LEVEL=DEBUG
-      - SECURITY_ENABLED=true
-      - SECURITY_CA_CERT=/etc/lume/security/ca.crt
-      - SECURITY_CERT=/etc/lume/security/tls.crt
-      - SECURITY_KEY=/etc/lume/security/tls.key
-    volumes:
-      - ../node-configs/certs/ca.crt:/etc/lume/security/ca.crt
-      - ../node-configs/certs/second/second.crt:/etc/lume/security/tls.crt
-      - ../node-configs/certs/second/second.key:/etc/lume/security/tls.key
-      - ./data/second-node-wal:/wal_data
-      - ../node-configs/second-peer.yaml:/lume-config/config.yaml
     command: [ "./lume", "--config", "/lume-config/config.yaml" ]
-    depends_on:
-      first:
-        condition: service_healthy
+    volumes:
+      - ../node-configs/second-peer.yaml:/lume-config/config.yaml
+    environment:
+      - NODE_ID=second
+      - SEEDS=192.168.0.45
+      - GOSSIP_ANT_ENTROPY_INTERVAL=5s
+      - TRANSPORT_MAX_BATCH_SIZE=10000
+      - LOG_LEVEL=DEBUG
     healthcheck: *grpc-healthcheck
-    networks:
-      - cluster_network
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
+
+
+  third:
+    container_name: third
+    extends:
+      service: base
+    environment:
+      NODE_ID: third
+      SEEDS: first,second
+    depends_on:
+      - second
+    ports:
+      - "8083:8080"
+
+  fourth:
+    container_name: fourth
+    extends:
+      service: base
+    environment:
+      NODE_ID: fourth
+      SEEDS: first,second,third
+    depends_on:
+      - second
+    ports:
+      - "8084:8080"
+
+  fifth:
+    container_name: fifth
+    extends:
+      service: base
+    environment:
+      NODE_ID: fifth
+      SEEDS: first,second,third,fourth
+    depends_on:
+      - second
+    ports:
+      - "8085:8080"
+
+  sixth:
+    container_name: sixth
+    extends:
+      service: base
+    environment:
+      NODE_ID: sixth
+      SEEDS: first,second,third,fourth,fifth
+    depends_on:
+      - second
+    ports:
+      - "8086:8080"
+
+  seventh:
+    container_name: seventh
+    extends:
+      service: base
+    environment:
+      NODE_ID: seventh
+      SEEDS: first,second,third,fourth,fifth,sixth
+    depends_on:
+      - second
+    ports:
+      - "8087:8080"
+
+  eighth:
+    container_name: eighth
+    extends:
+      service: base
+    environment:
+      NODE_ID: eighth
+      SEEDS: first,second,third,fourth,fifth,sixth,seventh
+    depends_on:
+      - second
+    ports:
+      - "8088:8080"
+
+  ninth:
+    container_name: ninth
+    extends:
+      service: base
+    environment:
+      NODE_ID: ninth
+      SEEDS: first,second,third,fourth,fifth,sixth,seventh,eighth
+    depends_on:
+      - second
+    ports:
+      - "8089:8080"
+
+  tenth:
+    container_name: tenth
+    extends:
+      service: base
+    environment:
+      NODE_ID: tenth
+      SEEDS: first,second,third,fourth,fifth,sixth,seventh,eighth,ninth
+    depends_on:
+      - second
+    ports:
+      - "8090:8080"
+
 
 
 networks:

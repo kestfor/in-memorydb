@@ -31,14 +31,13 @@ func (s *HLCTestSuite) TestNewHLC() {
 
 func (s *HLCTestSuite) TestNowGeneratesTimestamp() {
 	ts := s.clock.Now()
-	s.NotNil(ts)
 	s.Greater(ts.WallTime, uint64(0))
 	s.Equal(uint64(0), ts.Lamport)
 	s.Equal("node-1", ts.ID)
 }
 
 func (s *HLCTestSuite) TestTimestampMonotonicity() {
-	timestamps := make([]*Timestamp, 100)
+	timestamps := make([]Timestamp, 100)
 
 	for i := 0; i < 100; i++ {
 		timestamps[i] = s.clock.Now()
@@ -69,13 +68,14 @@ func (s *HLCTestSuite) TestLogicalClockIncrement() {
 // === Timestamp операции ===
 
 func (s *HLCTestSuite) TestTimestampCopy() {
-	original := &Timestamp{
+	original := Timestamp{
 		WallTime: 12345,
 		Lamport:  67,
 		ID:       "node-1",
 	}
 
-	copied := original.Copy()
+	// Value semantics: assignment is a copy
+	copied := original
 	s.Equal(original.WallTime, copied.WallTime)
 	s.Equal(original.Lamport, copied.Lamport)
 	s.Equal(original.ID, copied.ID)
@@ -87,7 +87,7 @@ func (s *HLCTestSuite) TestTimestampCopy() {
 
 func (s *HLCTestSuite) TestTimestampTime() {
 	now := time.Now()
-	ts := &Timestamp{
+	ts := Timestamp{
 		WallTime: uint64(now.UnixNano()),
 		Lamport:  0,
 		ID:       "node-1",
@@ -98,17 +98,17 @@ func (s *HLCTestSuite) TestTimestampTime() {
 }
 
 func (s *HLCTestSuite) TestTimestampEqual() {
-	ts1 := &Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
-	ts2 := &Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
-	ts3 := &Timestamp{WallTime: 100, Lamport: 6, ID: "node-1"}
+	ts1 := Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
+	ts2 := Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
+	ts3 := Timestamp{WallTime: 100, Lamport: 6, ID: "node-1"}
 
 	s.True(ts1.Equal(ts2))
 	s.False(ts1.Equal(ts3))
 }
 
 func (s *HLCTestSuite) TestTimestampBeforeAfter() {
-	ts1 := &Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
-	ts2 := &Timestamp{WallTime: 200, Lamport: 5, ID: "node-1"}
+	ts1 := Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
+	ts2 := Timestamp{WallTime: 200, Lamport: 5, ID: "node-1"}
 
 	s.True(ts1.Before(ts2))
 	s.False(ts2.Before(ts1))
@@ -117,7 +117,7 @@ func (s *HLCTestSuite) TestTimestampBeforeAfter() {
 }
 
 func (s *HLCTestSuite) TestTimestampString() {
-	ts := &Timestamp{
+	ts := Timestamp{
 		WallTime: uint64(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC).UnixNano()),
 		Lamport:  42,
 		ID:       "node-1",
@@ -132,8 +132,8 @@ func (s *HLCTestSuite) TestTimestampString() {
 // === Compare function ===
 
 func (s *HLCTestSuite) TestCompareWallTime() {
-	ts1 := &Timestamp{WallTime: 100, Lamport: 0, ID: "node-1"}
-	ts2 := &Timestamp{WallTime: 200, Lamport: 0, ID: "node-1"}
+	ts1 := Timestamp{WallTime: 100, Lamport: 0, ID: "node-1"}
+	ts2 := Timestamp{WallTime: 200, Lamport: 0, ID: "node-1"}
 
 	s.Equal(Lower, Compare(ts1, ts2))
 	s.Equal(Greater, Compare(ts2, ts1))
@@ -141,32 +141,31 @@ func (s *HLCTestSuite) TestCompareWallTime() {
 }
 
 func (s *HLCTestSuite) TestCompareLamport() {
-	ts1 := &Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
-	ts2 := &Timestamp{WallTime: 100, Lamport: 10, ID: "node-1"}
+	ts1 := Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
+	ts2 := Timestamp{WallTime: 100, Lamport: 10, ID: "node-1"}
 
 	s.Equal(Lower, Compare(ts1, ts2))
 	s.Equal(Greater, Compare(ts2, ts1))
 }
 
 func (s *HLCTestSuite) TestCompareNodeID() {
-	ts1 := &Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
-	ts2 := &Timestamp{WallTime: 100, Lamport: 5, ID: "node-2"}
+	ts1 := Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
+	ts2 := Timestamp{WallTime: 100, Lamport: 5, ID: "node-2"}
 
 	s.Equal(Lower, Compare(ts1, ts2))
 	s.Equal(Greater, Compare(ts2, ts1))
 }
 
 func (s *HLCTestSuite) TestCompareIdentical() {
-	ts := &Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
+	ts := Timestamp{WallTime: 100, Lamport: 5, ID: "node-1"}
 
 	s.Equal(Equal, Compare(ts, ts))
 }
 
 // === SyncWithRemote ===
 
-func (s *HLCTestSuite) TestSyncWithRemoteNil() {
-	ts := s.clock.SyncWithRemote(nil)
-	s.NotNil(ts)
+func (s *HLCTestSuite) TestSyncWithRemoteZero() {
+	ts := s.clock.SyncWithRemote(Timestamp{})
 	s.Greater(ts.WallTime, uint64(0))
 }
 
@@ -174,7 +173,7 @@ func (s *HLCTestSuite) TestSyncWithRemoteFutureTime() {
 	localTS := s.clock.Now()
 
 	// Создаём timestamp из будущего
-	futureTS := &Timestamp{
+	futureTS := Timestamp{
 		WallTime: localTS.WallTime + uint64(time.Second),
 		Lamport:  0,
 		ID:       "node-2",
@@ -195,7 +194,7 @@ func (s *HLCTestSuite) TestSyncWithRemotePastTime() {
 	localTS := s.clock.Now()
 
 	// Создаём timestamp из прошлого
-	pastTS := &Timestamp{
+	pastTS := Timestamp{
 		WallTime: localTS.WallTime - uint64(time.Second),
 		Lamport:  0,
 		ID:       "node-2",
@@ -210,7 +209,7 @@ func (s *HLCTestSuite) TestSyncWithRemotePastTime() {
 func (s *HLCTestSuite) TestSyncIncreasesLamport() {
 	ts1 := s.clock.Now()
 
-	remoteTS := &Timestamp{
+	remoteTS := Timestamp{
 		WallTime: ts1.WallTime,
 		Lamport:  ts1.Lamport + 5,
 		ID:       "node-2",
@@ -261,7 +260,7 @@ func (s *HLCTestSuite) TestConcurrentNow() {
 	const numGoroutines = 100
 	const callsPerGoroutine = 100
 
-	timestamps := make([]*Timestamp, numGoroutines*callsPerGoroutine)
+	timestamps := make([]Timestamp, numGoroutines*callsPerGoroutine)
 	var wg sync.WaitGroup
 	var idx int32
 
@@ -287,7 +286,7 @@ func (s *HLCTestSuite) TestConcurrentNow() {
 	// Проверяем что все timestamps уникальны или монотонны
 	seen := make(map[string]bool)
 	for _, ts := range timestamps {
-		if ts != nil {
+		if !ts.IsZero() {
 			key := ts.String()
 			s.False(seen[key], "should not have duplicate timestamps")
 			seen[key] = true
@@ -302,13 +301,13 @@ func (s *HLCTestSuite) TestConcurrentSync() {
 	wg.Add(numGoroutines)
 
 	// Создаём удалённые timestamps от разных узлов
-	remoteTimestamps := make([]*Timestamp, numGoroutines)
+	remoteTimestamps := make([]Timestamp, numGoroutines)
 	for i := 0; i < numGoroutines; i++ {
 		remoteClock := NewHLC(string(rune('A' + i)))
 		remoteTimestamps[i] = remoteClock.Now()
 	}
 
-	results := make([]*Timestamp, numGoroutines)
+	results := make([]Timestamp, numGoroutines)
 
 	for i := 0; i < numGoroutines; i++ {
 		go func(idx int) {
@@ -321,7 +320,7 @@ func (s *HLCTestSuite) TestConcurrentSync() {
 
 	// Все результаты должны быть валидны
 	for i, ts := range results {
-		s.NotNil(ts, "result %d should not be nil", i)
+		s.False(ts.IsZero(), "result %d should not be zero", i)
 		s.Greater(ts.WallTime, uint64(0))
 	}
 }
@@ -330,7 +329,7 @@ func (s *HLCTestSuite) TestConcurrentSync() {
 
 func (s *HLCTestSuite) TestTimestampTotalOrder() {
 	// Генерируем много timestamps
-	timestamps := make([]*Timestamp, 1000)
+	timestamps := make([]Timestamp, 1000)
 	for i := 0; i < len(timestamps); i++ {
 		timestamps[i] = s.clock.Now()
 	}
@@ -355,14 +354,22 @@ func (s *HLCTestSuite) TestSyncMonotonicity() {
 	// Последовательные синхронизации не должны откатывать время назад
 	ts1 := s.clock.Now()
 
-	remote1 := &Timestamp{WallTime: ts1.WallTime + 1000, Lamport: 0, ID: "node-2"}
+	remote1 := Timestamp{WallTime: ts1.WallTime + 1000, Lamport: 0, ID: "node-2"}
 	ts2 := s.clock.SyncWithRemote(remote1)
 
-	remote2 := &Timestamp{WallTime: ts2.WallTime - 500, Lamport: 0, ID: "node-3"}
+	remote2 := Timestamp{WallTime: ts2.WallTime - 500, Lamport: 0, ID: "node-3"}
 	ts3 := s.clock.SyncWithRemote(remote2)
 
 	s.False(ts3.Before(ts2), "time should not go backwards")
 	s.False(ts3.Before(ts1), "time should not go backwards")
+}
+
+func (s *HLCTestSuite) TestIsZero() {
+	var zero Timestamp
+	s.True(zero.IsZero())
+
+	nonZero := Timestamp{WallTime: 1}
+	s.False(nonZero.IsZero())
 }
 
 // === Unit tests (без suite) ===
@@ -382,18 +389,18 @@ func TestHLCCreation(t *testing.T) {
 
 func TestTimestampComparePriority(t *testing.T) {
 	// WallTime имеет приоритет
-	ts1 := &Timestamp{WallTime: 100, Lamport: 10, ID: "z"}
-	ts2 := &Timestamp{WallTime: 200, Lamport: 5, ID: "a"}
+	ts1 := Timestamp{WallTime: 100, Lamport: 10, ID: "z"}
+	ts2 := Timestamp{WallTime: 200, Lamport: 5, ID: "a"}
 	assert.Equal(t, Lower, Compare(ts1, ts2))
 
 	// При равном WallTime, смотрим на Lamport
-	ts3 := &Timestamp{WallTime: 100, Lamport: 5, ID: "z"}
-	ts4 := &Timestamp{WallTime: 100, Lamport: 10, ID: "a"}
+	ts3 := Timestamp{WallTime: 100, Lamport: 5, ID: "z"}
+	ts4 := Timestamp{WallTime: 100, Lamport: 10, ID: "a"}
 	assert.Equal(t, Lower, Compare(ts3, ts4))
 
 	// При равных WallTime и Lamport, смотрим на ID
-	ts5 := &Timestamp{WallTime: 100, Lamport: 5, ID: "a"}
-	ts6 := &Timestamp{WallTime: 100, Lamport: 5, ID: "z"}
+	ts5 := Timestamp{WallTime: 100, Lamport: 5, ID: "a"}
+	ts6 := Timestamp{WallTime: 100, Lamport: 5, ID: "z"}
 	assert.Equal(t, Lower, Compare(ts5, ts6))
 }
 
@@ -409,7 +416,7 @@ func TestNowNanoWithoutOffset(t *testing.T) {
 }
 
 func TestLamportTime(t *testing.T) {
-	ts := &Timestamp{
+	ts := Timestamp{
 		WallTime: 12345,
 		Lamport:  67890,
 		ID:       "node-1",

@@ -1,22 +1,36 @@
 ---
 metrics:
   port: 8082
+  csv_path: results.csv
 
 databases:
-  #  name: memcache
-  #  host: localhost:11211
+  - name: lume
+    host: localhost:8080
+
+  - name: aerospike
+    host: localhost:3005
+
+  - name: dragonfly
+    host: localhost:6380
 
   - name: redis
     host: localhost:6379
 
-  - name: lume
-    host: localhost:50053
+  - name: keydb
+    host: localhost:6381
+
+  - name: memcached
+    host: localhost:11211
 
 test:
   name: test
+  type: get
   minClients: 50
-  clientsStep: 5
-  maxClients: 100
-  stageIntervalS: 60
-  requestDelayMs: 1
+  clientsStep: 50
+  maxClients: 10000
+  growthMode: exponential
+  growthFactor: 1.6
+  clientStages: [25, 50, 100, 200, 350, 500, 750, 1000, 1500, 2500, 4000, 6000, 8000, 10000]
+  stageIntervalS: 90
+  requestDelayMs: 2
   maxKeysNum: 100000

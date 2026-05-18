@@ -1,0 +1,34 @@
+# Auto-generated for {{ nodes }} node(s)
+# Профили:
+{% for n in range(1, nodes + 1) %}
+#   {{ n }}-node:  docker compose --profile {{ n }}-node up
+{% endfor %}
+
+services:
+{% for i in range(1, nodes + 1) %}
+  node{{ i }}:
+    extends:
+      file: docker-compose.base.yaml
+      service: base-node
+    container_name: lume-node{{ i }}
+    profiles: [{% for n in range(i, nodes + 1) %} {{ n }}-node{{ ", " if not loop.last else "" }}{% endfor %} ]
+    ports:
+      - "{{ 8080 + i }}:8080"
+    environment:
+      NODE_ID: node{{ i }}
+{% if i > 1 %}
+      SEEDS: node1
+{% endif %}
+{% for key, value in extra_env.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% if i > 1 %}
+    depends_on:
+      node1:
+        condition: service_healthy
+{% endif %}
+{% endfor %}
+
+networks:
+  cluster_network:
+    driver: bridge

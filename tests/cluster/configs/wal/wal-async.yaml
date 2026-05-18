@@ -1,0 +1,24 @@
+# WAL-конфиг с асинхронным fsync (минимальный overhead).
+# NODE_ID и SEEDS задаются через env.
+gossip:
+  bind_address: "0.0.0.0"
+  port: 8081
+  fanout: 3
+  interval: 10s
+  retries: 2
+engine:
+  shards_num: 256
+buffer:
+  size: 1000
+persistence:
+  enabled: true
+  wal:
+    path: /wal_data
+    flush_interval: 100ms
+    sync_mode: false
+    batch_size: 1000
+    segment_threshold: 10000
+security:
+  mode: disabled
+trace:
+  enabled: false

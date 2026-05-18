@@ -187,6 +187,19 @@ func setFieldValue(field reflect.Value, value string) error {
 			return err
 		}
 		field.SetBool(boolVal)
+	case reflect.Slice:
+		parts := strings.Split(value, ",")
+		elemType := field.Type().Elem()
+		slice := reflect.MakeSlice(field.Type(), 0, len(parts))
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			elem := reflect.New(elemType).Elem()
+			if err := setFieldValue(elem, part); err != nil {
+				return fmt.Errorf("failed to parse slice element %q: %w", part, err)
+			}
+			slice = reflect.Append(slice, elem)
+		}
+		field.Set(slice)
 	default:
 		return fmt.Errorf("unsupported field type: %s", field.Kind())
 	}

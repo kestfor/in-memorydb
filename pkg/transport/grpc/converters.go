@@ -99,9 +99,8 @@ func fromKeyState(ks *types.KeyState) *transportpb.KeyStateProto {
 		CrdtType:  string(ks.CRDTType),
 		State:     ks.State,
 		Tombstone: ks.Tombstone,
-		Vc:        ks.VC,
 	}
-	if ks.SetTimeStamp != nil {
+	if !ks.SetTimeStamp.IsZero() {
 		pb.SetTimeStampWall = ks.SetTimeStamp.WallTime
 		pb.SetTimeStampLamport = ks.SetTimeStamp.Lamport
 		pb.SetTimeStampId = ks.SetTimeStamp.ID
@@ -118,10 +117,9 @@ func toKeyState(pb *transportpb.KeyStateProto) *types.KeyState {
 		CRDTType:  crdt.CRDTType(pb.CrdtType),
 		State:     pb.State,
 		Tombstone: pb.Tombstone,
-		VC:        pb.Vc,
 	}
 	if pb.SetTimeStampWall != 0 || pb.SetTimeStampLamport != 0 || pb.SetTimeStampId != "" {
-		ks.SetTimeStamp = &hlc.Timestamp{
+		ks.SetTimeStamp = hlc.Timestamp{
 			WallTime: pb.SetTimeStampWall,
 			Lamport:  pb.SetTimeStampLamport,
 			ID:       pb.SetTimeStampId,

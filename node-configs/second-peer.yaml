@@ -3,7 +3,7 @@ node:
   bind_address: "0.0.0.0"
   port: 8080
 seeds:
-  - "first"
+  - "192.168.0.45"
 gossip:
   bind_address: "0.0.0.0"
   port: 8081
@@ -11,6 +11,7 @@ gossip:
   interval: 10s
   retries: 2
 membership:
+  advertise_addr: "192.168.0.82"
   port: 8082
 persistence:
   enabled: false

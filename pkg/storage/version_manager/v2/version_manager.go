@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"log/slog"
-	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -27,14 +26,6 @@ const (
 	DefaultNumBuckets = 4
 )
 
-// keyMeta holds per-key version clock and precomputed hash
-type keyMeta struct {
-	mu     sync.RWMutex
-	vc     map[string]uint64
-	hash   uint64
-	bucket uint32
-}
-
 // VersionManager v2 - оптимизированная версия без глобального лока
 // Ключевые отличия от v1:
 // - Advance() полностью lock-free (seq атомарен, history для локальной ноды не используется)
@@ -48,19 +39,20 @@ type VersionManager struct {
 	engine      engine.Engine
 	fabric      crdt.CRDTFabric
 	updater     *entry_updater.EntryUpdater
-	keyVersions sync.Map // key string → *keyMeta
-	numBuckets  uint32   // number of hash buckets for partitioned anti-entropy
+	keyVersions *keyVersionShards
+	numBuckets  uint32 // number of hash buckets for partitioned anti-entropy
 }
 
 // NewVersionManager создаёт новый VersionManager v2
 func NewVersionManager(nodeID string, engine engine.Engine) *VersionManager {
 	return &VersionManager{
-		nodeID:     nodeID,
-		history:    history.NewShardedHistory(),
-		engine:     engine,
-		fabric:     crdt.NewFabric(),
-		updater:    entry_updater.NewEntryUpdater(crdt.NewFabric(), nodeID),
-		numBuckets: DefaultNumBuckets,
+		nodeID:      nodeID,
+		history:     history.NewShardedHistory(),
+		engine:      engine,
+		fabric:      crdt.NewFabric(),
+		updater:     entry_updater.NewEntryUpdater(crdt.NewFabric(), nodeID),
+		keyVersions: newKeyVersionShards(),
+		numBuckets:  DefaultNumBuckets,
 	}
 }
 
@@ -71,18 +63,20 @@ func keyBucket(key string, numBuckets uint32) uint32 {
 	return h.Sum32() % numBuckets
 }
 
-// Advance увеличивает локальный sequence number на 1 и обновляет per-key VC
+// Advance увеличивает локальный sequence number на 1
 // Полностью lock-free: seq атомарен, история для локальной ноды не хранится
 // (локальный seq всегда contiguous: 1, 2, 3, ...)
-func (vm *VersionManager) Advance(key string) uint64 {
-	newSeq := vm.seq.Add(1)
-	vm.updateKeyVC(key, vm.nodeID, newSeq)
-	return newSeq
+func (vm *VersionManager) UpdateLocal(ctx context.Context, updates ...types.Update) []types.Update {
+	for i := range updates {
+		vm.updateKeyStateHash(updates[i].Key, stateDigest(updates[i].Payload.Hash(), updates[i].Type == types.UpdateTypeDelete))
+		updates[i].Seq = vm.seq.Add(1)
+	}
+	return updates
 }
 
 // Update применяет набор updates от remote нод
 // Возвращает slice успешно применённых updates
-func (vm *VersionManager) Update(ctx context.Context, updates ...types.Update) []types.Update {
+func (vm *VersionManager) UpdateRemote(ctx context.Context, updates ...types.Update) []types.Update {
 	if len(updates) == 0 {
 		return nil
 	}
@@ -164,6 +158,7 @@ func (vm *VersionManager) handleUpdate(ctx context.Context, update *types.Update
 	}
 
 	// Применяем update к engine
+	var newHash uint64
 	updateEntryCallback := func(ctx context.Context, entry *engine.CRDTEntry) (bool, error) {
 		result := vm.updater.ApplyUpdate(entry, update)
 
@@ -171,8 +166,12 @@ func (vm *VersionManager) handleUpdate(ctx context.Context, update *types.Update
 			return false, result.Error
 		}
 
-		if result.Applied && update.Type == types.UpdateTypeDelete {
+		if result.Modified && update.Type == types.UpdateTypeDelete {
 			vm.engine.DeleteWithTimeStamp(ctx, update.SetTimeStamp, update.Key)
+		}
+
+		if result.Applied {
+			newHash = stateDigest(entry.Object.Hash(), entry.Tombstone)
 		}
 
 		return result.Applied, nil
@@ -193,10 +192,9 @@ func (vm *VersionManager) handleUpdate(ctx context.Context, update *types.Update
 		if !vm.handleNewEntry(ctx, update) {
 			return false
 		}
+	} else {
+		vm.updateKeyStateHash(update.Key, newHash)
 	}
-
-	// Update per-key VC after successful apply
-	vm.updateKeyVC(update.Key, update.NodeID, update.Seq)
 
 	return true
 }
@@ -214,6 +212,7 @@ func (vm *VersionManager) handleNewEntry(ctx context.Context, update *types.Upda
 	}
 
 	vm.engine.PutWithTimeStamp(ctx, update.SetTimeStamp, update.Key, newEntry.Object, nil)
+	vm.updateKeyStateHash(update.Key, stateDigest(newEntry.Object.Hash(), false))
 	return true
 }
 
@@ -290,6 +289,7 @@ func (vm *VersionManager) RestoreFromWal(ctx context.Context, wal wal.WAL) error
 // applyUpdateDuringRestore применяет update во время восстановления из WAL
 // Отличается от handleUpdate тем, что не проверяет дубликаты (WAL уже уникален)
 func (vm *VersionManager) applyUpdateDuringRestore(ctx context.Context, update *types.Update) {
+	var newHash uint64
 	updateEntryCallback := func(ctx context.Context, entry *engine.CRDTEntry) (bool, error) {
 		result := vm.updater.ApplyUpdate(entry, update)
 
@@ -297,8 +297,12 @@ func (vm *VersionManager) applyUpdateDuringRestore(ctx context.Context, update *
 			return false, result.Error
 		}
 
-		if result.Applied && update.Type == types.UpdateTypeDelete {
+		if result.Modified && update.Type == types.UpdateTypeDelete {
 			vm.engine.DeleteWithTimeStamp(ctx, update.SetTimeStamp, update.Key)
+		}
+
+		if result.Applied {
+			newHash = stateDigest(entry.Object.Hash(), entry.Tombstone)
 		}
 
 		return result.Applied, nil
@@ -315,7 +319,10 @@ func (vm *VersionManager) applyUpdateDuringRestore(ctx context.Context, update *
 
 	if !updated && update.Type != types.UpdateTypeDelete {
 		vm.handleNewEntry(ctx, update)
+	} else {
+		vm.updateKeyStateHash(update.Key, newHash)
 	}
+
 }
 
 // RestoreSeq очищает историю для ноды (для перезапуска синхронизации)
@@ -336,33 +343,26 @@ func (vm *VersionManager) Stats() Stats {
 	}
 }
 
-// updateKeyVC updates the per-key version clock for the given key and node
-func (vm *VersionManager) updateKeyVC(key, nodeID string, seq uint64) {
-	val, _ := vm.keyVersions.LoadOrStore(key, &keyMeta{
-		vc:     make(map[string]uint64),
-		bucket: keyBucket(key, vm.numBuckets),
-	})
-	km := val.(*keyMeta)
-
-	km.mu.Lock()
-	if seq > km.vc[nodeID] {
-		km.vc[nodeID] = seq
-	}
-	km.hash = hashVC(km.vc)
-	km.mu.Unlock()
+// Advance увеличивает локальный seq и возвращает новое значение.
+// Алиас для обратной совместимости с тестами.
+func (vm *VersionManager) Advance(_ string) uint64 {
+	return vm.seq.Add(1)
 }
 
-// KeyDigests returns a map of key → hash(VC) for keys in the specified bucket
+// Update применяет updates от remote нод.
+// Алиас для UpdateRemote для обратной совместимости с тестами.
+func (vm *VersionManager) Update(ctx context.Context, updates ...types.Update) []types.Update {
+	return vm.UpdateRemote(ctx, updates...)
+}
+
+// KeyDigests returns a map of key → hash for keys in the specified bucket
 func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
 	result := make(map[string]uint64)
-	vm.keyVersions.Range(func(k, v any) bool {
-		km := v.(*keyMeta)
+	vm.keyVersions.Range(func(key string, km *keyMeta) bool {
 		if km.bucket != bucket {
 			return true
 		}
-		km.mu.RLock()
-		result[k.(string)] = km.hash
-		km.mu.RUnlock()
+		result[key] = km.hash.Load()
 		return true
 	})
 	return result
@@ -371,23 +371,6 @@ func (vm *VersionManager) KeyDigests(bucket uint32) map[string]uint64 {
 // NumBuckets returns the number of hash buckets used for partitioned anti-entropy
 func (vm *VersionManager) NumBuckets() uint32 {
 	return vm.numBuckets
-}
-
-// KeyVersionClock returns the version clock for a specific key
-func (vm *VersionManager) KeyVersionClock(key string) map[string]uint64 {
-	val, ok := vm.keyVersions.Load(key)
-	if !ok {
-		return nil
-	}
-	km := val.(*keyMeta)
-	km.mu.RLock()
-	defer km.mu.RUnlock()
-
-	result := make(map[string]uint64, len(km.vc))
-	for k, v := range km.vc {
-		result[k] = v
-	}
-	return result
 }
 
 // MergeKeyState merges a remote key state into the local engine
@@ -404,86 +387,99 @@ func (vm *VersionManager) MergeKeyState(ctx context.Context, state *types.KeySta
 		return err
 	}
 
-	entry, ok := vm.engine.Get(ctx, state.Key)
+	var newHash uint64
+
+	entry, ok := vm.engine.GetRaw(ctx, state.Key)
 	if !ok {
-		// Key doesn't exist locally — create it
+		// Key doesn't exist locally (physically deleted or never existed) — create it
 		if state.Tombstone {
 			vm.engine.PutWithTimeStamp(ctx, state.SetTimeStamp, state.Key, remoteCRDT, nil)
 			vm.engine.DeleteWithTimeStamp(ctx, state.SetTimeStamp, state.Key)
+			newHash = stateDigest(remoteCRDT.Hash(), true)
 		} else {
 			vm.engine.PutWithTimeStamp(ctx, state.SetTimeStamp, state.Key, remoteCRDT, nil)
+			newHash = stateDigest(remoteCRDT.Hash(), false)
 		}
 	} else {
-		// Key exists — merge CRDT states
 		entry.Mu.Lock()
-		if entry.Object.Type() == state.CRDTType {
-			if err := entry.Object.Merge(remoteCRDT); err != nil {
-				entry.Mu.Unlock()
-				slog.ErrorContext(ctx, "VersionManager.MergeKeyState: failed to merge",
-					"error", err, "key", state.Key)
-				return err
-			}
-		} else {
-			// Type mismatch: remote SetTimeStamp wins if newer
-			if state.SetTimeStamp != nil && (entry.SetTimeStamp == nil || entry.SetTimeStamp.Before(state.SetTimeStamp)) {
+
+		if entry.Tombstone && !state.Tombstone {
+			// Local is tombstone, remote is alive — remote wins if newer
+			if !state.SetTimeStamp.Before(entry.SetTimeStamp) {
 				entry.Object = remoteCRDT
 				entry.SetTimeStamp = state.SetTimeStamp
+				entry.Tombstone = false
 			}
-		}
-
-		// Handle tombstone
-		if state.Tombstone && (entry.SetTimeStamp == nil || !state.SetTimeStamp.Before(entry.SetTimeStamp)) {
+			newHash = stateDigest(entry.Object.Hash(), entry.Tombstone)
 			entry.Mu.Unlock()
-			vm.engine.DeleteWithTimeStamp(ctx, state.SetTimeStamp, state.Key)
+		} else if !entry.Tombstone && state.Tombstone {
+			// Local is alive, remote is tombstone — tombstone wins if newer
+			if !state.SetTimeStamp.Before(entry.SetTimeStamp) {
+				entry.Mu.Unlock()
+				vm.engine.DeleteWithTimeStamp(ctx, state.SetTimeStamp, state.Key)
+				newHash = stateDigest(remoteCRDT.Hash(), true)
+			} else {
+				// Local is alive and newer — merge CRDT state from remote (pre-delete state)
+				if entry.Object.Type() == state.CRDTType {
+					_ = entry.Object.Merge(remoteCRDT)
+				}
+				newHash = stateDigest(entry.Object.Hash(), entry.Tombstone)
+				entry.Mu.Unlock()
+			}
+		} else if entry.Tombstone && state.Tombstone {
+			// Both tombstones — keep the one with newer timestamp
+			if state.SetTimeStamp.After(entry.SetTimeStamp) {
+				entry.SetTimeStamp = state.SetTimeStamp
+			}
+			newHash = stateDigest(entry.Object.Hash(), entry.Tombstone)
+			entry.Mu.Unlock()
 		} else {
+			// Both alive — merge CRDT states
+			if entry.Object.Type() == state.CRDTType {
+				if err := entry.Object.Merge(remoteCRDT); err != nil {
+					entry.Mu.Unlock()
+					slog.ErrorContext(ctx, "VersionManager.MergeKeyState: failed to merge",
+						"error", err, "key", state.Key)
+					return err
+				}
+				// Keep the newer SetTimeStamp — if remote did a Set later, adopt its timestamp
+				if state.SetTimeStamp.After(entry.SetTimeStamp) {
+					entry.SetTimeStamp = state.SetTimeStamp
+				}
+			} else {
+				// Type mismatch: newer SetTimeStamp wins
+				if !state.SetTimeStamp.IsZero() && (entry.SetTimeStamp.IsZero() || entry.SetTimeStamp.Before(state.SetTimeStamp)) {
+					entry.Object = remoteCRDT
+					entry.SetTimeStamp = state.SetTimeStamp
+				}
+			}
+			newHash = stateDigest(entry.Object.Hash(), entry.Tombstone)
 			entry.Mu.Unlock()
 		}
 	}
 
-	// Merge per-key VC (element-wise max)
-	if state.VC != nil {
-		val, _ := vm.keyVersions.LoadOrStore(state.Key, &keyMeta{
-			vc:     make(map[string]uint64),
-			bucket: keyBucket(state.Key, vm.numBuckets),
-		})
-		km := val.(*keyMeta)
-		km.mu.Lock()
-		for nodeID, seq := range state.VC {
-			if seq > km.vc[nodeID] {
-				km.vc[nodeID] = seq
-			}
-		}
-		km.hash = hashVC(km.vc)
-		km.mu.Unlock()
-	}
+	vm.updateKeyStateHash(state.Key, newHash)
 
 	return nil
 }
 
-// hashVC computes an FNV-64a hash of the version clock for comparison
-func hashVC(vc map[string]uint64) uint64 {
-	if len(vc) == 0 {
-		return 0
-	}
-
-	// Sort keys for deterministic hashing
-	keys := make([]string, 0, len(vc))
-	for k := range vc {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
+// stateDigest computes a combined hash of the CRDT state hash and tombstone flag.
+// This is the value stored in keyMeta.hash and compared during anti-entropy.
+func stateDigest(crdtHash uint64, tombstone bool) uint64 {
 	h := fnv.New64a()
 	buf := make([]byte, 8)
-	for _, k := range keys {
-		h.Write([]byte(k))
-		binary.LittleEndian.PutUint64(buf, vc[k])
-		h.Write(buf)
+	binary.LittleEndian.PutUint64(buf, crdtHash)
+	h.Write(buf)
+	if tombstone {
+		h.Write([]byte{1})
+	} else {
+		h.Write([]byte{0})
 	}
 	return h.Sum64()
 }
 
-// HashVC is exported for testing
-func HashVC(vc map[string]uint64) uint64 {
-	return hashVC(vc)
+// updateKeyStateHash updates the precomputed state hash for a key
+func (vm *VersionManager) updateKeyStateHash(key string, hash uint64) {
+	km := vm.keyVersions.LoadOrStore(key, keyBucket(key, vm.numBuckets))
+	km.hash.Store(hash)
 }

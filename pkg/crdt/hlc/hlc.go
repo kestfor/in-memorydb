@@ -18,37 +18,34 @@ type Timestamp struct {
 	ID       string `json:"id"`
 }
 
-func (t *Timestamp) Copy() *Timestamp {
-	return &Timestamp{
-		WallTime: t.WallTime,
-		Lamport:  t.Lamport,
-		ID:       t.ID,
-	}
+// IsZero reports whether the timestamp is the zero value (unset).
+func (t Timestamp) IsZero() bool {
+	return t.WallTime == 0 && t.Lamport == 0 && t.ID == ""
 }
 
 // Time возвращает time.Time из наносекунд
-func (t *Timestamp) Time() time.Time {
+func (t Timestamp) Time() time.Time {
 	return time.Unix(0, int64(t.WallTime))
 }
 
-func (t *Timestamp) LamportTime() uint64 {
+func (t Timestamp) LamportTime() uint64 {
 	return t.Lamport
 }
 
 // Equal compares the current Timestamp with another Timestamp and returns true if they are equal in WallTime and Lamport values.
-func (t *Timestamp) Equal(another *Timestamp) bool {
+func (t Timestamp) Equal(another Timestamp) bool {
 	return t.WallTime == another.WallTime && t.Lamport == another.Lamport
 }
 
-func (t *Timestamp) Before(other *Timestamp) bool { return Compare(t, other) == Lower }
-func (t *Timestamp) After(other *Timestamp) bool  { return Compare(t, other) == Greater }
-func (t *Timestamp) String() string {
+func (t Timestamp) Before(other Timestamp) bool { return Compare(t, other) == Lower }
+func (t Timestamp) After(other Timestamp) bool  { return Compare(t, other) == Greater }
+func (t Timestamp) String() string {
 	return fmt.Sprintf("(%s, L=%d, id=%s)",
 		time.Unix(0, int64(t.WallTime)).UTC().Format(time.RFC3339Nano),
 		t.Lamport, t.ID)
 }
 
-func Compare(a, b *Timestamp) int {
+func Compare(a, b Timestamp) int {
 	if a.WallTime < b.WallTime {
 		return Lower
 	}
@@ -99,7 +96,7 @@ func (h *Time) nowNano() uint64 {
 	return uint64(time.Now().Add(off).UnixNano())
 }
 
-func (h *Time) Now() *Timestamp {
+func (h *Time) Now() Timestamp {
 	for {
 		now := h.nowNano()
 		p := h.st.Load()
@@ -118,7 +115,7 @@ func (h *Time) Now() *Timestamp {
 
 		newPtr := &newPair
 		if h.st.CompareAndSwap(p, newPtr) {
-			return &Timestamp{
+			return Timestamp{
 				WallTime: newPtr.wall,
 				Lamport:  newPtr.logical,
 				ID:       h.nodeID,
@@ -127,7 +124,7 @@ func (h *Time) Now() *Timestamp {
 	}
 }
 
-func (h *Time) SyncWithRemote(remote *Timestamp) *Timestamp {
+func (h *Time) SyncWithRemote(remote Timestamp) Timestamp {
 	for {
 		now := h.nowNano()
 		p := h.st.Load()
@@ -139,20 +136,28 @@ func (h *Time) SyncWithRemote(remote *Timestamp) *Timestamp {
 		if now > newWall {
 			newWall = now
 		}
-		if remote != nil && remote.WallTime > newWall {
+		if !remote.IsZero() && remote.WallTime > newWall {
 			newWall = remote.WallTime
 		}
 
 		var newLogical uint64
 		switch {
-		case remote != nil && newWall == remote.WallTime && newWall == now:
+		case !remote.IsZero() && newWall == remote.WallTime && newWall == now:
 			if remote.Lamport >= logical {
 				newLogical = remote.Lamport + 1
 			} else {
 				newLogical = logical + 1
 			}
-		case remote != nil && newWall == remote.WallTime:
-			newLogical = remote.Lamport + 1
+		case !remote.IsZero() && newWall == remote.WallTime:
+			if lastWall == newWall {
+				if remote.Lamport >= logical {
+					newLogical = remote.Lamport + 1
+				} else {
+					newLogical = logical + 1
+				}
+			} else {
+				newLogical = remote.Lamport + 1
+			}
 		case newWall == now && now > lastWall:
 			newLogical = 0
 		default:
@@ -162,7 +167,7 @@ func (h *Time) SyncWithRemote(remote *Timestamp) *Timestamp {
 		newPtr := &pair{wall: newWall, logical: newLogical}
 
 		if h.st.CompareAndSwap(p, newPtr) {
-			return &Timestamp{
+			return Timestamp{
 				WallTime: newWall,
 				Lamport:  newLogical,
 				ID:       h.nodeID,

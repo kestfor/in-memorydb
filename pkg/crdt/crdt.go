@@ -35,6 +35,10 @@ type CRDT interface {
 
 	// Get type of CRDT
 	Type() CRDTType
+
+	// Hash returns a fast, deterministic hash of the current CRDT state.
+	// Used by anti-entropy to detect divergence without serialization.
+	Hash() uint64
 }
 
 type Delta interface {
@@ -50,6 +54,8 @@ type Delta interface {
 	Merge(other Delta) error
 
 	CreateCRDT() (CRDT, error)
+
+	Hash() uint64
 }
 
 type CRDTConstructor func(id string) CRDT

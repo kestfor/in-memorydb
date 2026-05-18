@@ -1,0 +1,20 @@
+# Базовый конфиг узла.
+# NODE_ID задаётся через env (обязательно).
+# SEEDS задаётся через env для не-seed узлов (SEEDS=node1).
+# Остальные параметры можно переопределить env-переменными.
+gossip:
+  bind_address: "0.0.0.0"
+  port: 8081
+  fanout: 3
+  interval: 10s
+  retries: 2
+engine:
+  shards_num: 256
+buffer:
+  size: 1000
+persistence:
+  enabled: false
+security:
+  mode: disabled
+trace:
+  enabled: false

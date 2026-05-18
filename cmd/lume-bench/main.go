@@ -16,6 +16,7 @@ import (
 	lumepb "github.com/kestfor/in-memorydb/api/lume"
 	"github.com/kestfor/in-memorydb/cmd/lume-bench/syscall"
 	"github.com/spf13/cobra"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/benchmark/stats"
 	"google.golang.org/grpc/credentials/insecure"
@@ -53,6 +54,7 @@ type config struct {
 	reqSize  int
 	reqType  string
 	poolSize int
+	maxRPS   int
 	testName string
 	outDir   string
 }
@@ -78,6 +80,7 @@ func main() {
 	f.StringVarP(&cfg.reqType, "type", "t", "mixed", "Request type: get, set, or mixed")
 	f.IntVar(&cfg.poolSize, "pool-size", 10000, "Key pool size")
 	f.StringVarP(&cfg.testName, "name", "n", "", "Test name (for profile filenames, default: bench_<timestamp>)")
+	f.IntVar(&cfg.maxRPS, "max-rps", 0, "Max requests per second across all workers (0 = unlimited)")
 	f.StringVarP(&cfg.outDir, "out", "o", ".", "Output directory for profile files")
 
 	if err := cmd.Execute(); err != nil {
@@ -110,6 +113,11 @@ func run(_ *cobra.Command, _ []string) error {
 	fmt.Printf("  "+dim+"req type:       "+reset+" %s\n", cfg.reqType)
 	fmt.Printf("  "+dim+"key pool size:  "+reset+" %d\n", cfg.poolSize)
 	fmt.Printf("  "+dim+"req body size:  "+reset+" %d bytes\n", cfg.reqSize)
+	if cfg.maxRPS > 0 {
+		fmt.Printf("  "+dim+"max rps:        "+reset+" %d\n", cfg.maxRPS)
+	} else {
+		fmt.Printf("  " + dim + "max rps:        " + reset + " unlimited\n")
+	}
 	fmt.Println()
 
 	// Connect
@@ -128,7 +136,7 @@ func run(_ *cobra.Command, _ []string) error {
 
 	// Pre-populate
 	if cfg.reqType == "get" || cfg.reqType == "mixed" {
-		if err := prepopulate(ccs[0], pool); err != nil {
+		if err := prepopulate(ccs, pool); err != nil {
 			return fmt.Errorf("pre-populate: %w", err)
 		}
 	}
@@ -156,6 +164,15 @@ func run(_ *cobra.Command, _ []string) error {
 		reportProgress(progressCtx, warmEnd, &ops, &errs)
 	}()
 
+	var limiter *rate.Limiter
+	if cfg.maxRPS > 0 {
+		// burst = totalWorkers: позволяет всем воркерам стартовать без ожидания,
+		// после чего rate limiter выравнивает нагрузку до maxRPS.
+		// burst = maxRPS создаёт thundering herd: воркеры синхронизируются
+		// и бьют сервер пачками вместо равномерного потока.
+		limiter = rate.NewLimiter(rate.Limit(cfg.maxRPS), totalWorkers)
+	}
+
 	var wg sync.WaitGroup
 	histCh := make(chan *stats.Histogram, totalWorkers)
 	for _, cc := range ccs {
@@ -163,7 +180,7 @@ func run(_ *cobra.Command, _ []string) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				histCh <- runWorker(cc, pool, warmEnd, benchEnd, &ops, &errs)
+				histCh <- runWorker(cc, pool, warmEnd, benchEnd, limiter, &ops, &errs)
 			}()
 		}
 	}
@@ -224,31 +241,33 @@ func closeAll(ccs []*grpc.ClientConn) {
 	}
 }
 
-func prepopulate(cc *grpc.ClientConn, pool *keyPool) error {
-	fmt.Printf(blue+"Pre-populating"+reset+" %d keys...\n", cfg.poolSize)
-	client := lumepb.NewLumeClient(cc)
-	for i, key := range pool.keys {
-		if _, err := client.Set(context.Background(), &lumepb.SetRequest{
-			Key:      key,
-			CrdtType: lumepb.Type_TYPE_LWW_REGISTER,
-		}); err != nil {
-			return fmt.Errorf("set %s: %w", key, err)
-		}
-		if _, err := client.Apply(context.Background(), &lumepb.ApplyRequest{
-			Key: key,
-			Operation: &lumepb.ApplyRequest_RegisterOperation{
-				RegisterOperation: &lumepb.ApplyRequest_Register{
-					Value: make([]byte, cfg.reqSize),
+func prepopulate(ccs []*grpc.ClientConn, pool *keyPool) error {
+	for i := range cfg.ports {
+		fmt.Printf(blue+"Pre-populating"+reset+" %d keys for %d port...\n", cfg.poolSize, i+1)
+		client := lumepb.NewLumeClient(ccs[i])
+		for i, key := range pool.keys {
+			if _, err := client.Set(context.Background(), &lumepb.SetRequest{
+				Key:      key,
+				CrdtType: lumepb.Type_TYPE_LWW_REGISTER,
+			}); err != nil {
+				return fmt.Errorf("set %s: %w", key, err)
+			}
+			if _, err := client.Apply(context.Background(), &lumepb.ApplyRequest{
+				Key: key,
+				Operation: &lumepb.ApplyRequest_RegisterOperation{
+					RegisterOperation: &lumepb.ApplyRequest_Register{
+						Value: make([]byte, cfg.reqSize),
+					},
 				},
-			},
-		}); err != nil {
-			return fmt.Errorf("apply %s: %w", key, err)
+			}); err != nil {
+				return fmt.Errorf("apply %s: %w", key, err)
+			}
+			if (i+1)%2000 == 0 {
+				fmt.Printf("\r\033[K  "+dim+"%d/%d keys"+reset, i+1, len(pool.keys))
+			}
 		}
-		if (i+1)%2000 == 0 {
-			fmt.Printf("\r\033[K  "+dim+"%d/%d keys"+reset, i+1, len(pool.keys))
-		}
+		fmt.Printf("\r\033[K  %d/%d keys — "+green+"done"+reset+"\n", len(pool.keys), len(pool.keys))
 	}
-	fmt.Printf("\r\033[K  %d/%d keys — "+green+"done"+reset+"\n", len(pool.keys), len(pool.keys))
 	return nil
 }
 
@@ -286,7 +305,7 @@ func reportProgress(ctx context.Context, warmEnd time.Time, ops, errs *atomic.In
 	}
 }
 
-func runWorker(cc *grpc.ClientConn, pool *keyPool, warmEnd, benchEnd time.Time, ops, errs *atomic.Int64) *stats.Histogram {
+func runWorker(cc *grpc.ClientConn, pool *keyPool, warmEnd, benchEnd time.Time, limiter *rate.Limiter, ops, errs *atomic.Int64) *stats.Histogram {
 	client := lumepb.NewLumeClient(cc)
 	hist := stats.NewHistogram(hopts)
 
@@ -295,6 +314,12 @@ func runWorker(cc *grpc.ClientConn, pool *keyPool, warmEnd, benchEnd time.Time, 
 		if start.After(benchEnd) {
 			return hist
 		}
+		if limiter != nil {
+			if err := limiter.Wait(context.Background()); err != nil {
+				return hist
+			}
+		}
+		start = time.Now()
 		err := doRequest(client, pool)
 		elapsed := time.Since(start)
 		if err != nil {

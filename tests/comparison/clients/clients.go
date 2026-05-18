@@ -13,6 +13,10 @@ const (
 	Redis     = "redis"
 	Memcached = "memcached"
 	Lume      = "lume"
+	Riak      = "riak"
+	Dragonfly = "dragonfly"
+	KeyDB     = "keydb"
+	Aerospike = "aerospike"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -25,11 +29,19 @@ type Client interface {
 func GetClient(db string, url string, m *monitoring.Metrics) Client {
 	switch db {
 	case Redis:
-		return NewRedisClient(url, m)
+		return NewRedisCompatibleClient(Redis, url, m)
+	case Dragonfly:
+		return NewRedisCompatibleClient(Dragonfly, url, m)
+	case KeyDB:
+		return NewRedisCompatibleClient(KeyDB, url, m)
+	case Aerospike:
+		return NewAerospikeClient(url, m)
 	case Memcached:
 		return NewMemcachedClient(url, m)
 	case Lume:
 		return NewLumeClient(url, m)
+	case Riak:
+		return NewRiakClient(url, m)
 	default:
 		slog.Error("unknown db", slog.String("db", db))
 		return nil

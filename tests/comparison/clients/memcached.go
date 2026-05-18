@@ -20,25 +20,25 @@ type MemcachedClient struct {
 
 func NewMemcachedClient(url string, m *monitoring.Metrics) *MemcachedClient {
 	client := memcache.New(url)
-	client.MaxIdleConns = 500
+	client.MaxIdleConns = 10000
 	client.Timeout = time.Second * 5
 	return &MemcachedClient{client: client, m: m}
 }
 
 func (c *MemcachedClient) Get(ctx context.Context, key string) (models.User, error) {
 	now := time.Now()
-	it, err := c.client.Get(key)
+	_, err := c.client.Get(key)
 	if err != nil {
 		return models.User{}, nil
 	}
 	c.m.Duration().With(memcachedLabelsGet).Observe(time.Since(now).Seconds())
 
-	var user models.User
-	if err = json.Unmarshal(it.Value, &user); err != nil {
-		return models.User{}, err
-	}
+	//var user models.User
+	//if err = json.Unmarshal(it.Value, &user); err != nil {
+	//	return models.User{}, err
+	//}
 
-	return user, err
+	return models.User{}, err
 }
 
 func (c *MemcachedClient) Set(ctx context.Context, key string, value *models.User) error {

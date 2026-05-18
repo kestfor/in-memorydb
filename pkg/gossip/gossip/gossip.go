@@ -54,7 +54,7 @@ type Config struct {
 	// The WorkerPoolSize parameter determines how many parallel communication goroutines can exist.
 	WorkerPoolSize int `yaml:"worker_pool_size" env:"GOSSIP_WORKER_POOL_SIZE" default:"5"`
 
-	RequestTimeout time.Duration `yaml:"-" env:"GOSSIP_REQUEST_TIMEOUT" default:"60s"`
+	RequestTimeout time.Duration `yaml:"-" env:"GOSSIP_REQUEST_TIMEOUT" default:"5s"`
 }
 
 var ErrNoPeers = errors.New("no peers available")
@@ -88,18 +88,19 @@ type DefaultGossip struct {
 
 func NewDefaultGossip(config *Config, transportConfig *grpc.TransportConfig, transport transport.Transport, list membership.Membership, manager version_manager.VersionManager, wal wal.WAL, buffer buffer.UpdatesBuffer, engine engine.Engine, serverOpts ...grpcserver.ServerOption) *DefaultGossip {
 	return &DefaultGossip{
-		config:          config,
-		transportConfig: transportConfig,
-		transport:       transport,
-		memberlist:      list,
-		versionManager:  manager,
-		wal:             wal,
-		buffer:          buffer,
-		engine:          engine,
-		serverOpts:      serverOpts,
-		gbuffer:         gossip_buffer.NewGossipBuffer(config.BufferSize),
-		updatesChannel:  make(chan []types.Update, 100),
-		numBuckets:      versionmanagerv2.DefaultNumBuckets,
+		config:            config,
+		transportConfig:   transportConfig,
+		transport:         transport,
+		memberlist:        list,
+		versionManager:    manager,
+		wal:               wal,
+		buffer:            buffer,
+		engine:            engine,
+		serverOpts:        serverOpts,
+		gbuffer:           gossip_buffer.NewGossipBuffer(config.BufferSize),
+		updatesChannel:    make(chan []types.Update, 100),
+		numBuckets:        versionmanagerv2.DefaultNumBuckets,
+		antiEntropyBucket: rand.Uint32() % versionmanagerv2.DefaultNumBuckets,
 	}
 }
 
@@ -151,6 +152,7 @@ func (g *DefaultGossip) Send(ctx context.Context, data []types.Update) error {
 				slog.Warn("gossip.Send: error while sending data to peer", "peer", peer.GossipAddr().String(), "err", err)
 				continue
 			}
+			slog.InfoContext(ctx, "gossip.Send: sent updates to peers", slog.String("peer", peer.ID()))
 			successNum++
 			break
 		}
@@ -219,7 +221,10 @@ func (g *DefaultGossip) GetVersionVector(ctx context.Context, peer types.Node) (
 // A semaphore is used to limit the number of concurrently executed send operations.
 func (g *DefaultGossip) readUpdates(ctx context.Context) {
 	sem := make(chan struct{}, g.config.WorkerPoolSize)
-	for updates := range g.updatesChannel {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	processUpdates := func(u []types.Update) {
 		sem <- struct{}{}
 		go func(u []types.Update) {
 			defer func() { <-sem }()
@@ -227,7 +232,6 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 			defer span.End()
 
 			clusterSize := len(g.memberlist.Members())
-
 			for index := range u {
 				u[index].TTL = getTTLNumForAsync(clusterSize, g.config.Fanout, int(g.config.AntiEntropyInterval.Seconds()))
 			}
@@ -235,13 +239,32 @@ func (g *DefaultGossip) readUpdates(ctx context.Context) {
 			ttlUpds := g.gbuffer.PeekN(g.config.MaxBatchSize - len(u))
 			u = append(u, ttlUpds...)
 
+			if len(u) == 0 {
+				return
+			}
+
 			if err := g.Send(ctx, u); err != nil {
 				slog.Warn("gossip.readUpdates: send failed", "err", err)
 				return
 			}
-
 			span.SetStatus(codes.Ok, "")
-		}(updates)
+		}(u)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case updates, ok := <-g.updatesChannel:
+			if !ok {
+				return
+			}
+			processUpdates(updates)
+		case <-ticker.C:
+			// Даже если никто не писал в updatesChannel,
+			// забираем накопленные данные из gbuffer
+			processUpdates(nil) // пустой слайс — PeekN всё равно отработает
+		}
 	}
 }
 
@@ -294,7 +317,7 @@ func (g *DefaultGossip) antiEntropyRound(ctx context.Context) {
 	// Step 1: Get remote key digests for this bucket
 	remoteDigests, err := g.transport.GetKeyDigests(withTimeOut, peer.GossipAddr().String(), bucket)
 	if err != nil {
-		slog.Error("gossip.antiEntropyRound: failed to get key digests", "err", err, "peer", peer.ID(), "bucket", bucket)
+		slog.Warn("gossip.antiEntropyRound: failed to get key digests", "err", err, "peer", peer.ID(), "bucket", bucket)
 		return
 	}
 

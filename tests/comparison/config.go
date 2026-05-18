@@ -21,9 +21,13 @@ type DBConfig struct {
 type Test struct {
 	DB             DBConfig `yaml:"-"`
 	Name           string   `yaml:"name"`
+	Type           string   `yaml:"type"`
 	MinClients     int      `yaml:"minClients"`
 	ClientsStep    int      `yaml:"clientsStep"`
 	MaxClients     int      `yaml:"maxClients"`
+	ClientStages   []int    `yaml:"clientStages"`
+	GrowthMode     string   `yaml:"growthMode"`
+	GrowthFactor   float64  `yaml:"growthFactor"`
 	StageIntervalS int      `yaml:"stageIntervalS"`
 	RequestDelayMs int      `yaml:"requestDelayMs"`
 	MaxKeysNum     int      `yaml:"maxKeysNum"`

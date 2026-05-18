@@ -1,65 +1,87 @@
 services:
   lume:
     container_name: lume
-    cpus: "3.0"
-    deploy:
-      resources:
-        limits:
-          cpus: "3.00"
+    cpus: "4.0"
+    command: [ "./lume", "--config", "/lume-config/config.yaml" ]
     build:
       context: ../../
-      dockerfile: ./local_tests/Dockerfile
+      dockerfile: Dockerfile
     ports:
-      - "50053:50053"
+      - "8080:8080"
     environment:
       - LOG_LEVEL=ERROR
-    #    volumes:
-    #      - wal1:/wal_data
-    command: [ "./lume", "--config", "../local_configs/config1.yaml" ]
+      - NODE_ID=main
+      - SECURITY_MODE=disabled
+    volumes:
+      - ./configs/db/lume.yaml:/lume-config/config.yaml
 
   redis:
-    image: redis:latest
+    image: redis:8
     container_name: redis
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     volumes:
       - ./configs/db/redis.conf:/usr/local/etc/redis/redis.conf:ro
     ports:
       - "6379:6379"
-    deploy:
-      resources:
-        limits:
-          cpus: "3.00"
-    cpus: 3.0
+    cpus: "4.0"
     restart: unless-stopped
 
-#  memcached:
-#    image: memcached:1.6
-#    container_name: memcached
-#    command: [ "memcached", "-u", "memcache", "-c", "1024", "-m", "128" ]
-#    volumes:
-#      - ./configs/db/memcached.conf:/etc/memcached.conf:ro
-#    ports:
-#      - "11211:11211"
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: "2.00"
-#    cpus: 2.0
-#    restart: unless-stopped
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: dragonfly
+    command: [ "dragonfly", "--logtostderr", "--port=6379" ]
+    ports:
+      - "6380:6379"
+    cpus: "4.0"
+    restart: unless-stopped
 
-#  cadvisor:
-#    image: gcr.io/cadvisor/cadvisor:latest
-#    container_name: cadvisor
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock:ro
-#      - /sys:/sys:ro
-#      - /var/lib/docker/:/var/lib/docker:ro
-#    ports:
-#      - "8080:8080"
-#    restart: unless-stopped
+  keydb:
+    image: eqalpha/keydb:latest
+    container_name: keydb
+    command: [ "keydb-server", "/etc/keydb/keydb.conf" ]
+    ports:
+      - "6381:6379"
+    cpus: "4.0"
+    volumes:
+      - ./configs/db/keydb.conf:/etc/keydb/keydb.conf:ro
+    restart: unless-stopped
+
+  aerospike:
+    image: aerospike/aerospike-server:latest
+    container_name: aerospike
+    ports:
+      - "3005:3000"
+    cpus: "4.0"
+    volumes:
+      - ./configs/db/aerospike.conf:/etc/aerospike/aerospike.conf
+    restart: unless-stopped
+
+  memcached:
+    image: memcached:1.6
+    container_name: memcached
+    command: [ "memcached", "-u", "memcache", "-c", "1024", "-m", "128" ]
+    volumes:
+      - ./configs/db/memcached.conf:/etc/memcached.conf:ro
+    ports:
+      - "11211:11211"
+    cpus: "4.0"
+    restart: unless-stopped
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    user: "0:0"
+    entrypoint: "telegraf --config /etc/telegraf/telegraf.conf"
+    volumes:
+      - ~/.orbstack/run/docker.sock:/var/run/docker.sock:ro
+      - ./configs/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    ports:
+      - "9273:9273"
+    restart: unless-stopped
 
 
   prometheus:
+    cpus: "1.0"
     image: prom/prometheus
     container_name: prometheus
     volumes:
@@ -69,6 +91,7 @@ services:
     restart: unless-stopped
 
   grafana:
+    cpus: "1.0"
     image: grafana/grafana
     container_name: grafana
     ports:

@@ -11,26 +11,29 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var redisLabelsSet = prometheus.Labels{"op": "set", "db": "redis"}
-var redisLabelsGet = prometheus.Labels{"op": "get", "db": "redis"}
-
 type RedisClient struct {
 	client *redis.Client
 	m      *monitoring.Metrics
+	dbName string
 }
 
-func NewRedisClient(url string, m *monitoring.Metrics) *RedisClient {
+func NewRedisCompatibleClient(dbName string, url string, m *monitoring.Metrics) *RedisClient {
 	client := redis.NewClient(&redis.Options{
-		Addr:         url,
-		Password:     "",
-		DB:           0,
-		PoolSize:     500,
-		DialTimeout:  time.Second * 5,
-		ReadTimeout:  time.Second * 5,
-		WriteTimeout: time.Second * 5,
+		Addr:               url,
+		Password:           "",
+		DB:                 0,
+		PoolSize:           1024,
+		MaxConcurrentDials: 128,
+		DialTimeout:        time.Second * 5,
+		ReadTimeout:        time.Second * 5,
+		WriteTimeout:       time.Second * 5,
 	})
 
-	return &RedisClient{client: client, m: m}
+	return &RedisClient{client: client, m: m, dbName: dbName}
+}
+
+func (c *RedisClient) labels(op string) prometheus.Labels {
+	return prometheus.Labels{"op": op, "db": c.dbName}
 }
 
 func (c *RedisClient) Get(ctx context.Context, key string) (models.User, error) {
@@ -47,7 +50,7 @@ func (c *RedisClient) Get(ctx context.Context, key string) (models.User, error) 
 	//	return User{}, annotate(err, "json.Unmarshal failed")
 	//}
 
-	c.m.Duration().With(redisLabelsGet).Observe(time.Since(now).Seconds())
+	c.m.Duration().With(c.labels("get")).Observe(time.Since(now).Seconds())
 	return user, err
 }
 
@@ -63,6 +66,6 @@ func (c *RedisClient) Set(ctx context.Context, key string, value *models.User) e
 		slog.Error("rdb.Set failed", "err", err)
 		return err
 	}
-	c.m.Duration().With(redisLabelsSet).Observe(time.Since(now).Seconds())
+	c.m.Duration().With(c.labels("set")).Observe(time.Since(now).Seconds())
 	return nil
 }

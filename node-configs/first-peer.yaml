@@ -11,15 +11,21 @@ gossip:
 membership:
   # advertise_addr задается явно, если запускать узлы на разных физических устройствах.
   # При запуске под docker-compose оставьте advertise_addr пустым, чтобы автоматически использовать IP/интерфейс контейнера.
-  # advertise_addr: "192.168.0.1"
+  advertise_addr: "192.168.0.45"
   port: 8082
 engine:
-  shards_num: 512
+  shards_num: 256
+buffer:
+  size: 1000
 persistence:
-  enabled: true
+  enabled: false
   wal:
+    flush_interval: 1s
+    sync_mode: false
     path: ./wal_data_1
+    batch_size: 1000
     segment_threshold: 10000
+
 security:
   mode: disabled
   ca_cert: ./node-configs/certs/ca.crt
