@@ -7,6 +7,9 @@
 
 <p align="center">
   <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.26.1-00ADD8?style=flat&logo=go&logoColor=white" alt="Go Version"></a>
+  <a href="https://github.com/kestfor/in-memorydb/actions"><img src="https://img.shields.io/github/actions/workflow/status/kestfor/in-memorydb/go.yml?branch=main&style=flat&logo=github" alt="Build Status"></a>
+  <a href="https://goreportcard.com/report/github.com/kestfor/in-memorydb"><img src="https://goreportcard.com/badge/github.com/kestfor/in-memorydb" alt="Go Report Card"></a>
+  <a href="https://deepwiki.com/kestfor/in-memorydb"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat" alt="License"></a>
 </p>
 
